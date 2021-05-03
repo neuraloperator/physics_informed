@@ -92,9 +92,10 @@ def train(model, X_u, u, X_f,
 
 
 if __name__ == '__main__':
-    # net = FNN1d(modes=16, width=64)
+
+    # # net = FNN1d(modes=16, width=64)
     net = FNN2d(modes1=16, modes2=16, width=64)
-    # net2 = FNNd(modes1=16, modes2=16, width=64)
+    # # net2 = FNNd(modes1=16, modes2=16, width=64)
     data = torch.randn((1, 100, 256, 2))
     pred = net(data)
     print(pred.shape)

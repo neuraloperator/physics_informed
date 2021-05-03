@@ -1,5 +1,5 @@
-Data
+data
 .vscode
 __pycache__
 .idea
-models.__pycache__
+figs
