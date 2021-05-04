@@ -28,28 +28,29 @@ sub = 1 #subsampling rate
 h = 128 // sub
 s = h
 sub_t = 1
-T = 100 // sub_t
+T = 100 // sub_t + 1
 
 batch_size = 20
 learning_rate = 0.001
 
-epochs = 2500
-step_size = 50
-gamma = 0.5
+epochs = 2000
+step_size = 200
+gamma = 0.25
 
 modes = 12
 width = 32
 
 log = True
 if wandb and log:
-    wandb.init(project='PINO-burgers',
+    wandb.init(project='PINO-Burgers',
+               entity='hzzheng-pino',
                group='AD',
                config={'lr': learning_rate,
                        'schedule_step': step_size,
                        'batch_size': batch_size,
                        'modes': modes,
                        'width': width},
-               tags=['original'])
+               tags=['StepLR'])
 
 datapath = '/mnt/md1/zongyi/burgers_pino.mat'
 constructor = DataConstructor(datapath, nx=128, nt=100, sub=sub, sub_t=sub_t, new=True)
@@ -60,6 +61,7 @@ image_dir = 'figs/AD-burgers'
 ckpt_dir = 'checkpoints/AD-burgers/'
 path = 'PINO_autograd_burgers_N'+str(ntrain)+'_ep' + str(epochs) + '_m' + str(modes) + '_w' + str(width)
 path_model = ckpt_dir + path + '.pt'
+
 if not os.path.exists(image_dir):
     os.makedirs(image_dir)
 if not os.path.exists(ckpt_dir):
@@ -71,9 +73,9 @@ modes = [modes * (4-i) // 4 for i in range(4)]
 model = PINO2d(modes1=modes, modes2=modes, width=width, layers=layers).to(device)
 num_param = count_params(model)
 print('Number of model parameters', num_param)
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
-# scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
+# scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
 
 myloss = LpLoss(size_average=True)
 # myloss = HpLoss(size_average=False, k=2, group=True)
@@ -88,7 +90,7 @@ for ep in pbar:
     train_loss = 0.0
 
     # train with ground truth
-    N = 10
+    # N = 10
     # ux, uy = x_train[:N].to(device), y_train[:N].to(device)
     for x, y in train_loader:
         x, y = x.to(device), y.to(device)
@@ -106,7 +108,6 @@ for ep in pbar:
         # uout = model(ux)
         # loss_u = myloss(uout.view(N, T, s), uy.view(N, T, s))
         loss_ic, loss_f = AD_loss(out.view(batch_size, P), x[:, 0, :, 0], (sample_t, sample_x), index_ic, p, q)
-        # pino_loss = loss_u + loss_ic + loss_f + loss_bc
         total_loss = (20*loss_ic + loss_f) * 100
         total_loss.backward()
 

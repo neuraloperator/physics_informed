@@ -43,8 +43,6 @@ def AD_loss(u, u0, grid, index_ic=None, p=None, q=None):
     loss_ic = F.mse_loss(boundary_u, u0)
     f = torch.zeros(Du.shape, device=u.device)
     loss_f = F.mse_loss(Du, f)
-
-    # errors = torch.tensor([loss_u, loss_bc0, loss_f, loss_bc1])
     return loss_ic, loss_f
 
 

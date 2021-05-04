@@ -73,8 +73,10 @@ class DataConstructor(object):
         self.s = nx // sub
         self.T = nt // sub_t
         self.new = new
+        if new:
+            self.T += 1
         self.x_data = dataloader.read_field('input')[:, ::sub]
-        self.y_data = dataloader.read_field('output')[:, 1::sub_t, ::sub]
+        self.y_data = dataloader.read_field('output')[:, ::sub_t, ::sub]
 
     def make_loader(self, n_sample, batch_size, train=True):
         if train:
@@ -86,7 +88,7 @@ class DataConstructor(object):
 
         if self.new:
             gridx = torch.tensor(np.linspace(0, 1, self.s + 1)[:-1], dtype=torch.float)
-            gridt = torch.tensor(np.linspace(0, 1, self.T + 1)[1:], dtype=torch.float)
+            gridt = torch.tensor(np.linspace(0, 1, self.T), dtype=torch.float)
         else:
             gridx = torch.tensor(np.linspace(0, 1, self.s), dtype=torch.float)
             gridt = torch.tensor(np.linspace(0, 1, self.T + 1)[1:], dtype=torch.float)
