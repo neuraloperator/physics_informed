@@ -9,7 +9,7 @@ from tqdm import tqdm
 from timeit import default_timer
 from losses import LpLoss, AD_loss
 from data_utils import DataConstructor
-from utils import get_sample, count_params
+from utils import get_sample, count_params, save_checkpoint
 
 try:
     import wandb
@@ -33,9 +33,9 @@ T = 100 // sub_t + 1
 batch_size = 20
 learning_rate = 0.001
 
-epochs = 2000
+epochs = 2500
 step_size = 200
-gamma = 0.25
+gamma = 0.5
 
 modes = 12
 width = 32
@@ -58,23 +58,23 @@ train_loader = constructor.make_loader(n_sample=ntrain, batch_size=batch_size, t
 test_loader = constructor.make_loader(n_sample=ntest, batch_size=batch_size, train=False)
 
 image_dir = 'figs/AD-burgers'
-ckpt_dir = 'checkpoints/AD-burgers/'
-path = 'PINO_autograd_burgers_N'+str(ntrain)+'_ep' + str(epochs) + '_m' + str(modes) + '_w' + str(width)
-path_model = ckpt_dir + path + '.pt'
+ckpt_dir = 'AD-burgers'
+name = 'PINO_autograd_burgers_N'+str(ntrain)+'_ep' + str(epochs) + '_m' + str(modes) + '_w' + str(width) + '.pt'
+
 
 if not os.path.exists(image_dir):
     os.makedirs(image_dir)
 if not os.path.exists(ckpt_dir):
     os.makedirs(ckpt_dir)
 
-layers = [width*2//4, width*3//4, width*4//4, width*4//4, width*5//4]
-modes = [modes * (4-i) // 4 for i in range(4)]
+layers = [width*2//4, width*3//4, width*3//4, width*4//4, width*4//4]
+modes = [modes * (5-i) // 4 for i in range(4)]
 
 model = PINO2d(modes1=modes, modes2=modes, width=width, layers=layers).to(device)
 num_param = count_params(model)
 print('Number of model parameters', num_param)
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
+scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[600, 1000, 1500, 2000], gamma=gamma)
 # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
 
 myloss = LpLoss(size_average=True)
@@ -161,4 +161,4 @@ for ep in pbar:
             }
         )
 
-torch.save(model, path_model)
+save_checkpoint(ckpt_dir, name, model, optimizer)

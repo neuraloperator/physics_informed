@@ -8,7 +8,7 @@ from models import FNN2d
 
 from tqdm import tqdm
 from timeit import default_timer
-from utils import count_params
+from utils import count_params, save_checkpoint
 from data_utils import DataConstructor
 from losses import LpLoss, PINO_loss
 
@@ -24,29 +24,32 @@ np.random.seed(0)
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 ntrain = 1000
-ntest = 200
+ntest = 100  #200
 
-sub = 8  # subsampling rate
-h = 2**10 // sub
-s = h
+sub = 1  #8  # subsampling rate
+# h = 2**10 // sub
+# s = h
 sub_t = 1
-T = 100 // sub_t
+# T = 100 // sub_t
 
-batch_size = 100
+batch_size = 20  # 100
 learning_rate = 0.001
 
 epochs = 2500
 step_size = 100
-gamma = 0.5
+gamma = 0.25
 
-modes = 20
-width = 64
+modes = 12  # 20
+width = 32  # 64
 
-datapath = '/mnt/md1/zongyi/burgers_v100_t100_r1024_N2048.mat'
+# datapath = '/mnt/md1/zongyi/burgers_v100_t100_r1024_N2048.mat'
+
+datapath = '/mnt/md1/zongyi/burgers_pino.mat'
 log = True
 
 if wandb and log:
     wandb.init(project='PINO-burgers',
+               entity='hzzheng-pino',
                group='FDM',
                config={'lr': learning_rate,
                        'schedule_step': step_size,
@@ -54,29 +57,28 @@ if wandb and log:
                        'modes': modes,
                        'width': width})
 
-constructor = DataConstructor(datapath, sub=sub, sub_t=sub_t)
+constructor = DataConstructor(datapath, nx=128, nt=100, sub=sub, sub_t=sub_t, new=True)
 train_loader = constructor.make_loader(n_sample=ntrain, batch_size=batch_size, train=True)
 test_loader = constructor.make_loader(n_sample=ntest, batch_size=batch_size, train=False)
 
-if not os.path.exists('checkpoints'):
-    os.makedirs('checkpoints')
-if not os.path.exists('figs'):
-    os.makedirs('figs')
+image_dir = 'figs/FDM-burgers'
+if not os.path.exists(image_dir):
+    os.makedirs(image_dir)
 
-path = 'PINO_FDM_burgers_N' + \
-    str(ntrain)+'_ep' + str(epochs) + '_m' + str(modes) + '_w' + str(width)
-path_model = 'checkpoints/' + path + '.pt'
+ckpt_dir = 'Burgers-FDM'
 
+name = 'PINO_FDM_burgers_N' + \
+    str(ntrain)+'_ep' + str(epochs) + '_m' + str(modes) + '_w' + str(width) + '.pt'
 
-layers = [width * (2+i) // 4 for i in range(5)]
-modes = [modes * (4-i) // 4 for i in range(4)]
+layers = [width*2//4, width*3//4, width*3//4, width*4//4, width*4//4]
+modes = [modes * (5-i) // 4 for i in range(4)]
 
 model = FNN2d(modes1=modes, modes2=modes, width=width, layers=layers).to(device)
 num_param = count_params(model)
 print('Number of model parameters', num_param)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=epochs//5, gamma=gamma/2)
+scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[800, 1000, 2000], gamma=gamma)
 # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
 
 myloss = LpLoss(size_average=True)
@@ -87,6 +89,7 @@ for ep in pbar:
     t1 = default_timer()
     train_pino = 0.0
     train_l2 = 0.0
+    train_loss = 0.0
     for x, y in train_loader:
         x, y = x.to(device), y.to(device)
 
@@ -98,12 +101,13 @@ for ep in pbar:
 
         loss = myloss(out.view(batch_size, -1), y.view(batch_size, -1))
         loss_u, loss_f = PINO_loss(out, x[:, 0, :, 0])
-        total_loss = loss_u * 10 + loss_f
+        total_loss = (loss_u * 10 + loss_f) * 100
         total_loss.backward()
-
         optimizer.step()
+
         train_l2 += loss.item()
         train_pino += loss_f.item()
+        train_loss += total_loss.item()
 
     scheduler.step()
 
@@ -123,13 +127,14 @@ for ep in pbar:
             test_pino = test_f.item()
 
     if ep % step_size == 0:
-        plt.imsave('figs/y_%d.png' % ep, y[0, :, :].cpu().numpy())
-        plt.imsave('figs/out_%d.png' % ep, out[0, :, :, 0].cpu().numpy())
+        plt.imsave('%s/y_%d.png' % (image_dir, ep), y[0, :, :].cpu().numpy())
+        plt.imsave('%s/out_%d.png' % (image_dir, ep), out[0, :, :, 0].cpu().numpy())
 
     train_l2 /= ntrain
     test_l2 /= ntest
     train_pino /= len(train_loader)
     test_pino /= len(test_loader)
+    train_loss /= len(train_loader)
 
     t2 = default_timer()
     pbar.set_description(
@@ -143,10 +148,11 @@ for ep in pbar:
             {
                 'Train f error': train_pino,
                 'Train L2 error': train_l2,
+                'Train loss': train_loss,
                 'Test f error': test_pino,
                 'Test L2 error': test_l2,
                 'Time cost': t2 - t1
             }
         )
 
-torch.save(model, path_model)
+save_checkpoint(ckpt_dir, name, model, optimizer)
