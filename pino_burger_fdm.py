@@ -130,8 +130,8 @@ for ep in pbar:
         plt.imsave('%s/y_%d.png' % (image_dir, ep), y[0, :, :].cpu().numpy())
         plt.imsave('%s/out_%d.png' % (image_dir, ep), out[0, :, :, 0].cpu().numpy())
 
-    train_l2 /= ntrain
-    test_l2 /= ntest
+    train_l2 /= len(train_loader)
+    test_l2 /= len(test_loader)
     train_pino /= len(train_loader)
     test_pino /= len(test_loader)
     train_loss /= len(train_loader)
