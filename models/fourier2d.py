@@ -103,8 +103,8 @@ class PINO2d(nn.Module):
         self.ws = nn.ModuleList([nn.Conv1d(in_size, out_size, 1)
                                  for in_size, out_size in zip(self.layers[:-1], self.layers[1:-1])])
         self.ws.append(LowRank2d(self.layers[-2], self.layers[-1]))
-        self.fc1 = nn.Linear(layers[-1], layers[-1] * 2)
-        self.fc2 = nn.Linear(layers[-1] * 2, out_dim)
+        self.fc1 = nn.Linear(layers[-1], layers[-1] * 4)
+        self.fc2 = nn.Linear(layers[-1] * 4, out_dim)
 
     def forward(self, x, y=None):
         batchsize = x.shape[0]

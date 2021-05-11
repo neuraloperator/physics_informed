@@ -9,7 +9,7 @@ from tqdm import tqdm
 from timeit import default_timer
 from losses import LpLoss, AD_loss
 from data_utils import DataConstructor
-from utils import get_sample, count_params, save_checkpoint
+from utils import get_sample, get_grid, count_params, save_checkpoint
 
 try:
     import wandb
@@ -24,16 +24,16 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 ntrain = 1000
 ntest = 100
 
-sub = 1 #subsampling rate
+sub = 2 #subsampling rate
 h = 128 // sub
 s = h
-sub_t = 1
+sub_t = 2
 T = 100 // sub_t + 1
 
 batch_size = 20
 learning_rate = 0.001
 
-epochs = 2500
+epochs = 1500
 step_size = 200
 gamma = 0.5
 
@@ -49,8 +49,10 @@ if wandb and log:
                        'schedule_step': step_size,
                        'batch_size': batch_size,
                        'modes': modes,
-                       'width': width},
-               tags=['StepLR'])
+                       'width': width,
+                       'sub_x': sub,
+                       'sub_t': sub_t},
+               tags=['full grid'])
 
 datapath = '/mnt/md1/zongyi/burgers_pino.mat'
 constructor = DataConstructor(datapath, nx=128, nt=100, sub=sub, sub_t=sub_t, new=True)
@@ -74,7 +76,7 @@ model = PINO2d(modes1=modes, modes2=modes, width=width, layers=layers).to(device
 num_param = count_params(model)
 print('Number of model parameters', num_param)
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[600, 1000, 1500, 2000], gamma=gamma)
+scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[200, 400, 600, 800, 1000], gamma=gamma)
 # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
 
 myloss = LpLoss(size_average=True)
@@ -94,20 +96,21 @@ for ep in pbar:
     # ux, uy = x_train[:N].to(device), y_train[:N].to(device)
     for x, y in train_loader:
         x, y = x.to(device), y.to(device)
-        # grid, gridt, gridx = get_grid(batch_size, T, s)
-        p = 50
-        q = 400
-        P = p+p+q
-        sample, sample_t, sample_x, index_ic = get_sample(batch_size, T, s, p=p, q=q)
+        grid, gridt, gridx = get_grid(batch_size, T, s)
+        # p = 50
+        # q = 400
+        # P = p+p+q
+        # sample, sample_t, sample_x, index_ic = get_sample(batch_size, T, s, p=p, q=q)
 
         optimizer.zero_grad()
-        out = model(x, sample)
+        out = model(x, grid)
 
         pred = model(x)
         loss_u = myloss(pred.view(batch_size, -1), y.view(batch_size, -1))
         # uout = model(ux)
         # loss_u = myloss(uout.view(N, T, s), uy.view(N, T, s))
-        loss_ic, loss_f = AD_loss(out.view(batch_size, P), x[:, 0, :, 0], (sample_t, sample_x), index_ic, p, q)
+        # loss_ic, loss_f = AD_loss(out.view(batch_size, P), x[:, 0, :, 0], (sample_t, sample_x), index_ic, p, q)
+        loss_ic, loss_f = AD_loss(out.view(batch_size, T, s), x[:, 0, :, 0], (gridt, gridx))
         total_loss = (20*loss_ic + loss_f) * 100
         total_loss.backward()
 

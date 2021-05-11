@@ -9,7 +9,7 @@ from models import FNN2d
 from tqdm import tqdm
 from timeit import default_timer
 from utils import count_params, save_checkpoint
-from data_utils import DataConstructor
+from data_utils import DataConstructor, sample_data
 from losses import LpLoss, PINO_loss
 
 try:
@@ -24,7 +24,8 @@ np.random.seed(0)
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 ntrain = 1000
-ntest = 100  #200
+nlabels = 0
+ntest = 200  #200
 
 sub = 1  #8  # subsampling rate
 # h = 2**10 // sub
@@ -35,7 +36,7 @@ sub_t = 1
 batch_size = 20  # 100
 learning_rate = 0.001
 
-epochs = 2500
+epochs = 2000
 step_size = 100
 gamma = 0.25
 
@@ -44,7 +45,8 @@ width = 32  # 64
 
 # datapath = '/mnt/md1/zongyi/burgers_v100_t100_r1024_N2048.mat'
 
-datapath = '/mnt/md1/zongyi/burgers_pino.mat'
+# datapath = '/mnt/md1/zongyi/burgers_pino.mat'
+datapath = 'data/burgers_pino.mat'
 log = True
 
 if wandb and log:
@@ -60,6 +62,12 @@ if wandb and log:
 constructor = DataConstructor(datapath, nx=128, nt=100, sub=sub, sub_t=sub_t, new=True)
 train_loader = constructor.make_loader(n_sample=ntrain, batch_size=batch_size, train=True)
 test_loader = constructor.make_loader(n_sample=ntest, batch_size=batch_size, train=False)
+if nlabels > 0:
+    supervised_loader = constructor.make_loader(n_sample=nlabels, batch_size=nlabels, start=ntrain, train=True)
+    supervised_loader = sample_data(loader=supervised_loader)
+else:
+    supervised_loader = None
+
 
 image_dir = 'figs/FDM-burgers'
 if not os.path.exists(image_dir):
@@ -78,7 +86,7 @@ num_param = count_params(model)
 print('Number of model parameters', num_param)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[800, 1000, 2000], gamma=gamma)
+scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[400, 800, 1200], gamma=gamma)
 # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
 
 myloss = LpLoss(size_average=True)
@@ -92,7 +100,8 @@ for ep in pbar:
     train_loss = 0.0
     for x, y in train_loader:
         x, y = x.to(device), y.to(device)
-
+        if nlabels >0:
+            ux, uy = next(supervised_loader)
         optimizer.zero_grad()
 
         out = model(x)

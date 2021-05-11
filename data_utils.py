@@ -78,10 +78,10 @@ class DataConstructor(object):
         self.x_data = dataloader.read_field('input')[:, ::sub]
         self.y_data = dataloader.read_field('output')[:, ::sub_t, ::sub]
 
-    def make_loader(self, n_sample, batch_size, train=True):
+    def make_loader(self, n_sample, batch_size, start=0, train=True):
         if train:
-            Xs = self.x_data[:n_sample]
-            ys = self.y_data[:n_sample]
+            Xs = self.x_data[start:start + n_sample]
+            ys = self.y_data[start:start + n_sample]
         else:
             Xs = self.x_data[-n_sample:]
             ys = self.y_data[-n_sample:]
@@ -103,6 +103,13 @@ class DataConstructor(object):
         else:
             loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False)
         return loader
+
+
+class DarcyLoader(object):
+    def __init__(self, datapath, s, r):
+        dataloader = MatReader(datapath)
+        self.x_data = dataloader.read_field('input')[:, ::r]
+        self.y_data = dataloader.read_field('output')[:, ::r, ::s]
 
 
 def load_data(datapath, N_f=10000):
@@ -229,3 +236,7 @@ class BurgerData(Dataset):
         return X_u, u
 
 
+def sample_data(loader):
+    while True:
+        for batch in loader:
+            yield batch
