@@ -147,8 +147,10 @@ class Net2d(nn.Module):
         return c
 
 
-Ntrain = 1
+Ntrain = 80
 Ntest = 1
+ntrain = Ntrain
+ntest = Ntest
 
 modes = 12
 width = 32
@@ -162,14 +164,6 @@ learning_rate = 0.0025
 scheduler_step = 500
 scheduler_gamma = 0.5
 
-print(epochs, learning_rate, scheduler_step, scheduler_gamma)
-
-path = 'test'
-# path = 'ns_fourier_V100_N'+str(ntrain)+'_ep' + str(epochs) + '_m' + str(modes) + '_w' + str(width)
-path_model = 'model/'+path
-path_train_err = 'results/'+path+'train.txt'
-path_test_err = 'results/'+path+'test.txt'
-path_image = 'image/'+path
 
 
 runtime = np.zeros(2, )
@@ -179,26 +173,33 @@ t1 = default_timer()
 sub = 4
 S = 256 // sub
 T_in = 1
-sub_t = 2
-T = 128//sub_t +1
+sub_t = 1
+T = 64//sub_t +1
 
-ntrain = Ntrain
-ntest = Ntest
+print(S, T)
+print(epochs, learning_rate, scheduler_step, scheduler_gamma)
 
-data = np.load('data/NS_fine.npy')
+path = 'pino_fdm_ns500_N'+str(ntrain)+'_ep' + str(epochs) + '_m' + str(modes) + '_w' + str(width) + '_s' + str(S) + '_t' + str(T)
+path_model = 'model/'+path
+path_train_err = 'results/'+path+'train.txt'
+path_test_err = 'results/'+path+'test.txt'
+path_image = 'image/'+path
+
+data = np.load('data/NS_fine_Re500_s256.npy')
 print(data.shape)
 data = torch.tensor(data, dtype=torch.float)[..., ::sub,::sub]
 print(data.shape)
 
-N = 5
+N = 100
 data2 = torch.zeros(N,S,S,T)
 for i in range(N):
-    data2[i] = data[i*128:(i+1)*128+1:sub_t,:,:].permute(1,2,0)
+    data2[i] = data[i*64:(i+1)*64+1:sub_t,:,:].permute(1,2,0)
 data = data2
 train_a = data[:Ntrain, :, :, 0].reshape(ntrain, S, S)
 train_u = data[:Ntrain].reshape(ntrain, S, S, T)
-test_a = data[:Ntest, :, :, 0].reshape(ntest, S, S)
-test_u = data[:Ntest].reshape(ntest, S, S, T)
+test_a = data[-Ntest:, :, :, 0].reshape(ntest, S, S)
+test_u = data[-Ntest:].reshape(ntest, S, S, T)
+
 print(torch.mean(torch.abs(train_a)), torch.mean(torch.abs(train_u)))
 
 print(train_u.shape)
@@ -234,18 +235,13 @@ t2 = default_timer()
 print('preprocessing finished, time used:', t2-t1)
 device = torch.device('cuda')
 
-model = Net2d(modes, width).cuda()
-# model = torch.load('model/ns_fourier_V100_N1000_ep100_m8_w20')
 
-print(model.count_params())
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
 
 x1 = torch.tensor(np.linspace(0, 2*np.pi, S+1)[:-1], dtype=torch.float).reshape(S, 1).repeat(1, S)
 x2 = torch.tensor(np.linspace(0, 2*np.pi, S+1)[:-1], dtype=torch.float).reshape(1, S).repeat(S, 1)
 forcing = -4 * (torch.cos(4*(x2))).reshape(1,S,S,1).cuda()
 
-def FDM_NS_vorticity(w, v=1/40):
+def FDM_NS_vorticity(w, v=1/500):
     batchsize = w.size(0)
     nx = w.size(1)
     ny = w.size(2)
@@ -268,16 +264,12 @@ def FDM_NS_vorticity(w, v=1/40):
 
     ux_h = 1j * k_y * f_h
     uy_h = -1j * k_x * f_h
-    # uxdx_h = 1j * k_x * ux_h
-    # uydy_h = 1j * k_y * uy_h
     wx_h = 1j * k_x * w_h
     wy_h = 1j * k_y * w_h
     wlap_h = -lap * w_h
 
     ux = torch.fft.irfft2(ux_h[:, :, :k_max + 1], dim=[1, 2])
     uy = torch.fft.irfft2(uy_h[:, :, :k_max + 1], dim=[1, 2])
-    # uxdx = torch.fft.irfft2(uxdx_h[:, :, :k_max + 1], dim=[1, 2])
-    # uydy = torch.fft.irfft2(uydy_h[:, :, :k_max + 1], dim=[1, 2])
     wx = torch.fft.irfft2(wx_h[:, :, :k_max+1], dim=[1,2])
     wy = torch.fft.irfft2(wy_h[:, :, :k_max+1], dim=[1,2])
     wlap = torch.fft.irfft2(wlap_h[:, :, :k_max+1], dim=[1,2])
@@ -286,7 +278,6 @@ def FDM_NS_vorticity(w, v=1/40):
     wt = (w[:, :, :, 2:] - w[:, :, :, :-2]) / (2 * dt)
 
     Du1 = wt + (ux*wx + uy*wy - v*wlap)[...,1:-1] - forcing
-    # Du2 = uxdx + uydy
     return Du1
 
 
@@ -314,7 +305,16 @@ myloss = LpLoss(size_average=True)
 error = np.zeros((epochs, 4))
 # x_normalizer.cuda()
 # y_normalizer.cuda()
-for ep in range(epochs):
+
+model = Net2d(modes, width).cuda()
+# model = torch.load('model/ns_fourier_V100_N1000_ep100_m8_w20')
+num_param = model.count_params()
+print(num_param)
+
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.5)
+
+for ep in range(100):
     model.train()
     t1 = default_timer()
     train_pino = 0.0
@@ -322,11 +322,46 @@ for ep in range(epochs):
     train_f = 0.0
     # train_f2 = 0.0
 
-    # train with ground truth
-    # N = 10
-    # ux, uy = train_a[:N].cuda(), train_u[:N].cuda()
-
     for x, y in train_loader:
+        x, y = x.cuda(), y.cuda()
+
+        optimizer.zero_grad()
+
+        out = model(x).reshape(batch_size, S, S, T)
+        x = x[:, :, :, 0, -1]
+
+        loss = myloss(out.view(batch_size, S, S, T), y.view(batch_size, S, S, T))
+        loss_ic, loss_f = PINO_loss(out.view(batch_size, S, S, T), x)
+        pino_loss = (loss_ic + loss_f) * 1
+
+        loss.backward()
+
+        optimizer.step()
+        train_l2 += loss.item()
+        train_pino += pino_loss.item()
+        train_f += loss_f.item()
+        # train_f2 += loss_f2.item()
+
+    scheduler.step()
+    train_l2 /= len(train_loader)
+    train_f /= len(train_loader)
+    # train_f2 /= len(train_loader)
+    train_pino /= len(train_loader)
+    t2 = default_timer()
+    print(ep, t2-t1, train_pino, train_f, train_l2)
+
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=0)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
+
+for ep in range(epochs):
+    model.train()
+    t1 = default_timer()
+    test_pino = 0.0
+    test_l2 = 0.0
+    test_f = 0.0
+    # train_f2 = 0.0
+
+    for x, y in test_loader:
         x, y = x.cuda(), y.cuda()
 
         optimizer.zero_grad()
@@ -344,25 +379,12 @@ for ep in range(epochs):
         pino_loss.backward()
 
         optimizer.step()
-        train_l2 += loss.item()
-        train_pino += pino_loss.item()
-        train_f += loss_f.item()
+        test_l2 += loss.item()
+        test_pino += pino_loss.item()
+        test_f += loss_f.item()
         # train_f2 += loss_f2.item()
 
     scheduler.step()
-
-    model.eval()
-    test_l2 = 0.0
-    test_pino = 0.0
-    with torch.no_grad():
-        for x, y in test_loader:
-            x, y = x.cuda(), y.cuda()
-
-            out = model(x).reshape(batch_size,S,S,T)
-            # out = y_normalizer.decode(out)
-
-            test_l2 += myloss(out.view(batch_size, S, S, T)[..., -1], y.view(batch_size, S, S, T)[..., -1]).item()
-            test_pino += 0
 
     # if ep % scheduler_step == scheduler_step-1:
         # plt.imshow(y[0,:,:,-1].cpu().numpy())
@@ -370,17 +392,12 @@ for ep in range(epochs):
         # plt.imshow(out[0,:,:,-1].cpu().numpy())
         # plt.show()
 
-    train_l2 /= len(train_loader)
     test_l2 /= len(test_loader)
-    train_f /= len(train_loader)
-    # train_f2 /= len(train_loader)
-    train_pino /= len(train_loader)
+    test_f /= len(test_loader)
     test_pino /= len(test_loader)
 
-    error[ep] = [train_pino, train_l2, train_f, test_l2]
-
     t2 = default_timer()
-    print(ep, t2-t1, train_pino, train_l2, train_f, test_l2)
+    print(ep, t2-t1, test_pino, test_l2, test_f)
 
 torch.save(model, path_model)
 
