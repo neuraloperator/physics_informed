@@ -408,7 +408,7 @@ for ep in range(epochs):
     test_pino /= len(test_loader)
 
     t2 = default_timer()
-    print(ep, t2-t1, test_pino, test_l2, test_f)
+    print(ep, t2-t1, test_pino, test_f, test_l2)
 
 torch.save(model, path_model)
 
