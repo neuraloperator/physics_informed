@@ -147,7 +147,7 @@ class Net2d(nn.Module):
         return c
 
 
-Ntrain = 80
+Ntrain = 999
 Ntest = 1
 ntrain = Ntrain
 ntest = Ntest
@@ -185,12 +185,12 @@ path_train_err = 'results/'+path+'train.txt'
 path_test_err = 'results/'+path+'test.txt'
 path_image = 'image/'+path
 
-data = np.load('data/NS_fine_Re40_s64.npy')
+data = np.load('data/NS_fine_Re40_s64_T1000.npy')
 print(data.shape)
 data = torch.tensor(data, dtype=torch.float)[..., ::sub,::sub]
 print(data.shape)
 
-N = 100
+N = Ntrain+Ntest
 data2 = torch.zeros(N,S,S,T)
 for i in range(N):
     data2[i] = data[i*64:(i+1)*64+1:sub_t,:,:].permute(1,2,0)
@@ -314,7 +314,7 @@ num_param = model.count_params()
 print(num_param)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.5)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.5)
 
 for ep in range(100):
     model.train()
@@ -339,7 +339,7 @@ for ep in range(100):
 
         loss = myloss(out.view(batch_size, S, S, T), y.view(batch_size, S, S, T))
         loss_ic, loss_f = PINO_loss(out.view(batch_size, S, S, T), x)
-        pino_loss = (loss_ic + loss_f) * 1
+        pino_loss = (loss_ic + loss_f)*1 + loss
 
         loss.backward()
 
@@ -349,13 +349,31 @@ for ep in range(100):
         train_f += loss_f.item()
         # train_f2 += loss_f2.item()
 
+    test_pino = 0.0
+    test_l2 = 0.0
+    with torch.no_grad():
+        for x, y in test_loader:
+            x, y = x.cuda(), y.cuda()
+
+            out = model(x).reshape(batch_size,S,S,T)
+            x = x[:, :, :, 0, -1]
+
+            loss = myloss(out.view(batch_size, S, S, T), y.view(batch_size, S, S, T))
+            loss_ic, loss_f = PINO_loss(out.view(batch_size, S, S, T), x)
+            pino_loss = (loss_ic + loss_f)*1
+
+            test_l2 += loss.item()
+            test_pino += pino_loss.item()
+
     scheduler.step()
     train_l2 /= len(train_loader)
     train_f /= len(train_loader)
-    # train_f2 /= len(train_loader)
     train_pino /= len(train_loader)
+    test_l2 /= len(test_loader)
+    test_pino /= len(test_loader)
     t2 = default_timer()
     print(ep, t2-t1, train_pino, train_f, train_l2)
+    print(ep, test_pino, test_l2)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=0)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
