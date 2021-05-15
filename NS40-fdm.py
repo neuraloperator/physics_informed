@@ -25,8 +25,8 @@ modes = 12
 width = 32
 
 batch_size = 1
-epochs = 5000
-learning_rate = 0.001
+epochs = 2500
+learning_rate = 0.0025
 scheduler_gamma = 0.25
 
 image_dir = 'figs/NS40'
@@ -64,7 +64,7 @@ loader = NS40Loader(datapath, sub=sub, sub_t=sub_t, N=1000)
 test_loader = loader.make_loader(ntest, batch_size=batch_size, train=False)
 train_loader = test_loader
 
-layers = [width*4//4, width*4//4, width*4//4, width*4//4, width*4//4]
+layers = [width * 4 //4, width* 4//4, width*4//4, width*4//4, width*4//4]
 modes = [modes for i in range(4)]
 
 model = FNN3d(modes1=modes, modes2=modes, modes3=modes, layers=layers).to(device)
@@ -72,9 +72,9 @@ num_param = count_params(model)
 print('Number of model parameters', num_param)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-milestones = [70, 150, 300, 1600, 4000]
+milestones = [70, 150, 1000, 1500]
 # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=scheduler_gamma)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.5)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.5)
 
 x1 = torch.tensor(np.linspace(0, 2*np.pi, S+1)[:-1], dtype=torch.float).reshape(S, 1).repeat(1, S)
 x2 = torch.tensor(np.linspace(0, 2*np.pi, S+1)[:-1], dtype=torch.float).reshape(1, S).repeat(S, 1)

@@ -196,6 +196,6 @@ def PINO_loss3d(u, u0, forcing):
 
     Du = FDM_NS_vorticity(u)
     f = forcing.repeat(batchsize, 1, 1, nt-2)
-    loss_f = F.mse_loss(Du, f)
+    loss_f = lploss(Du, f)
 
     return loss_ic, loss_f
