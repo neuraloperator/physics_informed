@@ -264,8 +264,6 @@ def FDM_NS_vorticity(w, v=1/40):
 
     ux_h = 1j * k_y * f_h
     uy_h = -1j * k_x * f_h
-    # uxdx_h = 1j * k_x * ux_h
-    # uydy_h = 1j * k_y * uy_h
     wx_h = 1j * k_x * w_h
     wy_h = 1j * k_y * w_h
     wlap_h = -lap * w_h
@@ -279,7 +277,7 @@ def FDM_NS_vorticity(w, v=1/40):
     dt = 1/(nt-1)
     wt = (w[:, :, :, 2:] - w[:, :, :, :-2]) / (2 * dt)
 
-    Du1 = wt + (ux*wx + uy*wy - v*wlap)[...,1:-1] - forcing
+    Du1 = wt + (ux*wx + uy*wy - v*wlap)[...,1:-1] #- forcing
     return Du1
 
 
@@ -296,8 +294,9 @@ def PINO_loss(u, u0):
     loss_ic = lploss(u_in, u0)
 
     Du = FDM_NS_vorticity(u)
-    f = torch.zeros(Du.shape, device=u.device)
-    loss_f = F.mse_loss(Du, f)
+    # f = torch.zeros(Du.shape, device=u.device)
+    f = forcing.repeat(batch_size, 1, 1, nt-2)
+    loss_f = lploss(Du, f)
     # f2 = torch.zeros(Du2.shape, device=u.device)
     # loss_f2 = F.mse_loss(Du2, f2)
 
@@ -309,7 +308,6 @@ error = np.zeros((epochs, 4))
 # y_normalizer.cuda()
 
 model = Net2d(modes, width).cuda()
-# model = torch.load('model/ns_fourier_V100_N1000_ep100_m8_w20')
 num_param = model.count_params()
 print(num_param)
 
@@ -339,9 +337,9 @@ for ep in range(100):
 
         loss = myloss(out.view(batch_size, S, S, T), y.view(batch_size, S, S, T))
         loss_ic, loss_f = PINO_loss(out.view(batch_size, S, S, T), x)
-        pino_loss = (loss_ic + loss_f)*1 + loss
+        pino_loss = (loss_ic + loss_f)*0.2 + loss
 
-        loss.backward()
+        pino_loss.backward()
 
         optimizer.step()
         train_l2 += loss.item()
@@ -375,6 +373,10 @@ for ep in range(100):
     print(ep, t2-t1, train_pino, train_f, train_l2)
     print(ep, test_pino, test_l2)
 
+torch.save(model, path_model + '_pretrain5')
+# model = torch.load('model/pino_fdm_ns40_N999_ep5000_m12_w32_s64_t65_pretrain2').cuda()
+
+
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=0)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
 
@@ -384,11 +386,6 @@ for ep in range(epochs):
     test_pino = 0.0
     test_l2 = 0.0
     test_f = 0.0
-    # train_f2 = 0.0
-
-    # train with ground truth
-    # N = 10
-    # ux, uy = train_a[:N].cuda(), train_u[:N].cuda()
 
     for x, y in test_loader:
         x, y = x.cuda(), y.cuda()
@@ -397,13 +394,10 @@ for ep in range(epochs):
 
         out = model(x).reshape(batch_size,S,S,T)
         x = x[:, :, :, 0, -1]
-        # x = x_normalizer.decode(x[:, :, :, 0, -1])
-        # out = y_normalizer.decode(out)
-        # y = y_normalizer.decode(y)
 
         loss = myloss(out.view(batch_size, S, S, T), y.view(batch_size, S, S, T))
         loss_ic, loss_f = PINO_loss(out.view(batch_size, S, S, T), x)
-        pino_loss = (loss_ic + loss_f)*1
+        pino_loss = (loss_ic+ loss_f)
 
         pino_loss.backward()
 
@@ -428,7 +422,7 @@ for ep in range(epochs):
     t2 = default_timer()
     print(ep, t2-t1, test_pino, test_f, test_l2)
 
-torch.save(model, path_model)
+torch.save(model, path_model+ '_finetune')
 
 
 # pred = torch.zeros(test_u.shape)
