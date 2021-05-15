@@ -3,32 +3,44 @@ import torch
 import torch.nn.functional as F
 
 
-def FDM_Burgers2(u, D=1, v=1/100):
-    batchsize = u.size(0)
-    nt = u.size(1)
-    nx = u.size(2)
-    u = u.reshape(batchsize, nt, nx)
-    dt = D / (nt-1)
-    dx = D / (nx)
-    # ux: (batch, size-2, size-2)
-    # ut = (u[:, 2:, 1:-1] - u[:, :-2, 1:-1]) / (2 * dt)
-    # ux = (u[:, 1:-1, 2:] - u[:, 1:-1, :-2]) / (2 * dx)
-    # uxx = (u[:, 1:-1, 2:] - 2*u[:, 1:-1, 1:-1] + u[:, 1:-1, :-2]) / (dx**2)
-    #
-    # u = u[:, 1:-1, 1:-1]
-    # Du = ut + ux*u - v*uxx
-    u_h = torch.fft.fft(u, dim=2)
+def FDM_NS_vorticity(w, v=1/40):
+    batchsize = w.size(0)
+    nx = w.size(1)
+    ny = w.size(2)
+    nt = w.size(3)
+    device = w.device
+    w = w.reshape(batchsize, nx, ny, nt)
+
+    w_h = torch.fft.fft2(w, dim=[1, 2])
     # Wavenumbers in y-direction
     k_max = nx//2
+    N = nx
     k_x = torch.cat((torch.arange(start=0, end=k_max, step=1, device=device),
-                     torch.arange(start=-k_max, end=0, step=1, device=device)), 0).reshape(1,1,nx)
-    ux_h = 2j *np.pi*k_x*u_h
-    uxx_h = 2j *np.pi*k_x*ux_h
-    ux = torch.fft.irfft(ux_h[:, :, :k_max], dim=2, n=nx)
-    uxx = torch.fft.irfft(uxx_h[:, :, :k_max], dim=2, n=nx)
-    ut = (u[:, 2:, :] - u[:, :-2, :]) / (2 * dt)
-    Du = ut + (ux*u - v*uxx)[:,1:-1,:]
-    return Du
+                     torch.arange(start=-k_max, end=0, step=1, device=device)), 0).reshape(N, 1).repeat(1, N).reshape(1,N,N,1)
+    k_y = torch.cat((torch.arange(start=0, end=k_max, step=1, device=device),
+                     torch.arange(start=-k_max, end=0, step=1, device=device)), 0).reshape(1, N).repeat(N, 1).reshape(1,N,N,1)
+    # Negative Laplacian in Fourier space
+    lap = (k_x ** 2 + k_y ** 2)
+    lap[0, 0, 0, 0] = 1.0
+    f_h = w_h / lap
+
+    ux_h = 1j * k_y * f_h
+    uy_h = -1j * k_x * f_h
+    wx_h = 1j * k_x * w_h
+    wy_h = 1j * k_y * w_h
+    wlap_h = -lap * w_h
+
+    ux = torch.fft.irfft2(ux_h[:, :, :k_max + 1], dim=[1, 2])
+    uy = torch.fft.irfft2(uy_h[:, :, :k_max + 1], dim=[1, 2])
+    wx = torch.fft.irfft2(wx_h[:, :, :k_max+1], dim=[1,2])
+    wy = torch.fft.irfft2(wy_h[:, :, :k_max+1], dim=[1,2])
+    wlap = torch.fft.irfft2(wlap_h[:, :, :k_max+1], dim=[1,2])
+
+    dt = 1/(nt-1)
+    wt = (w[:, :, :, 2:] - w[:, :, :, :-2]) / (2 * dt)
+
+    Du1 = wt + (ux*wx + uy*wy - v*wlap)[...,1:-1] #- forcing
+    return Du1
 
 
 def Autograd_Burgers(u, grid, v=1/100):
@@ -168,3 +180,22 @@ def PINO_loss(u, u0):
     # loss_bc1 = F.mse_loss((u[:, :, 1] - u[:, :, -1]) /
     #                       (2/(nx)), (u[:, :, 0] - u[:, :, -2])/(2/(nx)))
     return loss_u, loss_f
+
+
+def PINO_loss3d(u, u0, forcing):
+    batchsize = u.size(0)
+    nx = u.size(1)
+    ny = u.size(2)
+    nt = u.size(3)
+
+    u = u.reshape(batchsize, nx, ny, nt)
+    lploss = LpLoss(size_average=True)
+
+    u_in = u[:, :, :, 0]
+    loss_ic = lploss(u_in, u0)
+
+    Du = FDM_NS_vorticity(u)
+    f = forcing.repeat(batchsize, 1, 1, nt-2)
+    loss_f = F.mse_loss(Du, f)
+
+    return loss_ic, loss_f

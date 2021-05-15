@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from .basics import SpectralConv3d
 
 
-class FNN3d(nn.Module()):
+class FNN3d(nn.Module):
     def __init__(self, modes1, modes2, modes3, width=16, layers=None, in_dim=4, out_dim=1):
         '''
         Args:
@@ -55,7 +55,7 @@ class FNN3d(nn.Module()):
 
         for i, (speconv, w) in enumerate(zip(self.sp_convs, self.ws)):
             x1 = speconv(x)
-            x2 = w(x.view(batchsize, self.layers[i], -1)).view(batchsize, self.layers[i+1], size_x, size_y)
+            x2 = w(x.view(batchsize, self.layers[i], -1)).view(batchsize, self.layers[i+1], size_x, size_y, size_z)
             x = x1 + x2
             if i != length - 1:
                 x = F.elu(x)
