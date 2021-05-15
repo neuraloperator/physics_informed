@@ -40,6 +40,16 @@ def get_grid(N, T, s):
     return grid, gridt, gridx
 
 
+def get_grid3d(S, T):
+    gridx = torch.tensor(np.linspace(0, 1, S + 1)[:-1], dtype=torch.float)
+    gridx = gridx.reshape(1, S, 1, 1, 1).repeat([1, 1, S, T, 1])
+    gridy = torch.tensor(np.linspace(0, 1, S + 1)[:-1], dtype=torch.float)
+    gridy = gridy.reshape(1, 1, S, 1, 1).repeat([1, S, 1, T, 1])
+    gridt = torch.tensor(np.linspace(0, 1, T), dtype=torch.float)
+    gridt = gridt.reshape(1, 1, 1, T, 1).repeat([1, S, S, 1, 1])
+    return gridx, gridy, gridt
+
+
 def PDELoss(model, x, t, nu):
     '''
     Compute the residual of PDE: 

@@ -130,16 +130,20 @@ def FDM_Burgers(u, D=1, v=1/100):
     nx = u.size(2)
 
     u = u.reshape(batchsize, nt, nx)
-    dt = D / (100)
+    dt = D / (nt-1)
     dx = D / (nx)
 
-    # ux: (batch, size-2, size-2)
-    ut = (u[:, 2:, 1:-1] - u[:, :-2, 1:-1]) / (2 * dt)
-    ux = (u[:, 1:-1, 2:] - u[:, 1:-1, :-2]) / (2 * dx)
-    uxx = (u[:, 1:-1, 2:] - 2*u[:, 1:-1, 1:-1] + u[:, 1:-1, :-2]) / (dx**2)
-    u = u[:, 1:-1, 1:-1]
-
-    Du = ut + ux*u - v*uxx
+    u_h = torch.fft.fft(u, dim=2)
+    # Wavenumbers in y-direction
+    k_max = nx//2
+    k_x = torch.cat((torch.arange(start=0, end=k_max, step=1, device=u.device),
+                     torch.arange(start=-k_max, end=0, step=1, device=u.device)), 0).reshape(1,1,nx)
+    ux_h = 2j *np.pi*k_x*u_h
+    uxx_h = 2j *np.pi*k_x*ux_h
+    ux = torch.fft.irfft(ux_h[:, :, :k_max+1], dim=2, n=nx)
+    uxx = torch.fft.irfft(uxx_h[:, :, :k_max+1], dim=2, n=nx)
+    ut = (u[:, 2:, :] - u[:, :-2, :]) / (2 * dt)
+    Du = ut + (ux*u - v*uxx)[:,1:-1,:]
     return Du
 
 

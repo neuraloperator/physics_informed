@@ -9,7 +9,7 @@ except ImportError:
 
 import torch
 from torch.utils.data import Dataset
-
+from utils import get_grid3d
 
 class MatReader(object):
     def __init__(self, file_path, to_torch=True, to_cuda=False, to_float=True):
@@ -65,7 +65,7 @@ class MatReader(object):
         self.to_float = to_float
 
 
-class DataConstructor(object):
+class BurgersLoader(object):
     def __init__(self, datapath, nx=2**10, nt=100, sub=8, sub_t=1, new=False):
         dataloader = MatReader(datapath)
         self.sub = sub
@@ -105,11 +105,39 @@ class DataConstructor(object):
         return loader
 
 
-class DarcyLoader(object):
-    def __init__(self, datapath, s, r):
-        dataloader = MatReader(datapath)
-        self.x_data = dataloader.read_field('input')[:, ::r]
-        self.y_data = dataloader.read_field('output')[:, ::r, ::s]
+class NS40Loader(object):
+    def __init__(self, datapath, sub=1, sub_t=1, N=1000):
+        self.N = N
+        self.S = 64 // sub
+        self.T = 64 // sub_t + 1
+        data = np.load(datapath)
+        data = torch.tensor(data, dtype=torch.float)[..., ::sub, ::sub]
+        self.data = self.rearrange(data, sub_t)
+
+    def rearrange(self, data, sub_t):
+        new_data = torch.zeros(self.N, self.S, self.S, self.T)
+        for i in range(self.N):
+            new_data[i] = data[i * 64: (i+1) * 64 + 1: sub_t].permute(1, 2, 0)
+        return new_data
+
+    def make_loader(self, n_sample, batch_size, start=0, train=True):
+        if train:
+            a_data = self.data[:n_sample, :, :, 0].reshape(n_sample, self.S, self.S)
+            u_data = self.data[:n_sample].reshape(n_sample, self.S, self.S, self.T)
+        else:
+            a_data = self.data[-n_sample:, :, :, 0].reshape(n_sample, self.S, self.S)
+            u_data = self.data[-n_sample:].reshape(n_sample, self.S, self.S, self.T)
+        a_data = a_data.reshape(n_sample, self.S, self.S, 1, 1).repeat([1, 1, 1, self.T, 1])
+        gridx, gridy, gridt = get_grid3d(self.S, self.T)
+        a_data = torch.cat((gridx.repeat([n_sample,1,1,1,1]), gridy.repeat([n_sample,1,1,1,1]),
+                            gridt.repeat([n_sample,1,1,1,1]), a_data), dim=-1)
+        dataset = torch.utils.data.TensorDataset(a_data, u_data)
+        loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=train)
+        return loader
+
+
+
+
 
 
 def load_data(datapath, N_f=10000):

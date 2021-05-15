@@ -1,9 +1,5 @@
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from functools import reduce
-from functools import partial
 
 from .lowrank2d import LowRank2d
 from .basics import SpectralConv2d
@@ -49,9 +45,9 @@ class FNN2d(nn.Module):
 
     def forward(self, x):
         '''
-        Input: 
+        Args:
             - x : (batch size, x_grid, y_grid, 2)
-        Output: 
+        Returns:
             - x: (batch size, x_grid, y_grid, 1)
         '''
         length = len(self.ws)

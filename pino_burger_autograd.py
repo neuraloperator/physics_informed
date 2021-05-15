@@ -8,8 +8,8 @@ from models import PINO2d
 from tqdm import tqdm
 from timeit import default_timer
 from losses import LpLoss, AD_loss
-from data_utils import DataConstructor
-from utils import get_sample, get_grid, count_params, save_checkpoint
+from data_utils import BurgersLoader
+from utils import get_grid, count_params, save_checkpoint
 
 try:
     import wandb
@@ -55,7 +55,7 @@ if wandb and log:
                tags=['full grid'])
 
 datapath = '/mnt/md1/zongyi/burgers_pino.mat'
-constructor = DataConstructor(datapath, nx=128, nt=100, sub=sub, sub_t=sub_t, new=True)
+constructor = BurgersLoader(datapath, nx=128, nt=100, sub=sub, sub_t=sub_t, new=True)
 train_loader = constructor.make_loader(n_sample=ntrain, batch_size=batch_size, train=True)
 test_loader = constructor.make_loader(n_sample=ntest, batch_size=batch_size, train=False)
 
