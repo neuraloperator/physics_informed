@@ -5,7 +5,7 @@ from .basics import SpectralConv3d
 
 
 class FNN3d(nn.Module):
-    def __init__(self, modes1, modes2, modes3, width=16, layers=None, in_dim=4, out_dim=1):
+    def __init__(self, modes1, modes2, modes3, width=16, fc_dim=128, layers=None, in_dim=4, out_dim=1):
         '''
         Args:
             modes1: list of int, first dimension maximal modes for each layer
@@ -34,8 +34,8 @@ class FNN3d(nn.Module):
         self.ws = nn.ModuleList([nn.Conv1d(in_size, out_size, 1)
                                  for in_size, out_size in zip(self.layers, self.layers[1:])])
 
-        self.fc1 = nn.Linear(layers[-1], layers[-1] * 8)
-        self.fc2 = nn.Linear(layers[-1] * 8, out_dim)
+        self.fc1 = nn.Linear(layers[-1], fc_dim)
+        self.fc2 = nn.Linear(fc_dim, out_dim)
 
     def forward(self, x):
         '''

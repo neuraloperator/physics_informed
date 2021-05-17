@@ -182,7 +182,7 @@ def PINO_loss(u, u0):
     return loss_u, loss_f
 
 
-def PINO_loss3d(u, u0, forcing):
+def PINO_loss3d(u, u0, forcing, v=1/40):
     batchsize = u.size(0)
     nx = u.size(1)
     ny = u.size(2)
@@ -194,8 +194,31 @@ def PINO_loss3d(u, u0, forcing):
     u_in = u[:, :, :, 0]
     loss_ic = lploss(u_in, u0)
 
-    Du = FDM_NS_vorticity(u)
+    Du = FDM_NS_vorticity(u, v)
     f = forcing.repeat(batchsize, 1, 1, nt-2)
     loss_f = lploss(Du, f)
 
     return loss_ic, loss_f
+
+
+def PDELoss(model, x, t, nu):
+    '''
+    Compute the residual of PDE:
+        residual = u_t + u * u_x - nu * u_{xx} : (N,1)
+
+    Params:
+        - model
+        - x, t: (x, t) pairs, (N, 2) tensor
+        - nu: constant of PDE
+    Return:
+        - mean of residual : scalar
+    '''
+    u = model(torch.cat([x, t], dim=1))
+    # First backward to compute u_x (shape: N x 1), u_t (shape: N x 1)
+    grad_x, grad_t = torch.autograd.grad(outputs=[u.sum()], inputs=[x, t], create_graph=True)
+    # Second backward to compute u_{xx} (shape N x 1)
+
+    gradgrad_x, = torch.autograd.grad(outputs=[grad_x.sum()], inputs=[x], create_graph=True)
+
+    residual = grad_t + u * grad_x - nu * gradgrad_x
+    return residual

@@ -18,18 +18,18 @@ except ImportError:
 
 
 torch.manual_seed(2022)
-Ntrain = 999
+Ntrain = 80
 Ntest = 1
 ntrain = Ntrain
 ntest = Ntest
-v = 1 / 40
+v = 1/500
 
 modes = 12
 width = 32
 
-batch_size = 1
+batch_size = 4
 epochs = 7500
-learning_rate = 0.0025
+learning_rate = 0.002
 scheduler_gamma = 0.5
 
 image_dir = 'figs/NS40'
@@ -44,7 +44,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 log = True
 
 if wandb and log:
-    wandb.init(project='PINO-NS40-tto',
+    wandb.init(project='PINO-NS500-operator-wo-y',
                entity='hzzheng-pino',
                group='FDM',
                config={'lr': learning_rate,
@@ -52,30 +52,32 @@ if wandb and log:
                        'scheduler_gamma': scheduler_gamma,
                        'modes': modes,
                        'width': width},
-               tags=['Single instance'])
+               tags=['f loss * 2'])
 
 
-sub = 1
-S = 64 // sub
+sub = 4
+nx = 256
+nt = 64
+S = nx // sub
 # T_in = 1
 sub_t = 1
-T = 64 // sub_t + 1
+T = nt // sub_t + 1
 # datapath = '/mnt/md1/visiondatasets/PINO-data/NS_fine_Re40_s64_T1000.npy'
-datapath = 'data/NS_fine_Re40_s64_T1000.npy'
+datapath = 'data/NS_fine_Re500_s256.npy'
 data = np.load(datapath)
-loader = NS40Loader(datapath, nx=64, nt=64, sub=sub, sub_t=sub_t, N=1000)
-# train_loader = loader.make_loader(ntrain, batch_size=batch_size, train=True)
-test_loader = loader.make_loader(ntest, batch_size=batch_size, train=False)
-train_loader = test_loader
+loader = NS40Loader(datapath, nx=nx, nt=nt, sub=sub, sub_t=sub_t, N=100)
+train_loader = loader.make_loader(ntrain, batch_size=batch_size, train=True)
+# test_loader = loader.make_loader(ntest, batch_size=batch_size, train=False)
+# train_loader = test_loader
 
-layers = [width * 4 // 4, width * 4 // 4, width*4//4, width*4//4, width*4//4]
+layers = [width*4//4, width * 4 // 4, width*4//4, width * 4 // 4, width*4//4]
 modes = [modes, modes, modes, modes]
 
-model = FNN3d(modes1=modes, modes2=modes, modes3=modes, layers=layers).to(device)
+model = FNN3d(modes1=modes, modes2=modes, modes3=modes, fc_dim=256, layers=layers).to(device)
 num_param = count_params(model)
 print('Number of model parameters', num_param)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+optimizer = torch.optim.Adam(model.parameters(), betas=(0.9, 0.999), lr=learning_rate)
 milestones = [500, 1500, 2500, 3500, 4500, 5500]
 scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=scheduler_gamma)
 # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.5)
@@ -98,18 +100,18 @@ for ep in pbar:
     test_l2 = 0.0
     for x, y in train_loader:
         x, y = x.to(device), y.to(device)
-        x_in = F.pad(x, (0, 0, 0, 5), "constant", 0)
+        # x = F.pad(x, (0, 0, 1, 1), "constant", 0)
 
         optimizer.zero_grad()
 
-        out = model(x_in).reshape(batch_size, S, S, T+5)
-        out = out[..., :-5]
+        out = model(x).reshape(batch_size, S, S, T)
+        # out = out[..., 1:-1]
 
         x = x[:, :, :, 0, -1]
 
         loss_l2 = myloss(out.view(batch_size, S, S, T), y.view(batch_size, S, S, T))
         loss_ic, loss_f = PINO_loss3d(out.view(batch_size, S, S, T), x, forcing, v)
-        total_loss = loss_ic + loss_f
+        total_loss = loss_ic + loss_f * 0.01
 
         total_loss.backward()
 

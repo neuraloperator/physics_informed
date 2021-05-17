@@ -11,6 +11,13 @@ import torch
 from torch.utils.data import Dataset
 from utils import get_grid3d
 
+
+def sample_data(loader):
+    while True:
+        for batch in loader:
+            yield batch
+
+
 class MatReader(object):
     def __init__(self, file_path, to_torch=True, to_cuda=False, to_float=True):
         super(MatReader, self).__init__()
@@ -26,12 +33,8 @@ class MatReader(object):
         self._load_file()
 
     def _load_file(self):
-        try:
-            self.data = scipy.io.loadmat(self.file_path)
-            self.old_mat = True
-        except:
-            self.data = h5py.File(self.file_path)
-            self.old_mat = False
+        self.data = scipy.io.loadmat(self.file_path)
+        self.old_mat = True
 
     def load_file(self, file_path):
         self.file_path = file_path
@@ -106,10 +109,10 @@ class BurgersLoader(object):
 
 
 class NS40Loader(object):
-    def __init__(self, datapath, sub=1, sub_t=1, N=1000):
+    def __init__(self, datapath, nx, nt, sub=1, sub_t=1, N=1000):
         self.N = N
-        self.S = 64 // sub
-        self.T = 64 // sub_t + 1
+        self.S = nx // sub
+        self.T = nt // sub_t + 1
         data = np.load(datapath)
         data = torch.tensor(data, dtype=torch.float)[..., ::sub, ::sub]
         self.data = self.rearrange(data, sub_t)
@@ -134,62 +137,6 @@ class NS40Loader(object):
         dataset = torch.utils.data.TensorDataset(a_data, u_data)
         loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=train)
         return loader
-
-
-
-
-
-
-def load_data(datapath, N_f=10000):
-    '''
-    Parameters:
-        - datapath: datapath of (x,t), u(x,t) data
-        - N_f: number of (x, t) 
-    Return:
-        - X_u: (N, 2) ndarray
-        - u: (N , 1) ndarray
-        - X_f: (N_f + N, 2) ndarray
-
-    '''
-    data = scipy.io.loadmat(datapath)
-
-    t = data['t'].flatten()[:, None]  # (100,1)
-    x = data['x'].flatten()[:, None]  # (256, 1)
-    Exact = np.real(data['usol']).T  # (100, 256)
-    # print(x.shape)
-    # print(t.shape)
-    # print(Exact.shape)
-    X, T = np.meshgrid(x, t)
-    X_star = np.hstack((X.flatten()[:, None], T.flatten()[:, None]))
-    u_star = Exact.flatten()[:, None]
-
-    # Domain bounds
-    lb = X_star.min(0)
-    ub = X_star.max(0)
-
-    xx1 = np.hstack((X[0:1, :].T, T[0:1, :].T))
-    uu1 = Exact[0:1, :].T
-    xx2 = np.hstack((X[:, 0:1], T[:, 0:1]))
-    uu2 = Exact[:, 0:1]
-    xx3 = np.hstack((X[:, -1:], T[:, -1:]))
-    uu3 = Exact[:, -1:]
-
-    X_u = np.vstack([xx1, xx2, xx3])
-    X_f = lb + (ub-lb)*lhs(2, N_f)
-    X_f = np.vstack((X_f, X_u))
-    u = np.vstack([uu1, uu2, uu3])
-
-    return X_u, u, X_f, X_star, u_star
-
-
-def sample(X_u, u, N=100):
-    '''
-    Randomly sample N pairs  
-    '''
-    idx = np.random.choice(X_u.shape[0], N, replace=False)
-    X_u = X_u[idx, :]
-    u = u[idx, :]
-    return X_u, u
 
 
 class BurgerData(Dataset):
@@ -264,7 +211,48 @@ class BurgerData(Dataset):
         return X_u, u
 
 
-def sample_data(loader):
-    while True:
-        for batch in loader:
-            yield batch
+class NS40data(Dataset):
+    def __init__(self, datapath, nx, nt, sub=1, sub_t=1, N=1000, index=1):
+        self.N = N
+        self.S = nx // sub
+        self.T = nt // sub_t + 1
+        data = np.load(datapath)
+        data = torch.tensor(data, dtype=torch.float)[..., ::sub, ::sub]
+        self.data = self.rearrange(data, sub_t)[-index]
+        self.x, self.y, self.t, self.vor = self.sample_xyt()
+
+    def __len__(self):
+        return len(self.x)
+
+    def __getitem__(self, idx):
+        return self.x[idx], self.y[idx], self.t[idx], self.vor[idx]
+
+    def rearrange(self, data, sub_t):
+        new_data = torch.zeros(self.N, self.S, self.S, self.T)
+        for i in range(self.N):
+            new_data[i] = data[i * 64: (i+1) * 64 + 1: sub_t].permute(1, 2, 0)
+        return new_data
+
+    def get_boundary(self):
+        bd_vor = self.data[:, :, 0].reshape(-1).unsqueeze(0).permute(1, 0)
+
+        xs = torch.tensor(np.linspace(0, 1, self.S + 1)[:-1], dtype=torch.float)
+        ys = torch.tensor(np.linspace(0, 1, self.S + 1)[:-1], dtype=torch.float)
+        gridx, gridy = torch.meshgrid(xs, ys)
+        bd_x = gridx.reshape(-1).unsqueeze(0).permute(1, 0)
+        bd_y = gridy.reshape(-1).unsqueeze(0).permute(1, 0)
+        bd_t = torch.zeros_like(bd_x)
+        return bd_x, bd_y, bd_t, bd_vor
+
+    def sample_xyt(self, sub=1):
+        xs = torch.tensor(np.linspace(0, 1, self.S + 1)[:-1], dtype=torch.float)[::sub]
+        ys = torch.tensor(np.linspace(0, 1, self.S + 1)[:-1], dtype=torch.float)[::sub]
+        ts = torch.tensor(np.linspace(0, 1, self.T), dtype=torch.float)[::sub]
+        gridx, gridy, gridt = torch.meshgrid(xs, ys, ts)
+        x = gridx.reshape(-1).unsqueeze(0).permute(1, 0)
+        y = gridy.reshape(-1).unsqueeze(0).permute(1, 0)
+        t = torch.zeros_like(x)
+        vor = self.data[::sub, ::sub, ::sub].reshape(-1).unsqueeze(0).permute(1, 0)
+        return x, y, t, vor
+
+
