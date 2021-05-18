@@ -1,6 +1,7 @@
 import scipy.io
 import numpy as np
 from scipy.interpolate import griddata
+
 try:
     from pyDOE import lhs
     # Only needed for PINN's dataset
@@ -69,7 +70,7 @@ class MatReader(object):
 
 
 class BurgersLoader(object):
-    def __init__(self, datapath, nx=2**10, nt=100, sub=8, sub_t=1, new=False):
+    def __init__(self, datapath, nx=2 ** 10, nt=100, sub=8, sub_t=1, new=False):
         dataloader = MatReader(datapath)
         self.sub = sub
         self.sub_t = sub_t
@@ -120,7 +121,7 @@ class NS40Loader(object):
     def rearrange(self, data, sub_t):
         new_data = torch.zeros(self.N, self.S, self.S, self.T)
         for i in range(self.N):
-            new_data[i] = data[i * 64: (i+1) * 64 + 1: sub_t].permute(1, 2, 0)
+            new_data[i] = data[i * 64: (i + 1) * 64 + 1: sub_t].permute(1, 2, 0)
         return new_data
 
     def make_loader(self, n_sample, batch_size, start=0, train=True):
@@ -132,8 +133,8 @@ class NS40Loader(object):
             u_data = self.data[-n_sample:].reshape(n_sample, self.S, self.S, self.T)
         a_data = a_data.reshape(n_sample, self.S, self.S, 1, 1).repeat([1, 1, 1, self.T, 1])
         gridx, gridy, gridt = get_grid3d(self.S, self.T)
-        a_data = torch.cat((gridx.repeat([n_sample,1,1,1,1]), gridy.repeat([n_sample,1,1,1,1]),
-                            gridt.repeat([n_sample,1,1,1,1]), a_data), dim=-1)
+        a_data = torch.cat((gridx.repeat([n_sample, 1, 1, 1, 1]), gridy.repeat([n_sample, 1, 1, 1, 1]),
+                            gridt.repeat([n_sample, 1, 1, 1, 1]), a_data), dim=-1)
         dataset = torch.utils.data.TensorDataset(a_data, u_data)
         loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=train)
         return loader
@@ -194,7 +195,7 @@ class BurgerData(Dataset):
         Return:
             - X_f: (N, 2) array
         '''
-        X_f = self.lb + (self.ub-self.lb)*lhs(2, N)
+        X_f = self.lb + (self.ub - self.lb) * lhs(2, N)
         X_f = np.vstack((X_f, self.X_u))
         return X_f
 
@@ -220,17 +221,24 @@ class NS40data(Dataset):
         data = torch.tensor(data, dtype=torch.float)[..., ::sub, ::sub]
         self.data = self.rearrange(data, sub_t)[-index]
         self.x, self.y, self.t, self.vor = self.sample_xyt()
+        self.ux, self.uy = self.convert2vel()
+        self.u_gt = self.ux.reshape(-1).unsqueeze(0).permute(1, 0)
+        self.v_gt =self.ux.reshape(-1).unsqueeze(0).permute(1, 0)
 
     def __len__(self):
         return len(self.x)
 
     def __getitem__(self, idx):
-        return self.x[idx], self.y[idx], self.t[idx], self.vor[idx]
+        return self.x[idx], self.y[idx], self.t[idx], self.vor[idx], self.u_gt[idx], self.v_gt[idx]
+
+    def convert2vel(self):
+        ux, uy = vor2vel(self.data.unsqueeze(0))
+        return ux, uy
 
     def rearrange(self, data, sub_t):
         new_data = torch.zeros(self.N, self.S, self.S, self.T)
         for i in range(self.N):
-            new_data[i] = data[i * 64: (i+1) * 64 + 1: sub_t].permute(1, 2, 0)
+            new_data[i] = data[i * 64: (i + 1) * 64 + 1: sub_t].permute(1, 2, 0)
         return new_data
 
     def get_boundary(self):
@@ -242,7 +250,9 @@ class NS40data(Dataset):
         bd_x = gridx.reshape(-1).unsqueeze(0).permute(1, 0)
         bd_y = gridy.reshape(-1).unsqueeze(0).permute(1, 0)
         bd_t = torch.zeros_like(bd_x)
-        return bd_x, bd_y, bd_t, bd_vor
+        ux = self.ux[:, :, :, 0].reshape(-1).unsqueeze(0).permute(1, 0)
+        uy = self.uy[:, :, :, 0].reshape(-1).unsqueeze(0).permute(1, 0)
+        return bd_x, bd_y, bd_t, bd_vor, ux, uy
 
     def sample_xyt(self, sub=1):
         xs = torch.tensor(np.linspace(0, 1, self.S + 1)[:-1], dtype=torch.float)[::sub]
@@ -256,3 +266,32 @@ class NS40data(Dataset):
         return x, y, t, vor
 
 
+def vor2vel(w):
+    batchsize = w.size(0)
+    nx = w.size(1)
+    ny = w.size(2)
+    nt = w.size(3)
+    device = w.device
+    w = w.reshape(batchsize, nx, ny, nt)
+
+    w_h = torch.fft.fft2(w, dim=[1, 2])
+    # Wavenumbers in y-direction
+    k_max = nx // 2
+    N = nx
+    k_x = torch.cat((torch.arange(start=0, end=k_max, step=1, device=device),
+                     torch.arange(start=-k_max, end=0, step=1, device=device)), 0) \
+        .reshape(N, 1).repeat(1, N).reshape(1, N, N, 1)
+    k_y = torch.cat((torch.arange(start=0, end=k_max, step=1, device=device),
+                     torch.arange(start=-k_max, end=0, step=1, device=device)), 0) \
+        .reshape(1, N).repeat(N, 1).reshape(1, N, N, 1)
+    # Negative Laplacian in Fourier space
+    lap = (k_x ** 2 + k_y ** 2)
+    lap[0, 0, 0, 0] = 1.0
+    f_h = w_h / lap
+
+    ux_h = 1j * k_y * f_h
+    uy_h = -1j * k_x * f_h
+
+    ux = torch.fft.irfft2(ux_h[:, :, :k_max + 1], dim=[1, 2])
+    uy = torch.fft.irfft2(uy_h[:, :, :k_max + 1], dim=[1, 2])
+    return ux, uy
