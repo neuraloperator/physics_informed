@@ -7,9 +7,9 @@ from models import PINO2d
 
 from tqdm import tqdm
 from timeit import default_timer
-from losses import LpLoss, AD_loss
-from data_utils import BurgersLoader
-from utils import get_grid, count_params, save_checkpoint
+from train_utils.losses import LpLoss, AD_loss
+from train_utils.data_utils import BurgersLoader
+from train_utils.utils import get_grid, count_params, save_checkpoint
 
 try:
     import wandb

@@ -1,13 +1,12 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.autograd as autograd
 
-from torch.optim import Adam, SGD, LBFGS
-from data_utils import NS40data
-from utils import set_grad, save_checkpoint
-from losses import LpLoss
+from torch.optim import Adam, LBFGS
+from train_utils.data_utils import NS40data
+from train_utils.utils import set_grad, save_checkpoint
+from train_utils.losses import LpLoss
 from models import FCNet
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -126,8 +125,8 @@ def train_adam(model, dataset, device):
             set_grad([x, y, t])
 
             u, v, pred_vor = net_NS(x, y, t, model)
-            velu_loss = mse(u, true_u)
-            velv_loss = mse(v, true_v)
+            velu_loss = criterion(u, true_u)
+            velv_loss = criterion(v, true_v)
             res_x, res_y = resf_NS(u, v, x, y, t, re=40)
             loss_f = torch.mean(res_x ** 2) + torch.mean(res_y ** 2)
             total_loss = velu_loss + velv_loss + loss_f
@@ -188,7 +187,7 @@ if __name__ == '__main__':
         wandb.init(project='PINO-NS40-pinns',
                    entity='hzzheng-pino',
                    group='AD',
-                   tags=['batch sample'])
+                   tags=['batch and lploss'])
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     datapath = 'data/NS_fine_Re40_s64_T1000.npy'

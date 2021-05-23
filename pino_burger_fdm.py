@@ -8,9 +8,9 @@ from models import FNN2d
 
 from tqdm import tqdm
 from timeit import default_timer
-from utils import count_params, save_checkpoint
-from data_utils import BurgersLoader, sample_data
-from losses import LpLoss, PINO_loss
+from train_utils.utils import count_params, save_checkpoint
+from train_utils.data_utils import BurgersLoader, sample_data
+from train_utils.losses import LpLoss, PINO_loss
 
 try:
     import wandb
@@ -26,7 +26,7 @@ np.random.seed(0)
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-ntrain = 1000
+ntrain = 800
 nlabels = 0
 ntest = 200  #200
 
@@ -39,7 +39,7 @@ sub_t = 1
 batch_size = 20  # 100
 learning_rate = 0.001
 
-epochs = 2000
+epochs = 2500
 step_size = 100
 gamma = 0.25
 
@@ -50,7 +50,7 @@ width = 32  # 64
 
 # datapath = '/mnt/md1/zongyi/burgers_pino.mat'
 datapath = 'data/burgers_pino.mat'
-log = True
+log = False
 
 if wandb and log:
     wandb.init(project='PINO-burgers',
@@ -61,7 +61,7 @@ if wandb and log:
                        'batch_size': batch_size,
                        'modes': modes,
                        'width': width},
-               tags=['Full data points'])
+               tags=['800 unlabeled samples'])
 
 constructor = BurgersLoader(datapath, nx=128, nt=100, sub=sub, sub_t=sub_t, new=True)
 train_loader = constructor.make_loader(n_sample=ntrain, batch_size=batch_size, train=True)
@@ -85,7 +85,7 @@ name = 'PINO_FDM_burgers_N' + \
 layers = [width*2//4, width*3//4, width*3//4, width*4//4, width*4//4]
 modes = [modes * (5-i) // 4 for i in range(4)]
 
-model = FNN2d(modes1=modes, modes2=modes, widths=width, layers=layers).to(device)
+model = FNN2d(modes1=modes, modes2=modes, width=width, layers=layers).to(device)
 num_param = count_params(model)
 print('Number of model parameters', num_param)
 

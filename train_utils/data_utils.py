@@ -1,6 +1,5 @@
 import scipy.io
 import numpy as np
-from scipy.interpolate import griddata
 
 try:
     from pyDOE import lhs
@@ -10,7 +9,7 @@ except ImportError:
 
 import torch
 from torch.utils.data import Dataset
-from utils import get_grid3d
+from train_utils.utils import get_grid3d
 
 
 def sample_data(loader):
@@ -138,6 +137,40 @@ class NS40Loader(object):
         dataset = torch.utils.data.TensorDataset(a_data, u_data)
         loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=train)
         return loader
+
+
+class NS500Loader(object):
+    def __init__(self, datapath, nx, nt, sub=1, sub_t=1, N=1000, t_interval=1.0, rearrange=True):
+        self.N = int(N / t_interval)
+        self.S = nx // sub
+        self.T = int(nt * t_interval) // sub_t + 1
+        data = np.load(datapath)
+        data = torch.tensor(data, dtype=torch.float)[..., ::sub_t, ::sub, ::sub]
+        self.data = data.permute(0, 2, 3, 1)
+        if t_interval == 0.5 and rearrange:
+            self.data = self.rearrange(self.data)
+
+    def make_loader(self, n_sample, batch_size, start=0, train=True):
+        if train:
+            a_data = self.data[:n_sample, :, :, 0].reshape(n_sample, self.S, self.S)
+            u_data = self.data[:n_sample].reshape(n_sample, self.S, self.S, self.T)
+        else:
+            a_data = self.data[-n_sample:, :, :, 0].reshape(n_sample, self.S, self.S)
+            u_data = self.data[-n_sample:].reshape(n_sample, self.S, self.S, self.T)
+        a_data = a_data.reshape(n_sample, self.S, self.S, 1, 1).repeat([1, 1, 1, self.T, 1])
+        gridx, gridy, gridt = get_grid3d(self.S, self.T)
+        a_data = torch.cat((gridx.repeat([n_sample, 1, 1, 1, 1]), gridy.repeat([n_sample, 1, 1, 1, 1]),
+                            gridt.repeat([n_sample, 1, 1, 1, 1]), a_data), dim=-1)
+        dataset = torch.utils.data.TensorDataset(a_data, u_data)
+        loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=train)
+        return loader
+
+    def rearrange(self, data):
+        new_data = torch.zeros(self.N, self.S, self.S, self.T)
+        for i in range(self.N//2):
+            new_data[2 * i] = data[i, :, :, :65]
+            new_data[2 * i + 1] = data[i, :, :, 64:]
+        return new_data
 
 
 class BurgerData(Dataset):

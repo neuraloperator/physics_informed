@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 
 import torch
 
@@ -8,9 +7,9 @@ from models import FNN2d
 
 from tqdm import tqdm
 from timeit import default_timer
-from utils import count_params, save_checkpoint
-from data_utils import DataConstructor, sample_data
-from losses import LpLoss, PINO_loss
+from train_utils.utils import count_params, save_checkpoint
+from train_utils.data_utils import BurgersLoader, sample_data
+from train_utils.losses import LpLoss, PINO_loss
 
 try:
     import wandb
@@ -25,7 +24,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 datapath = 'data/burgers_pino.mat'
 sub = 1
 sub_t = 1
-constructor = DataConstructor(datapath, nx=128, nt=100, sub=sub, sub_t=sub_t, new=True)
+constructor = BurgersLoader(datapath, nx=128, nt=100, sub=sub, sub_t=sub_t, new=True)
 
 
 def train():
@@ -40,7 +39,7 @@ def train():
     width = 32  # 64
 
     config_defaults = {
-        'ntrain': 100,
+        'ntrain': 800,
         'nlabels': 10,
         'ntest': 200,
         'lr': learning_rate,
@@ -48,7 +47,7 @@ def train():
         'modes': modes,
         'width': width
     }
-    wandb.init(config=config_defaults)
+    wandb.init(config=config_defaults, tags=['Epoch'])
     config = wandb.config
     print('config: ', config)
 
@@ -64,12 +63,11 @@ def train():
     name = 'PINO_FDM_burgers_N' + \
            str(ntrain) + '_L' + str(nlabels) + '-' + str(ntest) + '.pt'
 
-
     train_loader = constructor.make_loader(n_sample=ntrain, batch_size=batch_size, train=True)
     test_loader = constructor.make_loader(n_sample=ntest, batch_size=batch_size, train=False)
     if config.nlabels > 0:
         supervised_loader = constructor.make_loader(n_sample=nlabels,
-                                                    batch_size=nlabels,
+                                                    batch_size=batch_size,
                                                     start=ntrain,
                                                     train=True)
         supervised_loader = sample_data(loader=supervised_loader)
@@ -85,6 +83,7 @@ def train():
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[500, 1000, 2000], gamma=gamma)
 
+
     myloss = LpLoss(size_average=True)
     pbar = tqdm(range(epochs), dynamic_ncols=True, smoothing=0.01)
 
@@ -97,25 +96,30 @@ def train():
         dp_loss = 0.0
         for x, y in train_loader:
             x, y = x.to(device), y.to(device)
-
-            ux, uy = next(supervised_loader)
-            ux, uy = ux.to(device), uy.to(device)
-            optimizer.zero_grad()
-            uout = model(ux)
-            datapoint_loss = myloss(uout.view(batch_size, -1), uy.view(batch_size, -1))
-
             out = model(x)
             loss = myloss(out.view(batch_size, -1), y.view(batch_size, -1))
             loss_u, loss_f = PINO_loss(out, x[:, 0, :, 0])
-            total_loss = (loss_u * 10 + loss_f + datapoint_loss * 10) * 100
+            total_loss = loss_u * 10 + loss_f
+
+            optimizer.zero_grad()
             total_loss.backward()
             optimizer.step()
 
             train_l2 += loss.item()
             train_pino += loss_f.item()
             train_loss += total_loss.item()
-            dp_loss += datapoint_loss.item()
 
+        for x, y in supervised_loader:
+            x, y = x.to(device), y.to(device)
+
+            out = model(x)
+            datapoint_loss = myloss(out.view(batch_size, -1), y.view(batch_size, -1))
+
+            optimizer.zero_grad()
+            datapoint_loss.backward()
+            optimizer.step()
+
+            dp_loss += datapoint_loss.item()
         scheduler.step()
 
         model.eval()
@@ -126,23 +130,17 @@ def train():
                 x, y = x.to(device), y.to(device)
 
                 out = model(x)
-                # out = y_normalizer.decode(out)
 
-                test_l2 += myloss(out.view(batch_size, -1),
-                                  y.view(batch_size, -1)).item()
+                test_l2 += myloss(out.view(batch_size, -1), y.view(batch_size, -1)).item()
                 test_u, test_f = PINO_loss(out, x[:, 0, :, 0])
                 test_pino = test_f.item()
-
-        if ep % step_size == 0:
-            plt.imsave('%s/y_%d.png' % (image_dir, ep), y[0, :, :].cpu().numpy())
-            plt.imsave('%s/out_%d.png' % (image_dir, ep), out[0, :, :, 0].cpu().numpy())
 
         train_l2 /= len(train_loader)
         test_l2 /= len(test_loader)
         train_pino /= len(train_loader)
         test_pino /= len(test_loader)
         train_loss /= len(train_loader)
-        dp_loss /= len(train_loader)
+        dp_loss /= len(supervised_loader)
 
         t2 = default_timer()
         pbar.set_description(
@@ -175,11 +173,8 @@ if __name__ == '__main__':
             'goal': 'minimize'
         },
         'parameters': {
-            'ntrain': {
-                'values': [100, 200, 400, 800]
-            },
             'nlabels': {
-                'values': [100]
+                'values': [20, 40, 60, 80, 100, 150, 200]
             }
         }
     }

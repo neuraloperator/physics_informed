@@ -8,9 +8,9 @@ from models import FNN3d
 
 from tqdm import tqdm
 from timeit import default_timer
-from utils import count_params, save_checkpoint
-from data_utils import NS40Loader, sample_data
-from losses import LpLoss, PINO_loss3d
+from train_utils.utils import count_params, save_checkpoint
+from train_utils.data_utils import NS40Loader
+from train_utils.losses import LpLoss, PINO_loss3d
 try:
     import wandb
 except ImportError:
@@ -41,7 +41,7 @@ ckpt_dir = 'NS40-FDM'
 name = 'PINO_FDM_NS40_N' + '_ep' + str(epochs) + '_m' + str(modes) + '_w' + str(width) + '.pt'
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-log = True
+log = False
 
 if wandb and log:
     wandb.init(project='PINO-NS40-tto',

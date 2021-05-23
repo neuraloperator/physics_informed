@@ -1,0 +1,36 @@
+data:
+  datapath: 'data/NS_fine_Re500_s2048_T100.npy'
+  Re: 500
+  total_num: 100
+  offset: 0
+  n_sample: 1
+  time_interval: 0.5
+  nx: 256
+  nt: 256
+  sub: 2
+  sub_t: 2
+  shuffle: False
+
+model:
+  layers: [32, 32, 32, 32, 32]
+  modes1: [20, 20, 20, 20]
+  modes2: [20, 20, 20, 20]
+  modes3: [20, 20, 20, 20]
+  fc_dim: 128
+
+train:
+  batchsize: 1
+  epochs: 7500
+  milestones: [500, 1500, 2500, 3500, 4500]
+  base_lr: 0.001
+  scheduler_gamma: 0.5
+#  ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-T500-05s-newloss.pt'
+  ic_loss: 1.0
+  f_loss: 1.0
+  xy_loss: 0
+  save_dir: 'Re500-T100'
+  save_name: 'PINO-fintune-T100-05s.pt'
+
+
+
+

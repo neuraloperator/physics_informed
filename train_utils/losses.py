@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 
 
-def FDM_NS_vorticity(w, v=1/40):
+def FDM_NS_vorticity(w, v=1/40, t_interval=1.0):
     batchsize = w.size(0)
     nx = w.size(1)
     ny = w.size(2)
@@ -36,7 +36,7 @@ def FDM_NS_vorticity(w, v=1/40):
     wy = torch.fft.irfft2(wy_h[:, :, :k_max+1], dim=[1,2])
     wlap = torch.fft.irfft2(wlap_h[:, :, :k_max+1], dim=[1,2])
 
-    dt = 1/(nt-1)
+    dt = t_interval / (nt-1)
     wt = (w[:, :, :, 2:] - w[:, :, :, :-2]) / (2 * dt)
 
     Du1 = wt + (ux*wx + uy*wy - v*wlap)[...,1:-1] #- forcing
@@ -182,7 +182,7 @@ def PINO_loss(u, u0):
     return loss_u, loss_f
 
 
-def PINO_loss3d(u, u0, forcing, v=1/40):
+def PINO_loss3d(u, u0, forcing, v=1/40, t_interval=1.0):
     batchsize = u.size(0)
     nx = u.size(1)
     ny = u.size(2)
@@ -194,7 +194,7 @@ def PINO_loss3d(u, u0, forcing, v=1/40):
     u_in = u[:, :, :, 0]
     loss_ic = lploss(u_in, u0)
 
-    Du = FDM_NS_vorticity(u, v)
+    Du = FDM_NS_vorticity(u, v, t_interval)
     f = forcing.repeat(batchsize, 1, 1, nt-2)
     loss_f = lploss(Du, f)
 
@@ -222,3 +222,9 @@ def PDELoss(model, x, t, nu):
 
     residual = grad_t + u * grad_x - nu * gradgrad_x
     return residual
+
+
+def get_forcing(S):
+    x1 = torch.tensor(np.linspace(0, 2*np.pi, S+1)[:-1], dtype=torch.float).reshape(S, 1).repeat(1, S)
+    x2 = torch.tensor(np.linspace(0, 2*np.pi, S+1)[:-1], dtype=torch.float).reshape(1, S).repeat(S, 1)
+    return -4 * (torch.cos(4*(x2))).reshape(1,S,S,1)
