@@ -9,7 +9,7 @@ from models import FNN3d
 
 if __name__ == '__main__':
     log = True
-    config_file = 'configs/Re500-T100-finetune-05s.yaml'
+    config_file = 'configs/Re500-T500-1s.yaml'
     with open(config_file, 'r') as stream:
         config = yaml.load(stream, yaml.FullLoader)
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -21,8 +21,7 @@ if __name__ == '__main__':
                          t_interval=data_config['time_interval'])
     train_loader = loader.make_loader(data_config['n_sample'],
                                       batch_size=config['train']['batchsize'],
-                                      start=199,
-                                      train=True)
+                                      train=False)
 
     model = FNN3d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
@@ -48,5 +47,5 @@ if __name__ == '__main__':
           device,
           log=log,
           project='PINO-finetune',
-          group='T100-0.5s',
-          tags=['T100-from scratch'])
+          group='T100-1s',
+          tags=['T100-with pretrain'])

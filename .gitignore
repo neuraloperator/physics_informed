@@ -3,3 +3,5 @@ data
 __pycache__
 .idea
 figs
+checkpoints
+*.pt

@@ -26,9 +26,9 @@ np.random.seed(0)
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-ntrain = 800
+ntrain = 1
 nlabels = 0
-ntest = 200  #200
+ntest = 1  #200
 
 sub = 1  #8  # subsampling rate
 # h = 2**10 // sub
@@ -36,7 +36,7 @@ sub = 1  #8  # subsampling rate
 sub_t = 1
 # T = 100 // sub_t
 
-batch_size = 20  # 100
+batch_size = 1  # 100
 learning_rate = 0.001
 
 epochs = 2500
@@ -50,7 +50,7 @@ width = 32  # 64
 
 # datapath = '/mnt/md1/zongyi/burgers_pino.mat'
 datapath = 'data/burgers_pino.mat'
-log = False
+log = True
 
 if wandb and log:
     wandb.init(project='PINO-burgers',
@@ -61,11 +61,11 @@ if wandb and log:
                        'batch_size': batch_size,
                        'modes': modes,
                        'width': width},
-               tags=['800 unlabeled samples'])
+               tags=['sample 1012'])
 
 constructor = BurgersLoader(datapath, nx=128, nt=100, sub=sub, sub_t=sub_t, new=True)
-train_loader = constructor.make_loader(n_sample=ntrain, batch_size=batch_size, train=True)
-test_loader = constructor.make_loader(n_sample=ntest, batch_size=batch_size, train=False)
+train_loader = constructor.make_loader(n_sample=ntrain, start=1012, batch_size=batch_size, train=True)
+test_loader = constructor.make_loader(n_sample=ntest, start=1012, batch_size=batch_size, train=True)
 if nlabels > 0:
     supervised_loader = constructor.make_loader(n_sample=nlabels, batch_size=nlabels, start=ntrain, train=True)
     supervised_loader = sample_data(loader=supervised_loader)
@@ -90,7 +90,7 @@ num_param = count_params(model)
 print('Number of model parameters', num_param)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[400, 800, 1200], gamma=gamma)
+scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[400, 800, 1800], gamma=gamma)
 # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
 
 myloss = LpLoss(size_average=True)
@@ -123,7 +123,7 @@ for ep in pbar:
         train_loss += total_loss.item()
 
     scheduler.step()
-
+    t2 = default_timer()
     model.eval()
     test_l2 = 0.0
     test_pino = 0.0
@@ -139,9 +139,9 @@ for ep in pbar:
             test_u, test_f = PINO_loss(out, x[:, 0, :, 0])
             test_pino += test_f.item()
 
-    if ep % step_size == 0:
-        plt.imsave('%s/y_%d.png' % (image_dir, ep), y[0, :, :].cpu().numpy())
-        plt.imsave('%s/out_%d.png' % (image_dir, ep), out[0, :, :, 0].cpu().numpy())
+    # if ep % step_size == 0:
+    #     plt.imsave('%s/y_%d.png' % (image_dir, ep), y[0, :, :].cpu().numpy())
+    #     plt.imsave('%s/out_%d.png' % (image_dir, ep), out[0, :, :, 0].cpu().numpy())
 
     train_l2 /= len(train_loader)
     test_l2 /= len(test_loader)
@@ -149,7 +149,6 @@ for ep in pbar:
     test_pino /= len(test_loader)
     train_loss /= len(train_loader)
 
-    t2 = default_timer()
     pbar.set_description(
         (
             f'Time cost: {t2- t1:.2f}; Train f error: {train_pino:.5f}; Train l2 error: {train_l2:.5f}. '

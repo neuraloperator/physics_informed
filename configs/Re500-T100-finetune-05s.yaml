@@ -6,9 +6,9 @@ data:
   n_sample: 1
   time_interval: 0.5
   nx: 256
-  nt: 256
+  nt: 128
   sub: 2
-  sub_t: 2
+  sub_t: 1
   shuffle: False
 
 model:
@@ -21,11 +21,11 @@ model:
 train:
   batchsize: 1
   epochs: 7500
-  milestones: [500, 1500, 2500, 3500, 4500]
-  base_lr: 0.001
+  milestones: [500, 1500, 3000, 4000, 5000]
+  base_lr: 0.0025
   scheduler_gamma: 0.5
-#  ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-T500-05s-newloss.pt'
-  ic_loss: 1.0
+  ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-T500-05s-newloss.pt'
+  ic_loss: 5.0
   f_loss: 1.0
   xy_loss: 0
   save_dir: 'Re500-T100'

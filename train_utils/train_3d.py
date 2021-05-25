@@ -11,8 +11,6 @@ except ImportError:
     wandb = None
 
 
-
-
 def train(model,
           loader, train_loader,
           optimizer, scheduler,
