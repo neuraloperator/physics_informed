@@ -98,7 +98,8 @@ def resf_NS(u, v, x, y, t, re=40):
     v_yy, = autograd.grad(outputs=[v_y.sum()], inputs=[y], create_graph=True)
     res_x = u_t + u * u_x + v * u_y - 1 / re * (u_xx + u_yy) - torch.sin(4 * y)
     res_y = v_t + u * v_x + v * v_y - 1 / re * (v_xx + v_yy)
-    return res_x, res_y
+    evp3 = u_x + v_y
+    return res_x, res_y, evp3
 
 
 def train(model, dataset, device):
@@ -127,7 +128,7 @@ def train(model, dataset, device):
         loss_bc = criterion(pred_vor, bd_vor)
 
         u, v = net_NS(x, y, t, model)
-        res_x, res_y = resf_NS(u, v, x, y, t, re=40)
+        res_x, res_y, evp3 = resf_NS(u, v, x, y, t, re=40)
         loss_f = torch.mean(res_x ** 2) + torch.mean(res_y ** 2)
         pred_vor = vel2vor(u, v, x, y)
         test_error = criterion(pred_vor, vor)
@@ -148,16 +149,16 @@ def train(model, dataset, device):
 
 
 def train_adam(model, dataset, device):
-    alpha = 100
-    beta = 100
-    epoch_num = 500
-    dataloader = DataLoader(dataset, batch_size=2000, shuffle=True, drop_last=True)
+    alpha = 1
+    beta = 1
+    epoch_num = 3000
+    dataloader = DataLoader(dataset, batch_size=5000, shuffle=True, drop_last=True)
 
     model.train()
     criterion = LpLoss(size_average=True)
     mse = nn.MSELoss()
-    optimizer = Adam(model.parameters(), lr=0.001)
-    milestones = [50, 100, 150, 200, 250, 300, 350]
+    optimizer = Adam(model.parameters(), lr=0.002)
+    milestones = [100, 500, 1500, 2000]
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=0.5)
     bd_x, bd_y, bd_t, bd_vor, u_gt, v_gt = dataset.get_boundary()
     bd_x, bd_y, bd_t, bd_vor, u_gt, v_gt = bd_x.to(device), bd_y.to(device), bd_t.to(device), \
@@ -177,7 +178,7 @@ def train_adam(model, dataset, device):
             u, v = net_NS(bd_x, bd_y, bd_t, model)
             loss_ic = mse(u, u_gt.view(-1)) + mse(v, v_gt.view(-1))
             #  boundary condition
-            loss_bc = boundary_loss(model, 200)
+            loss_bc = boundary_loss(model, 100)
 
             # collocation points
             x, y, t, vor, true_u, true_v = x.to(device), y.to(device), t.to(device), \
@@ -186,8 +187,10 @@ def train_adam(model, dataset, device):
             u, v = net_NS(x, y, t, model)
             # velu_loss = criterion(u, true_u)
             # velv_loss = criterion(v, true_v)
-            res_x, res_y = resf_NS(u, v, x, y, t, re=40)
-            loss_f = torch.mean(res_x ** 2) + torch.mean(res_y ** 2)
+            res_x, res_y, evp3 = resf_NS(u, v, x, y, t, re=40)
+            loss_f = mse(res_x, torch.zeros_like(res_x)) \
+                     + mse(res_y, torch.zeros_like(res_y)) \
+                     + mse(evp3, torch.zeros_like(evp3))
 
             total_loss = loss_f + loss_bc * alpha + loss_ic * beta
             total_loss.backward()
@@ -233,6 +236,7 @@ def train_adam(model, dataset, device):
                 {
                     'Train f error': f_error,
                     'Train IC error': ic_error,
+                    'Train BC error': bc_error,
                     'Test L2 error': test_error,
                     'Total loss': total_train_loss,
                     'u error': u_error,
@@ -244,17 +248,17 @@ def train_adam(model, dataset, device):
 
 
 if __name__ == '__main__':
-    log = False
+    log = True
     if wandb and log:
         wandb.init(project='PINO-NS40-NSFnet',
                    entity='hzzheng-pino',
-                   group='AD',
-                   tags=['4x50'])
+                   group='1-1',
+                   tags=['5x100'])
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     datapath = 'data/NS_fine_Re40_s64_T1000.npy'
     dataset = NS40data(datapath, nx=64, nt=64, sub=1, sub_t=1, N=1000, index=1)
-    layers = [3, 100, 100, 100, 100, 100, 2]
+    layers = [3, 50, 50, 50, 50, 2]
     model = FCNet(layers).to(device)
     model = train_adam(model, dataset, device)
     save_checkpoint('checkpoints/pinns', name='NS40.pt', model=model)
