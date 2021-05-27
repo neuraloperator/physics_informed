@@ -38,7 +38,8 @@ if not os.path.exists(image_dir):
 
 ckpt_dir = 'NS40-FDM'
 
-name = 'PINO_FDM_NS40_N' + '_ep' + str(epochs) + '_m' + str(modes) + '_w' + str(width) + '.pt'
+name = 'PINO_FDM_NS40_N' + '_ep' + \
+    str(epochs) + '_m' + str(modes) + '_w' + str(width) + '.pt'
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 log = False
@@ -71,23 +72,24 @@ train_loader = test_loader
 layers = [width * 4 // 4, width * 4 // 4, width*4//4, width*4//4, width*4//4]
 modes = [modes, modes, modes, modes]
 
-model = FNN3d(modes1=modes, modes2=modes, modes3=modes, layers=layers).to(device)
+model = FNN3d(modes1=modes, modes2=modes,
+              modes3=modes, layers=layers).to(device)
 num_param = count_params(model)
 print('Number of model parameters', num_param)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 milestones = [500, 1500, 2500, 3500, 4500, 5500]
-scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=scheduler_gamma)
+scheduler = torch.optim.lr_scheduler.MultiStepLR(
+    optimizer, milestones=milestones, gamma=scheduler_gamma)
 # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.5)
 
 x1 = torch.tensor(np.linspace(0, 2*np.pi, S+1)[:-1], dtype=torch.float).reshape(S, 1).repeat(1, S)
 x2 = torch.tensor(np.linspace(0, 2*np.pi, S+1)[:-1], dtype=torch.float).reshape(1, S).repeat(S, 1)
 
-forcing = -4 * (torch.cos(4*(x2))).reshape(1,S,S,1).to(device)
+forcing = -4 * (torch.cos(4*(x2))).reshape(1, S, S, 1).to(device)
 
 myloss = LpLoss(size_average=True)
 pbar = tqdm(range(epochs), dynamic_ncols=True, smoothing=0.01)
-
 
 for ep in pbar:
     model.train()
@@ -107,7 +109,8 @@ for ep in pbar:
 
         x = x[:, :, :, 0, -1]
 
-        loss_l2 = myloss(out.view(batch_size, S, S, T), y.view(batch_size, S, S, T))
+        loss_l2 = myloss(out.view(batch_size, S, S, T),
+                         y.view(batch_size, S, S, T))
         loss_ic, loss_f = PINO_loss3d(out.view(batch_size, S, S, T), x, forcing, v)
         total_loss = loss_ic + loss_f
 

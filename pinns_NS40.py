@@ -67,7 +67,7 @@ def train_adam(model, dataset, device):
             total_loss = loss_f + loss_bc * alpha + loss_ic * beta
             total_loss.backward()
             optimizer.step()
-
+    
             total_train_loss += total_loss.item()
             bc_error += loss_bc.item()
             ic_error += loss_ic.item()
