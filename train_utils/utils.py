@@ -66,12 +66,10 @@ def zero_grad(params):
     '''
     if isinstance(params, torch.Tensor):
         if params.grad is not None:
-            params.grad.detach()
             params.grad.zero_()
     else:
         for p in params:
             if p.grad is not None:
-                p.grad.detach()
                 p.grad.zero_()
 
 

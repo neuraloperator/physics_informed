@@ -5,8 +5,8 @@ from torch.optim import Adam
 from train_utils.data_utils import NS40data
 from train_utils.utils import set_grad, save_checkpoint
 from train_utils.losses import LpLoss
-from train_utils.baseline_utils import net_NS, vel2vor
-from train_utils.baseline_loss import resf_NS, boundary_loss
+from baselines.utils import net_NS, vel2vor
+from baselines.loss import resf_NS, boundary_loss
 
 from models import FCNet
 from torch.utils.data import DataLoader

@@ -1,7 +1,7 @@
 import torch
 import torch.autograd as autograd
-from .utils import set_grad
-from .baseline_utils import get_sample, net_NS, sub_mse
+from train_utils.utils import set_grad
+from .utils import get_sample, net_NS, sub_mse
 
 
 def boundary_loss(model, npt=100):
@@ -34,7 +34,7 @@ def resf_NS(u, v, p, x, y, t, re=40):
     '''
     u_x, u_y, u_t = autograd.grad(outputs=[u.sum()], inputs=[x, y, t], create_graph=True)
     v_x, v_y, v_t = autograd.grad(outputs=[v.sum()], inputs=[x, y, t], create_graph=True)
-    u_xx,  = autograd.grad(outputs=[u_x.sum()], inputs=[x], create_graph=True)
+    u_xx, = autograd.grad(outputs=[u_x.sum()], inputs=[x], create_graph=True)
     u_yy, = autograd.grad(outputs=[u_y.sum()], inputs=[y], create_graph=True)
     v_xx, = autograd.grad(outputs=[v_x.sum()], inputs=[x], create_graph=True)
     v_yy, = autograd.grad(outputs=[v_y.sum()], inputs=[y], create_graph=True)
@@ -44,3 +44,4 @@ def resf_NS(u, v, p, x, y, t, re=40):
     res_y = v_t + u * v_x + v * v_y + p_y - 1 / re * (v_xx + v_yy)
     evp3 = u_x + v_y
     return res_x, res_y, evp3
+
