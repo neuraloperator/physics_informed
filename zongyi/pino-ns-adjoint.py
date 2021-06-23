@@ -12,6 +12,8 @@ from functools import partial
 
 from timeit import default_timer
 import scipy.io
+from torch.autograd import grad
+from torch.autograd.functional import hessian
 
 torch.manual_seed(0)
 np.random.seed(0)
@@ -64,13 +66,13 @@ class SpectralConv3d(nn.Module):
         x = torch.fft.irfftn(out_ft, s=(x.size(2), x.size(3), x.size(4)), dim=[2,3,4], norm="ortho")
         return x
 
-class SimpleBlock2d(nn.Module):
-    def __init__(self, modes1, modes2, modes3, width):
-        super(SimpleBlock2d, self).__init__()
+class Net2dA(nn.Module):
+    def __init__(self, modes, width):
+        super(Net2dA, self).__init__()
 
-        self.modes1 = modes1
-        self.modes2 = modes2
-        self.modes3 = modes3
+        self.modes1 = modes
+        self.modes2 = modes
+        self.modes3 = modes
         self.width = width
         self.fc0 = nn.Linear(4, self.width)
 
@@ -82,9 +84,6 @@ class SimpleBlock2d(nn.Module):
         self.w1 = nn.Conv1d(self.width, self.width, 1)
         self.w2 = nn.Conv1d(self.width, self.width, 1)
         self.w3 = nn.Conv1d(self.width, self.width, 1)
-
-        self.fc1 = nn.Linear(self.width, 128)
-        self.fc2 = nn.Linear(128, 1)
 
     def forward(self, x):
         batchsize = x.shape[0]
@@ -112,24 +111,7 @@ class SimpleBlock2d(nn.Module):
         x2 = self.w3(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y, size_z)
         x = x1 + x2
 
-
-        x = x.permute(0, 2, 3, 4, 1)
-        x = self.fc1(x)
-        x = F.elu(x)
-        x = self.fc2(x)
         return x
-
-class Net2d(nn.Module):
-    def __init__(self, modes, width):
-        super(Net2d, self).__init__()
-
-        self.conv1 = SimpleBlock2d(modes, modes, modes, width)
-
-
-    def forward(self, x):
-        x = self.conv1(x)
-        return x
-
 
     def count_params(self):
         c = 0
@@ -138,6 +120,28 @@ class Net2d(nn.Module):
 
         return c
 
+class Net2dB(nn.Module):
+    def __init__(self, modes, width):
+        super(Net2dB, self).__init__()
+        self.modes1 = modes
+        self.modes2 = modes
+        self.modes3 = modes
+        self.width = width
+
+        self.fc1 = nn.Linear(self.width, 128)
+        self.fc2 = nn.Linear(128, 1)
+
+    def forward(self, x, is_sum=True):
+        x = x.permute(0, 2, 3, 4, 1)
+        x = self.fc1(x)
+        x = F.elu(x)
+        x = self.fc2(x)
+        # x = x**1
+
+        if is_sum:
+            return x.sum()
+
+        return x
 
 #####################################################################################
 # set the parameters
@@ -169,6 +173,7 @@ S = 64 // sub
 T_in = 1
 sub_t = 1
 T = 64//sub_t +1
+T_pad = 11
 
 print(S, T)
 print(epochs, learning_rate, scheduler_step, scheduler_gamma)
@@ -242,7 +247,56 @@ x1 = torch.tensor(np.linspace(0, 2*np.pi, S+1)[:-1], dtype=torch.float).reshape(
 x2 = torch.tensor(np.linspace(0, 2*np.pi, S+1)[:-1], dtype=torch.float).reshape(1, S).repeat(S, 1)
 forcing = -4 * (torch.cos(4*(x2))).reshape(1,S,S,1).cuda()
 
-def FDM_NS_vorticity(w, v=1/40):
+pi = np.pi
+def Ajdoint1(w, Lx=2*pi, Ly=2*pi, Lt=1*(T+T_pad)/(T-1)):
+    batchsize = w.size(0)
+    channel = w.size(1)
+    nx = w.size(-3)
+    ny = w.size(-2)
+    nt = w.size(-1)
+
+    device = w.device
+    w = w.reshape(batchsize, channel, nx, ny, nt)
+
+    w_h = torch.fft.fftn(w, dim=[-3, -2, -1])
+    # Wavenumbers in y-direction
+
+
+    k_x = torch.cat((torch.arange(start=0, end=nx//2, step=1, device=device),
+                     torch.arange(start=-nx//2, end=0, step=1, device=device)), 0).reshape(nx, 1, 1).repeat(1, ny, nt).reshape(1,1,nx,ny,nt)
+    k_y = torch.cat((torch.arange(start=0, end=ny//2, step=1, device=device),
+                     torch.arange(start=-ny//2, end=0, step=1, device=device)), 0).reshape(1, ny, 1).repeat(nx, 1, nt).reshape(1,1,nx,ny,nt)
+    k_t = torch.cat((torch.arange(start=0, end=nt//2, step=1, device=device),
+                     torch.arange(start=-nt//2, end=0, step=1, device=device)), 0).reshape(1, 1, nt).repeat(nx, ny, 1).reshape(1,1,nx,ny,nt)
+    # Negative Laplacian in Fourier space
+
+    wx_h = 1j * k_x * w_h * (2*pi/Lx)
+    wy_h = 1j * k_y * w_h * (2*pi/Ly)
+    wt_h = 1j * k_t * w_h * (2*pi/Lt)
+    wxx_h = 1j * k_x * wx_h * (2*pi/Lx)
+    wyy_h = 1j * k_y * wy_h * (2*pi/Ly)
+
+    wx = torch.fft.irfftn(wx_h[..., :nt//2+1], dim=[-3,-2,-1])[...,:T]
+    wy = torch.fft.irfftn(wy_h[..., :nt//2+1], dim=[-3,-2,-1])[...,:T]
+    wt = torch.fft.irfftn(wt_h[..., :nt//2+1], dim=[-3,-2,-1])[...,:T]
+    wxx = torch.fft.irfftn(wxx_h[..., :nt//2+1], dim=[-3,-2,-1])[...,:T]
+    wyy = torch.fft.irfftn(wyy_h[..., :nt//2+1], dim=[-3,-2,-1])[...,:T]
+    return (wx,wy,wt,wxx,wyy)
+
+def Ajdoint2(Dw, dQ, d2Q):
+    dQ = dQ[...,:T]
+    d2Q = d2Q[...,:T]
+    wx, wy, wt, wxx, wyy = Dw
+
+    wx = torch.sum(wx * dQ, dim=1)
+    wy = torch.sum(wy * dQ, dim=1)
+    wt = torch.sum(wt * dQ, dim=1)
+
+    wxx = torch.sum(wx**2 * d2Q + wxx * dQ, dim=1)
+    wyy = torch.sum(wy**2 * d2Q + wyy * dQ, dim=1)
+    return (wx,wy,wt,wxx,wyy)
+
+def FDM_NS_vorticity(w, Dw, v=1/40):
     batchsize = w.size(0)
     nx = w.size(1)
     ny = w.size(2)
@@ -267,22 +321,34 @@ def FDM_NS_vorticity(w, v=1/40):
     uy_h = -1j * k_x * f_h
     wx_h = 1j * k_x * w_h
     wy_h = 1j * k_y * w_h
+    wxx_h = 1j * k_x * wx_h
     wlap_h = -lap * w_h
 
     ux = torch.fft.irfft2(ux_h[:, :, :k_max + 1], dim=[1, 2])
     uy = torch.fft.irfft2(uy_h[:, :, :k_max + 1], dim=[1, 2])
-    wx = torch.fft.irfft2(wx_h[:, :, :k_max+1], dim=[1,2])
-    wy = torch.fft.irfft2(wy_h[:, :, :k_max+1], dim=[1,2])
-    wlap = torch.fft.irfft2(wlap_h[:, :, :k_max+1], dim=[1,2])
+    wx2 = torch.fft.irfft2(wx_h[:, :, :k_max+1], dim=[1,2])
+    wy2 = torch.fft.irfft2(wy_h[:, :, :k_max+1], dim=[1,2])
+    wlap2 = torch.fft.irfft2(wlap_h[:, :, :k_max+1], dim=[1,2])
+    wxx2 = torch.fft.irfft2(wxx_h[:, :, :k_max + 1], dim=[1, 2])
 
     dt = 1/(nt-1)
-    wt = (w[:, :, :, 2:] - w[:, :, :, :-2]) / (2 * dt)
+    wt2 = (w[:, :, :, 2:] - w[:, :, :, :-2]) / (2 * dt)
+    # Du = wt + (ux*wx + uy*wy - v*wlap)[...,1:-1] #- forcing
 
-    Du1 = wt + (ux*wx + uy*wy - v*wlap)[...,1:-1] #- forcing
-    return Du1
+    wx, wy, wt, wxx, wyy = Dw
+    wlap = wxx + wyy
+    Du = wt + (ux*wx + uy*wy - v*wlap2) #- forcing
+
+    # print(F.mse_loss(wx,wx2))
+    # print(F.mse_loss(wy,wy2))
+    # print(F.mse_loss(wxx, wxx2))
+    # print(F.mse_loss(wlap,wlap2))
+    # print(F.mse_loss(wt[...,1:-1],wt2))
+
+    return Du
 
 
-def PINO_loss(u, u0):
+def PINO_loss(u, u0, Dw):
     batchsize = u.size(0)
     nx = u.size(1)
     ny = u.size(2)
@@ -294,9 +360,9 @@ def PINO_loss(u, u0):
     u_in = u[:, :, :, 0]
     loss_ic = lploss(u_in, u0)
 
-    Du = FDM_NS_vorticity(u)
+    Du = FDM_NS_vorticity(u, Dw)
     # f = torch.zeros(Du.shape, device=u.device)
-    f = forcing.repeat(batch_size, 1, 1, nt-2)
+    f = forcing.repeat(batch_size, 1, 1, nt)
     loss_f = lploss(Du, f)
     # f2 = torch.zeros(Du2.shape, device=u.device)
     # loss_f2 = F.mse_loss(Du2, f2)
@@ -308,8 +374,9 @@ error = np.zeros((epochs, 4))
 # x_normalizer.cuda()
 # y_normalizer.cuda()
 
-model = Net2d(modes, width).cuda()
-num_param = model.count_params()
+modelA = Net2dA(modes, width).cuda()
+modelB = Net2dB(modes, width).cuda()
+num_param = modelA.count_params()
 print(num_param)
 
 #####################################################################################
@@ -384,12 +451,13 @@ print(num_param)
 #####################################################################################
 # Fine-tune (solving)
 #####################################################################################
-
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=0)
+params = list(modelA.parameters()) + list(modelB.parameters())
+optimizer = torch.optim.Adam(params, lr=learning_rate, weight_decay=0)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
 
 for ep in range(epochs):
-    model.train()
+    modelA.train()
+    modelB.train()
     t1 = default_timer()
     test_pino = 0.0
     test_l2 = 0.0
@@ -400,13 +468,23 @@ for ep in range(epochs):
 
         optimizer.zero_grad()
 
-        x_in = F.pad(x, (0,0,0,10), "constant", 0)
-        out = model(x_in).reshape(batch_size,S,S,T+10)
-        out = out[..., :-10]
+        x_in = F.pad(x, (0,0,0,T_pad), "constant", 0)
+        X = modelA(x_in)
+        out = modelB(X, is_sum=False)
+        out = out.reshape(batch_size,S,S,T+T_pad)
+
+        dQ = grad(out.sum(), X, create_graph=True)[0]
+        d2Q = hessian(modelB, X, create_graph=True)[0]
+        print(dQ.shape, d2Q.shape)
+
+        Dw = Ajdoint1(X)
+        Dw = Ajdoint2(Dw, dQ, d2Q)
+
+        out = out[..., :-T_pad]
         x = x[:, :, :, 0, -1]
 
         loss = myloss(out.view(batch_size, S, S, T), y.view(batch_size, S, S, T))
-        loss_ic, loss_f = PINO_loss(out.view(batch_size, S, S, T), x)
+        loss_ic, loss_f = PINO_loss(out.view(batch_size, S, S, T), x, Dw)
         pino_loss = (loss_ic + loss_f)
 
         pino_loss.backward()
@@ -419,23 +497,23 @@ for ep in range(epochs):
 
     scheduler.step()
 
-    if ep % 1000 == 1:
-        y = y[0,:,:,:].cpu().numpy()
-        out = out[0,:,:,:].detach().cpu().numpy()
-
-        fig, ax = plt.subplots(2, 4)
-        ax[0,0].imshow(y[..., 16])
-        ax[0,1].imshow(y[..., 32])
-        ax[0,2].imshow(y[..., 48])
-        ax[0,3].imshow(y[..., 64])
-        print(np.mean(np.abs(y[..., 16]-y[..., 64])))
-
-        ax[1,0].imshow(out[..., 16])
-        ax[1,1].imshow(out[..., 32])
-        ax[1,2].imshow(out[..., 48])
-        ax[1,3].imshow(out[..., 64])
-        print(np.mean(np.abs(out[..., 16]-out[..., 64])))
-        plt.show()
+    # if ep % 1000 == 1:
+    #     y = y[0,:,:,:].cpu().numpy()
+    #     out = out[0,:,:,:].detach().cpu().numpy()
+    #
+    #     fig, ax = plt.subplots(2, 4)
+    #     ax[0,0].imshow(y[..., 16])
+    #     ax[0,1].imshow(y[..., 32])
+    #     ax[0,2].imshow(y[..., 48])
+    #     ax[0,3].imshow(y[..., 64])
+    #     print(np.mean(np.abs(y[..., 16]-y[..., 64])))
+    #
+    #     ax[1,0].imshow(out[..., 16])
+    #     ax[1,1].imshow(out[..., 32])
+    #     ax[1,2].imshow(out[..., 48])
+    #     ax[1,3].imshow(out[..., 64])
+    #     print(np.mean(np.abs(out[..., 16]-out[..., 64])))
+    #     plt.show()
 
     test_l2 /= len(test_loader)
     test_f /= len(test_loader)
@@ -444,7 +522,8 @@ for ep in range(epochs):
     t2 = default_timer()
     print(ep, t2-t1, test_pino, test_f, test_l2)
 
-torch.save(model, path_model+ '_finetune')
+# torch.save(modelA, path_model+ '_finetuneA')
+# torch.save(modelB, path_model+ '_finetuneB')
 
 
 # pred = torch.zeros(test_u.shape)

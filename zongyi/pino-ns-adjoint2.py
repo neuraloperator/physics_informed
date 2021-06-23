@@ -17,7 +17,52 @@ torch.manual_seed(0)
 np.random.seed(0)
 
 activation = F.relu
+pi = np.pi
 
+#####################################################################################
+# set the parameters
+#####################################################################################
+
+Ntrain = 999
+Ntest = 1
+ntrain = Ntrain
+ntest = Ntest
+
+modes = 20
+width = 20
+
+batch_size = 1
+batch_size2 = batch_size
+
+
+epochs = 2000
+learning_rate = 0.01
+scheduler_step = 200
+scheduler_gamma = 0.5
+
+
+runtime = np.zeros(2, )
+t1 = default_timer()
+
+sub = 1
+S = 64 // sub
+T_in = 1
+sub_t = 1
+T = 64//sub_t +1
+T_pad = 11
+print(S, T)
+print(epochs, learning_rate, scheduler_step, scheduler_gamma)
+
+HOME_PATH = '../'
+path = 'pino_ns_adjoint40_N'+str(ntrain)+'_ep' + str(epochs) + '_m' + str(modes) + '_w' + str(width) + '_s' + str(S) + '_t' + str(T)
+path_model = HOME_PATH+'model/'+path
+path_train_err = HOME_PATH+'results/'+path+'train.txt'
+path_test_err = HOME_PATH+'results/'+path+'test.txt'
+path_image = HOME_PATH+'image/'+path
+
+#####################################################################################
+# Network
+#####################################################################################
 
 def compl_mul3d(a, b):
     # (batch, in_channel, x,y,t ), (in_channel, out_channel, x,y,t) -> (batch, out_channel, x,y,t)
@@ -72,6 +117,8 @@ class SimpleBlock2d(nn.Module):
         self.modes2 = modes2
         self.modes3 = modes3
         self.width = width
+        self.width2 = width*4
+        self.out_dim = 1
         self.fc0 = nn.Linear(4, self.width)
 
         self.conv0 = SpectralConv3d(self.width, self.width, self.modes1, self.modes2, self.modes3)
@@ -83,12 +130,13 @@ class SimpleBlock2d(nn.Module):
         self.w2 = nn.Conv1d(self.width, self.width, 1)
         self.w3 = nn.Conv1d(self.width, self.width, 1)
 
-        self.fc1 = nn.Linear(self.width, 128)
-        self.fc2 = nn.Linear(128, 1)
+        self.fc1 = nn.Linear(self.width, self.width2)
+        self.fc2 = nn.Linear(self.width2, self.out_dim)
 
     def forward(self, x):
         batchsize = x.shape[0]
         size_x, size_y, size_z = x.shape[1], x.shape[2], x.shape[3]
+
 
         x = self.fc0(x)
         x = x.permute(0, 4, 1, 2, 3)
@@ -112,12 +160,101 @@ class SimpleBlock2d(nn.Module):
         x2 = self.w3(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y, size_z)
         x = x1 + x2
 
+        DX = self.dX(x)
 
         x = x.permute(0, 2, 3, 4, 1)
-        x = self.fc1(x)
-        x = F.elu(x)
+        x1 = self.fc1(x)
+        x = F.tanh(x1)
         x = self.fc2(x)
-        return x
+
+        DX = self.dQ(x1, DX)
+
+        return x, DX
+
+    def dX(self, w, Lx=2 * pi, Ly=2 * pi, Lt=1 * (T + T_pad) / (T - 1)):
+        batchsize = w.size(0)
+        channel = w.size(1)
+        nx = w.size(-3)
+        ny = w.size(-2)
+        nt = w.size(-1)
+
+        device = w.device
+        w = w.reshape(batchsize, channel, nx, ny, nt)
+
+        w_h = torch.fft.fftn(w, dim=[-3, -2, -1])
+        # Wavenumbers in y-direction
+
+        k_x = torch.cat((torch.arange(start=0, end=nx // 2, step=1, device=device),
+                         torch.arange(start=-nx // 2, end=0, step=1, device=device)),
+                        0).reshape(nx, 1, 1).repeat(1, ny, nt).reshape(1, 1, nx, ny, nt)
+        k_y = torch.cat((torch.arange(start=0, end=ny // 2, step=1, device=device),
+                         torch.arange(start=-ny // 2, end=0, step=1, device=device)),
+                        0).reshape(1, ny, 1).repeat(nx, 1, nt).reshape(1, 1, nx, ny, nt)
+        k_t = torch.cat((torch.arange(start=0, end=nt // 2, step=1, device=device),
+                         torch.arange(start=-nt // 2, end=0, step=1, device=device)),
+                        0).reshape(1, 1, nt).repeat(nx, ny, 1).reshape(1, 1, nx, ny, nt)
+        # Negative Laplacian in Fourier space
+
+        wx_h = 1j * k_x * w_h * (2 * pi / Lx)
+        wy_h = 1j * k_y * w_h * (2 * pi / Ly)
+        wt_h = 1j * k_t * w_h * (2 * pi / Lt)
+        wxx_h = 1j * k_x * wx_h * (2 * pi / Lx)
+        wyy_h = 1j * k_y * wy_h * (2 * pi / Ly)
+
+        wx = torch.fft.irfftn(wx_h[..., :nt // 2 + 1], dim=[-3, -2, -1])
+        wy = torch.fft.irfftn(wy_h[..., :nt // 2 + 1], dim=[-3, -2, -1])
+        wt = torch.fft.irfftn(wt_h[..., :nt // 2 + 1], dim=[-3, -2, -1])
+        wxx = torch.fft.irfftn(wxx_h[..., :nt // 2 + 1], dim=[-3, -2, -1])
+        wyy = torch.fft.irfftn(wyy_h[..., :nt // 2 + 1], dim=[-3, -2, -1])
+        return (wx, wy, wt, wxx, wyy)
+
+    def dQ(self, X1, DX):
+        # X1 (batch, x,y,t,m)
+        X1 = X1.permute(0, 4, 1, 2, 3)  # (b,m,x,y,t)
+        (wx, wy, wt, wxx, wyy) = DX  # DX (batch, i, x,y,t)
+
+        b = X1.shape[0]
+        x = X1.shape[-3]
+        y = X1.shape[-2]
+        t = X1.shape[-1]
+        i = self.width
+        m = self.width2
+        n = self.width2
+        o = self.out_dim
+
+        ### Gradient: D(f o g) = D(f(g)) o Dg
+
+        DW1 = self.fc1.weight #(m, i)
+
+        # DELU = torch.ones(X1.shape, device=X1.device) #(batch, x,y,t,m)
+        # DELU[X1 <= 0] = torch.exp(X1[X1 <= 0])
+
+        Dtanh = 1/torch.cosh(X1)**2  # (b,m,x,y,t)
+
+        DW2 = self.fc2.weight.reshape(n,)  # (o, n)
+
+        DQ = torch.einsum("mi,bmxyz,m->bixyz", DW1,Dtanh,DW2)
+
+        wxQ = torch.einsum("bixyz,bixyz->bxyz", DQ, wx)
+        wyQ = torch.einsum("bixyz,bixyz->bxyz", DQ, wy)
+        wtQ = torch.einsum("bixyz,bixyz->bxyz", DQ, wt)
+
+        ### Hessian: D^2(f o g) = Dg o Hf o Dg + Df o Hg
+
+        # HW2 = HW1 = 0
+        # HELU = torch.zeros(X1.shape, device=X1.device)  # (batch, x,y,t,m)
+        # HELU[X1 <= 0] = torch.exp(X1[X1 <= 0])
+        # HELU = HELU.permute(0, 4, 1, 2, 3)# (b,m,x,y,t), (m=n)
+        Htanh = -2*Dtanh*torch.tanh(X1)
+        H2 = DW2.reshape(1,m,1,1,1)*Htanh # (b,m,x,y,t)
+
+        wxx1 = torch.einsum("bixyz,mi,bmxyz,mj,bjxyz->bxyz", wx,DW1,H2,DW1,wx) # (b,x,y,t)
+        wxx2 = torch.einsum("bixyz,bixyz->bxyz", DQ.reshape(b,i,x,y,t), wxx)
+        wxxQ = wxx1 + wxx2
+        wyy1 = torch.einsum("bixyz,mi,bmxyz,mj,bjxyz->bxyz", wy,DW1,H2,DW1,wy) # (b,x,y,t)
+        wyy2 = torch.einsum("bixyz,bixyz->bxyz", DQ.reshape(b,i,x,y,t), wyy)
+        wyyQ = wyy1 + wyy2
+        return (wxQ, wyQ, wtQ, wxxQ, wyyQ)
 
 class Net2d(nn.Module):
     def __init__(self, modes, width):
@@ -139,46 +276,7 @@ class Net2d(nn.Module):
         return c
 
 
-#####################################################################################
-# set the parameters
-#####################################################################################
 
-Ntrain = 999
-Ntest = 1
-ntrain = Ntrain
-ntest = Ntest
-
-modes = 20
-width = 32
-
-batch_size = 1
-batch_size2 = batch_size
-
-
-epochs = 2000
-learning_rate = 0.01
-scheduler_step = 200
-scheduler_gamma = 0.5
-
-
-runtime = np.zeros(2, )
-t1 = default_timer()
-
-sub = 1
-S = 64 // sub
-T_in = 1
-sub_t = 1
-T = 64//sub_t +1
-
-print(S, T)
-print(epochs, learning_rate, scheduler_step, scheduler_gamma)
-
-HOME_PATH = '../'
-path = 'pino_fdm_ns40_N'+str(ntrain)+'_ep' + str(epochs) + '_m' + str(modes) + '_w' + str(width) + '_s' + str(S) + '_t' + str(T)
-path_model = HOME_PATH+'model/'+path
-path_train_err = HOME_PATH+'results/'+path+'train.txt'
-path_test_err = HOME_PATH+'results/'+path+'test.txt'
-path_image = HOME_PATH+'image/'+path
 
 
 #####################################################################################
@@ -242,47 +340,65 @@ x1 = torch.tensor(np.linspace(0, 2*np.pi, S+1)[:-1], dtype=torch.float).reshape(
 x2 = torch.tensor(np.linspace(0, 2*np.pi, S+1)[:-1], dtype=torch.float).reshape(1, S).repeat(S, 1)
 forcing = -4 * (torch.cos(4*(x2))).reshape(1,S,S,1).cuda()
 
-def FDM_NS_vorticity(w, v=1/40):
+pi = np.pi
+def Fourier_NS_vorticity(w, DW, Lt=1*(T+T_pad)/(T-1), nu=1/40):
     batchsize = w.size(0)
-    nx = w.size(1)
-    ny = w.size(2)
-    nt = w.size(3)
+    nx = w.size(-3)
+    ny = w.size(-2)
+    nt = w.size(-1)
+
+    (wxQ, wyQ, wtQ, wxxQ, wyyQ) = DW
+    wlapQ = wxxQ + wyyQ
+
     device = w.device
     w = w.reshape(batchsize, nx, ny, nt)
 
-    w_h = torch.fft.fft2(w, dim=[1, 2])
+    w_h = torch.fft.fftn(w, dim=[-3, -2, -1])
     # Wavenumbers in y-direction
-    k_max = nx//2
-    N = nx
-    k_x = torch.cat((torch.arange(start=0, end=k_max, step=1, device=device),
-                     torch.arange(start=-k_max, end=0, step=1, device=device)), 0).reshape(N, 1).repeat(1, N).reshape(1,N,N,1)
-    k_y = torch.cat((torch.arange(start=0, end=k_max, step=1, device=device),
-                     torch.arange(start=-k_max, end=0, step=1, device=device)), 0).reshape(1, N).repeat(N, 1).reshape(1,N,N,1)
+
+
+    k_x = torch.cat((torch.arange(start=0, end=nx//2, step=1, device=device),
+                     torch.arange(start=-nx//2, end=0, step=1, device=device)), 0).reshape(nx, 1, 1).repeat(1, ny, nt).reshape(1,nx,ny,nt)
+    k_y = torch.cat((torch.arange(start=0, end=ny//2, step=1, device=device),
+                     torch.arange(start=-ny//2, end=0, step=1, device=device)), 0).reshape(1, ny, 1).repeat(nx, 1, nt).reshape(1,nx,ny,nt)
+    k_t = torch.cat((torch.arange(start=0, end=nt//2, step=1, device=device),
+                     torch.arange(start=-nt//2, end=0, step=1, device=device)), 0).reshape(1, 1, nt).repeat(nx, ny, 1).reshape(1,nx,ny,nt)
+    # Negative Laplacian in Fourier space
+
     # Negative Laplacian in Fourier space
     lap = (k_x ** 2 + k_y ** 2)
-    lap[0, 0, 0, 0] = 1.0
+    lap[0,0,0,:] = 1.0
     f_h = w_h / lap
 
     ux_h = 1j * k_y * f_h
     uy_h = -1j * k_x * f_h
+
     wx_h = 1j * k_x * w_h
     wy_h = 1j * k_y * w_h
+    wt_h = 1j * k_t * w_h * (2*pi/Lt)
     wlap_h = -lap * w_h
+    wxx_h = 1j * k_x * wx_h
 
-    ux = torch.fft.irfft2(ux_h[:, :, :k_max + 1], dim=[1, 2])
-    uy = torch.fft.irfft2(uy_h[:, :, :k_max + 1], dim=[1, 2])
-    wx = torch.fft.irfft2(wx_h[:, :, :k_max+1], dim=[1,2])
-    wy = torch.fft.irfft2(wy_h[:, :, :k_max+1], dim=[1,2])
-    wlap = torch.fft.irfft2(wlap_h[:, :, :k_max+1], dim=[1,2])
-
-    dt = 1/(nt-1)
-    wt = (w[:, :, :, 2:] - w[:, :, :, :-2]) / (2 * dt)
-
-    Du1 = wt + (ux*wx + uy*wy - v*wlap)[...,1:-1] #- forcing
-    return Du1
+    ux = torch.fft.irfftn(ux_h[..., :nt//2+1], dim=[-3,-2,-1])
+    uy = torch.fft.irfftn(uy_h[..., :nt//2+1], dim=[-3,-2,-1])
+    wx = torch.fft.irfftn(wx_h[..., :nt//2+1], dim=[-3,-2,-1])
+    wy = torch.fft.irfftn(wy_h[..., :nt//2+1], dim=[-3,-2,-1])
+    wt = torch.fft.irfftn(wt_h[..., :nt//2+1], dim=[-3,-2,-1])
+    wlap = torch.fft.irfftn(wlap_h[..., :nt//2+1], dim=[-3,-2,-1])
+    wxx = torch.fft.irfftn(wxx_h[..., :nt//2+1], dim=[-3,-2,-1])
 
 
-def PINO_loss(u, u0):
+    # print(F.mse_loss(wxQ,wx).item())
+    # print(F.mse_loss(wtQ,wt).item())
+    # print(F.mse_loss(wxxQ,wxx).item())
+    # print(F.mse_loss(wlapQ,wlap).item())
+
+    # Du = wt + (ux*wx + uy*wy - nu*wlap)  #- forcing
+    Du = wtQ + (ux*wxQ + uy*wyQ - nu*wlapQ)  #- forcing
+    return Du[..., :T]
+
+
+def PINO_loss(u, u0, DX):
     batchsize = u.size(0)
     nx = u.size(1)
     ny = u.size(2)
@@ -290,13 +406,14 @@ def PINO_loss(u, u0):
 
     u = u.reshape(batchsize, nx, ny, nt)
     lploss = LpLoss(size_average=True)
+    lploss = F.mse_loss
 
     u_in = u[:, :, :, 0]
     loss_ic = lploss(u_in, u0)
 
-    Du = FDM_NS_vorticity(u)
+    Du = Fourier_NS_vorticity(u, DX)
     # f = torch.zeros(Du.shape, device=u.device)
-    f = forcing.repeat(batch_size, 1, 1, nt-2)
+    f = forcing.repeat(batch_size, 1, 1, T)
     loss_f = lploss(Du, f)
     # f2 = torch.zeros(Du2.shape, device=u.device)
     # loss_f2 = F.mse_loss(Du2, f2)
@@ -400,13 +517,14 @@ for ep in range(epochs):
 
         optimizer.zero_grad()
 
-        x_in = F.pad(x, (0,0,0,10), "constant", 0)
-        out = model(x_in).reshape(batch_size,S,S,T+10)
-        out = out[..., :-10]
+        x_in = F.pad(x, (0,0,0,T_pad), "constant", 0)
+        out, DX = model(x_in)
+        out = out.view(batch_size, S, S, T+T_pad)
+        # out = out[..., :-T_pad]
         x = x[:, :, :, 0, -1]
 
-        loss = myloss(out.view(batch_size, S, S, T), y.view(batch_size, S, S, T))
-        loss_ic, loss_f = PINO_loss(out.view(batch_size, S, S, T), x)
+        loss = myloss(out[..., :T].view(batch_size, S, S, T), y.view(batch_size, S, S, T))
+        loss_ic, loss_f = PINO_loss(out.view(batch_size, S, S, T+T_pad), x, DX)
         pino_loss = (loss_ic + loss_f)
 
         pino_loss.backward()
@@ -421,7 +539,7 @@ for ep in range(epochs):
 
     if ep % 1000 == 1:
         y = y[0,:,:,:].cpu().numpy()
-        out = out[0,:,:,:].detach().cpu().numpy()
+        out = out[0,:,:,:T].detach().cpu().numpy()
 
         fig, ax = plt.subplots(2, 4)
         ax[0,0].imshow(y[..., 16])
