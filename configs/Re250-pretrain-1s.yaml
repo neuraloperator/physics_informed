@@ -1,0 +1,38 @@
+data:
+  datapath: 'data/NS_fine_Re250_T128_part0.npy'
+  Re: 250
+  total_num: 100
+  offset: 0
+  n_sample: 190
+  time_interval: 1.0
+  nx: 128
+  nt: 128
+  sub: 1
+  sub_t: 2
+  shuffle: True
+
+
+model:
+  layers: [32, 32, 32, 32, 32]
+  modes1: [16, 16, 16, 16]
+  modes2: [16, 16, 16, 16]
+  modes3: [16, 16, 16, 16]
+  fc_dim: 128
+
+train:
+  batchsize: 1
+  epochs: 150
+  milestones: [25, 50, 75, 100]
+  base_lr: 0.001
+  scheduler_gamma: 0.5
+  ic_loss: 1.0
+  f_loss: 1.0
+  xy_loss: 5.0
+  save_dir: 'Re250-FDM'
+  save_name: 'PINO-pretrain-Re250-1s.pt'
+
+others:
+  project: 'PINO-pretrain'
+  group: 'Re250-1s'
+
+

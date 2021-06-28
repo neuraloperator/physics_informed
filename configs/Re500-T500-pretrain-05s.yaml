@@ -24,13 +24,15 @@ train:
   milestones: [25, 50, 75]
   base_lr: 0.001
   scheduler_gamma: 0.5
-#  ckpt: 'checkpoints/Re500-FDM/PINO_FDM_Re500_T500.pt'
   ic_loss: 1.0
   f_loss: 1.0
   xy_loss: 5.0
   save_dir: 'Re500-FDM'
-  save_name: 'PINO-pretrain-T500-05s-newloss.pt'
-  log: True
+  save_name: 'PINO-pretrain-T500-05s.pt'
+
+others:
+  project: 'PINO-pretrain'
+  group: 'Re500-0.5s'
 
 
 

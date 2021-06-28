@@ -167,9 +167,69 @@ class NS500Loader(object):
 
     def rearrange(self, data):
         new_data = torch.zeros(self.N, self.S, self.S, self.T)
-        for i in range(self.N//2):
+        for i in range(self.N // 2):
             new_data[2 * i] = data[i, :, :, :65]
             new_data[2 * i + 1] = data[i, :, :, 64:]
+        return new_data
+
+
+class NSLoader(object):
+    def __init__(self, datapath1, datapath2,
+                 nx, nt, sub=1, sub_t=1,
+                 N=100, t_interval=1.0):
+        self.N = N
+        self.S = nx // sub
+        self.T = int(nt * t_interval) // sub_t + 1
+        data1 = np.load(datapath1)
+        data2 = np.load(datapath2)
+        data1 = torch.tensor(data1, dtype=torch.float)[..., ::sub_t, ::sub, ::sub]
+        data2 = torch.tensor(data2, dtype=torch.float)[..., ::sub_t, ::sub, ::sub]
+        if t_interval == 0.5:
+            data1 = self.extract(data1)
+            data2 = self.extract(data2)
+        part1 = data1.permute(0, 2, 3, 1)
+        part2 = data2.permute(0, 2, 3, 1)
+        self.data = torch.cat((part1, part2), dim=0)
+
+    def make_loader(self, n_sample, batch_size, start=0, train=True):
+        if train:
+            a_data = self.data[start:start + n_sample, :, :, 0].reshape(n_sample, self.S, self.S)
+            u_data = self.data[start:start + n_sample].reshape(n_sample, self.S, self.S, self.T)
+        else:
+            a_data = self.data[-n_sample:, :, :, 0].reshape(n_sample, self.S, self.S)
+            u_data = self.data[-n_sample:].reshape(n_sample, self.S, self.S, self.T)
+        a_data = a_data.reshape(n_sample, self.S, self.S, 1, 1).repeat([1, 1, 1, self.T, 1])
+        gridx, gridy, gridt = get_grid3d(self.S, self.T)
+        a_data = torch.cat((gridx.repeat([n_sample, 1, 1, 1, 1]), gridy.repeat([n_sample, 1, 1, 1, 1]),
+                            gridt.repeat([n_sample, 1, 1, 1, 1]), a_data), dim=-1)
+        dataset = torch.utils.data.TensorDataset(a_data, u_data)
+        loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=train)
+        return loader
+
+    @staticmethod
+    def extract(data):
+        '''
+        Extract data with time range 0-0.5, 0.25-0.75, 0.5-1.0, 0.75-1.25,...
+        Args:
+            data: tensor with size N x 129 x 128 x 128
+
+        Returns:
+            output: (4*N-1) x 64 x 128 x 128
+        '''
+        T = data.shape[1] // 2
+        interval = data.shape[1] // 4
+        N = data.shape[0]
+        new_data = torch.zeros(4 * N - 1, T + 1, data.shape[2], data.shape[3])
+        for i in range(N):
+            for j in range(4):
+                if i == N - 1 and j == 3:
+                    # reach boundary
+                    break
+                if j != 3:
+                    new_data[i * 4 + j] = data[i, interval * j:interval * j + T + 1]
+                else:
+                    new_data[i * 4 + j, 0: interval] = data[i, interval * j:interval * j + interval]
+                    new_data[i * 4 + j, interval: T + 1] = data[i + 1, 0:interval + 1]
         return new_data
 
 
@@ -256,7 +316,7 @@ class NS40data(Dataset):
         self.x, self.y, self.t, self.vor = self.sample_xyt()
         self.ux, self.uy = self.convert2vel()
         self.u_gt = self.ux.reshape(-1).unsqueeze(0).permute(1, 0)
-        self.v_gt =self.ux.reshape(-1).unsqueeze(0).permute(1, 0)
+        self.v_gt = self.ux.reshape(-1).unsqueeze(0).permute(1, 0)
 
     def __len__(self):
         return len(self.x)

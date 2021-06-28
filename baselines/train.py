@@ -56,8 +56,8 @@ class Baselinetrainer(object):
 
             pred_col_uvwp = self.model(self.col_xyzt)
             f_loss = self.loss_f(pred_col_uvwp, self.col_xyzt, re=re)
-
-            total_loss = alpha * bd_loss + beta * ini_loss + f_loss
+            gt_loss = mse(pred_col_uvwp, self.col_uvwp)
+            total_loss = alpha * bd_loss + beta * ini_loss + f_loss + gt_loss * 100
             total_loss.backward()
             optimizer.step()
             if scheduler is not None:
@@ -66,7 +66,8 @@ class Baselinetrainer(object):
             pbar.set_description(
                 (
                     f'Total loss: {total_loss.item():.6f}, f loss: {f_loss.item():.7f} '
-                    f'Boundary loss : {bd_loss.item():.7f}, initial loss: {ini_loss.item():.7f}'
+                    f'Boundary loss : {bd_loss.item():.7f}, initial loss: {ini_loss.item():.7f} '
+                    f'Gt loss: {gt_loss.item():.6f}'
                 )
             )
             if e % 500 == 0:

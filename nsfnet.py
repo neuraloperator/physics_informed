@@ -20,4 +20,4 @@ if __name__ == '__main__':
 
     trainer.prepare_data(dataset)
     trainer.train_adam(optimizer, alpha, beta,
-                       iter_num=5000)
+                       iter_num=10000)

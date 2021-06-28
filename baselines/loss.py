@@ -39,7 +39,7 @@ def resf_NS(u, v, p, x, y, t, re=40):
     v_xx, = autograd.grad(outputs=[v_x.sum()], inputs=[x], create_graph=True)
     v_yy, = autograd.grad(outputs=[v_y.sum()], inputs=[y], create_graph=True)
     p_x, = autograd.grad(outputs=[p.sum()], inputs=[x], create_graph=True)
-    p_y, = autograd.grad(outputs=[p.sum()], inputs=[x], create_graph=True)
+    p_y, = autograd.grad(outputs=[p.sum()], inputs=[y], create_graph=True)
     res_x = u_t + u * u_x + v * u_y + p_x - 1 / re * (u_xx + u_yy) - torch.sin(4 * y)
     res_y = v_t + u * v_x + v * v_y + p_y - 1 / re * (v_xx + v_yy)
     evp3 = u_x + v_y

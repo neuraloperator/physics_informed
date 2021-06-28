@@ -62,10 +62,10 @@ class FNN2d(nn.Module):
             x2 = w(x.view(batchsize, self.layers[i], -1)).view(batchsize, self.layers[i+1], size_x, size_y)
             x = x1 + x2
             if i != length - 1:
-                x = F.relu(x)
+                x = F.elu(x)
         x = x.permute(0, 2, 3, 1)
         x = self.fc1(x)
-        x = F.relu(x)
+        x = F.elu(x)
         x = self.fc2(x)
         return x
 
