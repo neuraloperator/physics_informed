@@ -13,9 +13,9 @@ data:
 
 model:
   layers: [32, 32, 32, 32, 32]
-  modes1: [20, 20, 20, 20]
-  modes2: [20, 20, 20, 20]
-  modes3: [20, 20, 20, 20]
+  modes1: [16, 16, 16, 16]
+  modes2: [16, 16, 16, 16]
+  modes3: [16, 16, 16, 16]
   fc_dim: 128
 
 train:
@@ -24,16 +24,16 @@ train:
   milestones: [500, 1500, 3000, 4000, 5000]
   base_lr: 0.0025
   scheduler_gamma: 0.5
-  ckpt: 'checkpoints/Re500-FDM/PINO-pretrain20-Re500-1s.pt'
   ic_loss: 5.0
   f_loss: 1.0
   xy_loss: 0
   save_dir: 'Re500-FDM'
-  save_name: 'PINO-Re500-fintune20-1s.pt'
+  save_name: 'PINO-Re500-1s.pt'
+  ckpt: 'checkpoints/Re300-FDM/PINO-pretrain-Re300-1s.pt'
 
 others:
-  project: 'PINO-finetune'
-  group: 'Re500-finetune20-1s'
+  project: 'PINO-transfer'
+  group: 'Re300to500-1s'
 
 
 

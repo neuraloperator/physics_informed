@@ -1,0 +1,38 @@
+data:
+  datapath: 'data/NS_fine_Re300_T128_part0.npy'
+  Re: 300
+  total_num: 100
+  offset: 193
+  n_sample: 1
+  time_interval: 1.0
+  nx: 128
+  nt: 128
+  sub: 1
+  sub_t: 2
+  shuffle: True
+
+model:
+  layers: [32, 32, 32, 32, 32]
+  modes1: [16, 16, 16, 16]
+  modes2: [16, 16, 16, 16]
+  modes3: [16, 16, 16, 16]
+  fc_dim: 128
+
+train:
+  batchsize: 1
+  epochs: 10000
+  milestones: [500, 1500, 3000, 4000, 6000]
+  base_lr: 0.0025
+  scheduler_gamma: 0.5
+  ic_loss: 5.0
+  f_loss: 1.0
+  xy_loss: 0.0
+  save_dir: 'Re300-FDM'
+  save_name: 'PINO-Re300-1s.pt'
+  ckpt: 'checkpoints/Re350-FDM/PINO-pretrain-Re350-1s.pt'
+
+others:
+  project: 'PINO-transfer'
+  group: 'Re350to300-1s'
+
+

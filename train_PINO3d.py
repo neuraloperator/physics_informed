@@ -1,6 +1,8 @@
 import yaml
 
 import torch
+
+from train_utils import Adam
 from train_utils.data_utils import NS500Loader, NSLoader
 from train_utils.losses import get_forcing
 from train_utils.train_3d import train
@@ -50,8 +52,8 @@ if __name__ == '__main__':
         model.load_state_dict(ckpt['model'])
         print('Weights loaded from %s' % ckpt_path)
 
-    optimizer = torch.optim.Adam(model.parameters(), betas=(0.9, 0.999),
-                                 lr=config['train']['base_lr'])
+    optimizer = Adam(model.parameters(), betas=(0.9, 0.999),
+                     lr=config['train']['base_lr'])
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
                                                      milestones=config['train']['milestones'],
                                                      gamma=config['train']['scheduler_gamma'])
