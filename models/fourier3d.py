@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -58,9 +59,9 @@ class FNN3d(nn.Module):
             x2 = w(x.view(batchsize, self.layers[i], -1)).view(batchsize, self.layers[i+1], size_x, size_y, size_z)
             x = x1 + x2
             if i != length - 1:
-                x = F.elu(x)
+                x = torch.tanh(x)
         x = x.permute(0, 2, 3, 4, 1)
         x = self.fc1(x)
-        x = F.elu(x)
+        x = torch.tanh(x)
         x = self.fc2(x)
         return x

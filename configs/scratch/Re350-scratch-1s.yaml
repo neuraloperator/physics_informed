@@ -12,16 +12,16 @@ data:
   shuffle: True
 
 model:
-  layers: [32, 32, 32, 32, 32]
-  modes1: [16, 16, 16, 16]
-  modes2: [16, 16, 16, 16]
-  modes3: [16, 16, 16, 16]
+  layers: [64, 64, 64, 64, 64]
+  modes1: [8, 8, 8, 8]
+  modes2: [8, 8, 8, 8]
+  modes3: [8, 8, 8, 8]
   fc_dim: 128
 
 train:
   batchsize: 1
   epochs: 10000
-  milestones: [500, 1500, 3000, 4000, 6000]
+  milestones: [1000, 2000, 3000, 4000, 5000]
   base_lr: 0.0025
   scheduler_gamma: 0.5
   ic_loss: 5.0
@@ -31,7 +31,7 @@ train:
   save_name: 'PINO-scratch-Re350-1s.pt'
 
 others:
-  project: 'PINO-finetune'
+  project: 'PINO-scratch-tanh'
   group: 'Re350-scratch-1s'
 
 

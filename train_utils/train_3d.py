@@ -21,11 +21,12 @@ def train(model,
           group='FDM',
           tags=['Nan']):
     if wandb and log:
-        wandb.init(project=project,
-                   entity='hzzheng-pino',
-                   group=group,
-                   config=config,
-                   tags=tags)
+        run = wandb.init(project=project,
+                         entity='hzzheng-pino',
+                         group=group,
+                         config=config,
+                         tags=tags, reinit=True,
+                         settings=wandb.Settings(start_method="fork"))
 
     # data parameters
     v = 1 / config['data']['Re']
@@ -102,6 +103,5 @@ def train(model,
     save_checkpoint(config['train']['save_dir'],
                     config['train']['save_name'],
                     model, optimizer)
-
-
-
+    if wandb and log:
+        run.finish()

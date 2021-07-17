@@ -1,7 +1,7 @@
 import yaml
 
 import torch
-
+# from torch.optim import Adam
 from train_utils import Adam
 from train_utils.data_utils import NS500Loader, NSLoader
 from train_utils.losses import get_forcing

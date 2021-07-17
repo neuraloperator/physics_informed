@@ -174,22 +174,41 @@ class NS500Loader(object):
 
 
 class NSLoader(object):
-    def __init__(self, datapath1, datapath2,
-                 nx, nt, sub=1, sub_t=1,
+    def __init__(self, datapath1,
+                 nx, nt,
+                 datapath2=None, sub=1, sub_t=1,
                  N=100, t_interval=1.0):
+        '''
+        Load data from npy and reshape to (N, X, Y, T)
+        Args:
+            datapath1: path to data
+            nx:
+            nt:
+            datapath2: path to second part of data, default None
+            sub:
+            sub_t:
+            N:
+            t_interval:
+        '''
         self.N = N
         self.S = nx // sub
         self.T = int(nt * t_interval) // sub_t + 1
         data1 = np.load(datapath1)
-        data2 = np.load(datapath2)
         data1 = torch.tensor(data1, dtype=torch.float)[..., ::sub_t, ::sub, ::sub]
-        data2 = torch.tensor(data2, dtype=torch.float)[..., ::sub_t, ::sub, ::sub]
+
+        if datapath2 is not None:
+            data2 = np.load(datapath2)
+            data2 = torch.tensor(data2, dtype=torch.float)[..., ::sub_t, ::sub, ::sub]
         if t_interval == 0.5:
             data1 = self.extract(data1)
-            data2 = self.extract(data2)
+            if datapath2 is not None:
+                data2 = self.extract(data2)
         part1 = data1.permute(0, 2, 3, 1)
-        part2 = data2.permute(0, 2, 3, 1)
-        self.data = torch.cat((part1, part2), dim=0)
+        if datapath2 is not None:
+            part2 = data2.permute(0, 2, 3, 1)
+            self.data = torch.cat((part1, part2), dim=0)
+        else:
+            self.data = part1
 
     def make_loader(self, n_sample, batch_size, start=0, train=True):
         if train:

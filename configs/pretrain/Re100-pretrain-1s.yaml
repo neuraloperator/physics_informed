@@ -3,7 +3,7 @@ data:
   Re: 100
   total_num: 100
   offset: 0
-  n_sample: 190
+  n_sample: 200
   time_interval: 1.0
   nx: 128
   nt: 128
@@ -11,12 +11,11 @@ data:
   sub_t: 2
   shuffle: True
 
-
 model:
-  layers: [32, 32, 32, 32, 32]
-  modes1: [16, 16, 16, 16]
-  modes2: [16, 16, 16, 16]
-  modes3: [16, 16, 16, 16]
+  layers: [64, 64, 64, 64, 64]
+  modes1: [8, 8, 8, 8]
+  modes2: [8, 8, 8, 8]
+  modes3: [8, 8, 8, 8]
   fc_dim: 128
 
 train:
@@ -33,6 +32,6 @@ train:
 
 others:
   project: 'PINO-pretrain'
-  group: 'Re100-1s'
+  group: 'Re100-1s-tanh'
 
 
