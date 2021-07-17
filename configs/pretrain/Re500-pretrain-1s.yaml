@@ -1,9 +1,9 @@
 data:
-  datapath: 'data/NS_fine_Re500_S2048_s64_T500_t128.npy'
+  datapath: 'data/NS_fine_Re400_T128_part0.npy'
   Re: 500
-  total_num: 500
+  total_num: 100
   offset: 0
-  n_sample: 500
+  n_sample: 200
   time_interval: 1
   nx: 64
   nt: 128
