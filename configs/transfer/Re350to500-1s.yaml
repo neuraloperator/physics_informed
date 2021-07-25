@@ -5,9 +5,9 @@ data:
   offset: 0
   n_sample: 1
   time_interval: 1
-  nx: 256
+  nx: 128
   nt: 128
-  sub: 2
+  sub: 1
   sub_t: 2
   shuffle: True
 

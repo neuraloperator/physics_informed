@@ -21,8 +21,8 @@ model:
 train:
   batchsize: 1
   epochs: 8000
-  milestones: [500, 1500, 2500, 3500, 4500, 5500, 6500, 7500]
-  base_lr: 0.0032
+  milestones: [1000, 2000, 3000, 4000, 5000, 6000, 7000]
+  base_lr: 0.0025
   scheduler_gamma: 0.5
   ic_loss: 5.0
   f_loss: 1.0

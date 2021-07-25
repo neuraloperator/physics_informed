@@ -2,7 +2,7 @@ data:
   datapath: 'data/NS_fine_Re350_T128_part0.npy'
   Re: 350
   total_num: 100
-  offset: 199
+  offset: 0
   n_sample: 1
   time_interval: 1.0
   nx: 128
@@ -20,8 +20,8 @@ model:
 
 train:
   batchsize: 1
-  epochs: 10000
-  milestones: [1000, 2000, 3000, 4000, 5000]
+  epochs: 8000
+  milestones: [1000, 2000, 3000, 4000, 5000, 6000, 7000]
   base_lr: 0.0025
   scheduler_gamma: 0.5
   ic_loss: 5.0

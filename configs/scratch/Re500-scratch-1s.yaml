@@ -2,12 +2,12 @@ data:
   datapath: 'data/NS_fine_Re500_T128_part2.npy'
   Re: 500
   total_num: 100
-  offset: 99
+  offset: 0
   n_sample: 1
   time_interval: 1
-  nx: 256
+  nx: 128
   nt: 128
-  sub: 2
+  sub: 1
   sub_t: 2
   shuffle: True
 
@@ -21,7 +21,7 @@ model:
 train:
   batchsize: 1
   epochs: 8000
-  milestones: [500, 1500, 2500, 3500, 4500, 5500, 6500, 7500]
+  milestones: [1000, 2000, 3000, 4000, 5000, 6000, 7000]
   base_lr: 0.0025
   scheduler_gamma: 0.5
   ic_loss: 5.0

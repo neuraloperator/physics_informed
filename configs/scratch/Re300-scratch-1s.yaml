@@ -22,7 +22,7 @@ train:
   batchsize: 1
   epochs: 8000
   milestones: [1000, 2000, 3000, 4000, 5000, 6000, 7000]
-  base_lr: 0.003
+  base_lr: 0.0025
   scheduler_gamma: 0.5
   ic_loss: 5.0
   f_loss: 1.0
