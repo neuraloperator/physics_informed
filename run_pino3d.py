@@ -39,7 +39,8 @@ def run_instance(ind, loader, config, data_config):
           device,
           log=options.log,
           project=config['others']['project'],
-          group=config['others']['group'])
+          group=config['others']['group'],
+          use_tqdm=False)
 
 
 if __name__ == '__main__':

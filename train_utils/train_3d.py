@@ -19,7 +19,8 @@ def train(model,
           log=False,
           project='PINO-default',
           group='FDM',
-          tags=['Nan']):
+          tags=['Nan'],
+          use_tqdm=True):
     if wandb and log:
         run = wandb.init(project=project,
                          entity='hzzheng-pino',
@@ -41,7 +42,9 @@ def train(model,
 
     model.train()
     myloss = LpLoss(size_average=True)
-    pbar = tqdm(range(config['train']['epochs']), dynamic_ncols=True, smoothing=0.01)
+    pbar = range(config['train']['epochs'])
+    if use_tqdm:
+        pbar = tqdm(pbar, dynamic_ncols=True, smoothing=0.05)
     zero = torch.zeros(1).to(device)
     for ep in pbar:
         model.train()
