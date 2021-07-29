@@ -85,13 +85,13 @@ def train(model,
         train_loss /= len(train_loader)
         test_l2 /= len(train_loader)
         t2 = default_timer()
-
-        pbar.set_description(
-            (
-                f'Train f error: {train_f:.5f}; Train ic l2 error: {train_ic:.5f}. '
-                f'Train loss: {train_loss:.5f}; Test l2 error: {test_l2:.5f}'
+        if use_tqdm:
+            pbar.set_description(
+                (
+                    f'Train f error: {train_f:.5f}; Train ic l2 error: {train_ic:.5f}. '
+                    f'Train loss: {train_loss:.5f}; Test l2 error: {test_l2:.5f}'
+                )
             )
-        )
         if wandb and log:
             wandb.log(
                 {
