@@ -13,7 +13,7 @@ class FNN1d(nn.Module):
         super(FNN1d, self).__init__()
 
         """
-        The overall network. It contains 4 layers of the Fourier layer.
+        The overall network. It contains several layers of the Fourier layer.
         1. Lift the input to the desire channel dimension by self.fc0 .
         2. 4 layers of the integral operators u' = (W + K)(u).
             W defined by self.w; K defined by self.conv .
@@ -30,7 +30,7 @@ class FNN1d(nn.Module):
         if layers is None:
             layers = [width] * 4
 
-        self.fc0 = nn.Linear(2, layers[-1])  # input channel is 2: (a(x), x)
+        self.fc0 = nn.Linear(2, layers[0])  # input channel is 2: (a(x), x)
 
         self.sp_convs = nn.ModuleList([SpectralConv1d(
             in_size, out_size, self.modes1) for in_size, out_size in zip(layers, layers[1:])])

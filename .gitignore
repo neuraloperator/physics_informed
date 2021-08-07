@@ -6,3 +6,4 @@ figs
 checkpoints
 *.pt
 .ipynb_checkpoints
+*.ipynb

@@ -25,7 +25,6 @@ def compl_mul3d(a, b):
 
 
 class SpectralConv1d(nn.Module):
-    # TODO: update code to pytorch 1.8.1
     def __init__(self, in_channels, out_channels, modes1):
         super(SpectralConv1d, self).__init__()
 
@@ -45,16 +44,14 @@ class SpectralConv1d(nn.Module):
     def forward(self, x):
         batchsize = x.shape[0]
         # Compute Fourier coeffcients up to factor of e^(- something constant)
-        x_ft = torch.rfft(x, 1, normalized=True, onesided=True)
+        x_ft = torch.fft.rfftn(x, dim=[2])
 
         # Multiply relevant Fourier modes
-        out_ft = torch.zeros(batchsize, self.in_channels,
-                             x.size(-1)//2 + 1, 2, device=x.device)
-        out_ft[:, :, :self.modes1] = compl_mul1d(
-            x_ft[:, :, :self.modes1], self.weights1)
+        out_ft = torch.zeros(batchsize, self.in_channels, x.size(-1)//2 + 1, device=x.device, dtype=torch.cfloat)
+        out_ft[:, :, :self.modes1] = compl_mul1d(x_ft[:, :, :self.modes1], self.weights1)
 
         # Return to physical space
-        x = torch.fft.irfft(out_ft)
+        x = torch.fft.irfft(out_ft, s=[x.size(-1)], dim=[2])
         return x
 
 ################################################################
