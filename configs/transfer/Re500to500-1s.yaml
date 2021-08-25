@@ -29,10 +29,10 @@ train:
   xy_loss: 0.0
   save_dir: 'Re500-FDM'
   save_name: 'PINO-Re500-1s.pt'
-  ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-Re500-1s.pt'
+  ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-Re500-1s-repro.pt'
 
 others:
-  project: 'PINO-transfer-tanh'
-  group: 'Re500to500-1s'
+  project: 'PINO-transfer'
+  group: 'Re500to500-1s-new'
 
 

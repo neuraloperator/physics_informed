@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import torch
-import torch.autograd as autograd
 
 
 def get_sample(N, T, s, p, q):
@@ -48,6 +47,15 @@ def get_grid3d(S, T):
     gridt = torch.tensor(np.linspace(0, 1, T), dtype=torch.float)
     gridt = gridt.reshape(1, 1, 1, T, 1).repeat([1, S, S, 1, 1])
     return gridx, gridy, gridt
+
+
+def convert_ic(u0, N, S, T):
+    u0 = u0.reshape(N, S, S, 1, 1).repeat([1, 1, 1, T, 1])
+    gridx, gridy, gridt = get_grid3d(S, T)
+    a_data = torch.cat((gridx.repeat([N, 1, 1, 1, 1]), gridy.repeat([N, 1, 1, 1, 1]),
+                        gridt.repeat([N, 1, 1, 1, 1]), u0), dim=-1)
+    return a_data
+
 
 
 def requires_grad(model, flag=True):

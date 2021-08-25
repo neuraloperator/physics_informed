@@ -141,7 +141,7 @@ class SpectralConv3d(nn.Module):
         super(SpectralConv3d, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.modes1 = modes1 #Number of Fourier modes to multiply, at most floor(N/2) + 1
+        self.modes1 = modes1  #Number of Fourier modes to multiply, at most floor(N/2) + 1
         self.modes2 = modes2
         self.modes3 = modes3
 
@@ -155,7 +155,6 @@ class SpectralConv3d(nn.Module):
         batchsize = x.shape[0]
         # Compute Fourier coeffcients up to factor of e^(- something constant)
         x_ft = torch.fft.rfftn(x, dim=[2,3,4])
-
         # Multiply relevant Fourier modes
         out_ft = torch.zeros(batchsize, self.out_channels, x.size(2), x.size(3), x.size(4)//2 + 1, device=x.device, dtype=torch.cfloat)
         out_ft[:, :, :self.modes1, :self.modes2, :self.modes3] = \
