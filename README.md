@@ -6,12 +6,8 @@
 - tqdm
 
 ## Description
-To train on Navier Stokes equations with Reynolds number 500, use
+To train on Navier Stokes equations, use
 ```bash
-python3 train_PINO3d.py --config_path configs/***.yaml 
+python3 train_PINO3d.py --config_path configs/***.yaml --num_gpus 1 
 ```
-
-To train on Navier Stokes equations with Reynolds number 100, 200, 250, 300, 350, 400, add '--new' to switch data loader to read data.
-```bash
-python3 train_PINO3d.py --config_path configs/***.yaml --new
-```
+see .yaml files under folder `configs` for example. 

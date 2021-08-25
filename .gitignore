@@ -4,6 +4,7 @@ __pycache__
 .idea
 figs
 checkpoints
-*.pt
 .ipynb_checkpoints
 *.ipynb
+*.pt
+*.pth

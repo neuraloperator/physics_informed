@@ -8,7 +8,7 @@ from models import FNN2d
 from tqdm import tqdm
 from timeit import default_timer
 from train_utils.utils import count_params, save_checkpoint
-from train_utils.data_utils import BurgersLoader
+from train_utils.datasets import BurgersLoader
 from train_utils.losses import LpLoss, PINO_loss
 
 try:

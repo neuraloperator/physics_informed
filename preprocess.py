@@ -8,7 +8,7 @@ import torch
 import torch.nn.functional as F
 
 from train_utils import Adam
-from train_utils.data_utils import NSLoader
+from train_utils.datasets import NSLoader
 from train_utils.losses import get_forcing
 from train_utils.train_3d import train
 from models import FNN3d

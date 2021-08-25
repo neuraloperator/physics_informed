@@ -30,7 +30,7 @@ train:
   f_loss: 1.0
   xy_loss: 5.0
   save_dir: 'Re500-FDM'
-  save_name: 'PINO-pretrain-Re500-1s-repro.pt'
+  save_name: 'PINO-pretrain-Re500-1s.pt'
 
 others:
   project: 'PINO-pretrain'

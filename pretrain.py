@@ -11,7 +11,7 @@ from solver.random_fields import GaussianRF
 from train_utils.utils import save_checkpoint, convert_ic
 from train_utils.losses import LpLoss, PINO_loss3d, get_forcing
 from train_utils import Adam
-from train_utils.data_utils import NSLoader
+from train_utils.datasets import NSLoader
 from models import FNN3d
 
 try:

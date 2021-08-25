@@ -3,7 +3,7 @@ import yaml
 import torch
 
 from train_utils import Adam
-from train_utils.data_utils import NSLoader
+from train_utils.datasets import NSLoader
 from train_utils.train_3d import progressive_train
 
 from models import FNN3d
