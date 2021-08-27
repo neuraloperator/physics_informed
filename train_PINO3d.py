@@ -12,6 +12,7 @@ from train_utils.data_utils import data_sampler
 from train_utils.losses import get_forcing
 from train_utils.train_3d import train
 from train_utils.distributed import setup, cleanup
+from train_utils.utils import requires_grad
 
 from models import FNN3d
 
@@ -70,7 +71,17 @@ def subprocess_fn(rank, args):
     if args.distributed:
         model = DDP(model, device_ids=[rank], broadcast_buffers=False)
 
-    optimizer = Adam(model.parameters(), betas=(0.9, 0.999),
+    requires_grad(model, False)
+    requires_grad(model.sp_convs[-1], True)
+    requires_grad(model.ws[-1], True)
+    requires_grad(model.fc1, True)
+    requires_grad(model.fc2, True)
+    params_to_udpate = []
+    for param in model.parameters():
+        if param.requires_grad == True:
+            params_to_udpate.append(param)
+
+    optimizer = Adam(params_to_udpate, betas=(0.9, 0.999),
                      lr=config['train']['base_lr'])
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
                                                      milestones=config['train']['milestones'],

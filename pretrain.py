@@ -8,6 +8,7 @@ import torch
 import torch.nn.functional as F
 
 from solver.random_fields import GaussianRF
+from train_utils.data_utils import sample_data
 from train_utils.utils import save_checkpoint, convert_ic
 from train_utils.losses import LpLoss, PINO_loss3d, get_forcing
 from train_utils import Adam
@@ -59,6 +60,8 @@ def mixed_train(model,              # model of neural operator
     if use_tqdm:
         pbar = tqdm(pbar, dynamic_ncols=True, smoothing=0.05)
     zero = torch.zeros(1).to(device)
+
+    a_loader = sample_data(a_loader)
     for ep in pbar:
         model.train()
         t1 = default_timer()
@@ -67,7 +70,7 @@ def mixed_train(model,              # model of neural operator
         train_f = 0.0
         test_l2 = 0.0
         err_eqn = 0.0
-        for (x, y), new_a in zip(train_loader, a_loader):
+        for x, y in train_loader:
             # Stage 1: train with data
             x, y = x.to(device), y.to(device)
 
@@ -98,6 +101,7 @@ def mixed_train(model,              # model of neural operator
             train_f += loss_f.item()
 
             # Stage 2: train with equation loss only
+            new_a = next(a_loader)
             new_a = new_a[0].to(device)
             optimizer.zero_grad()
             x_in = F.pad(new_a, (0, 0, 0, 5), "constant", 0)
