@@ -8,6 +8,11 @@
 ## Description
 To train on Navier Stokes equations, use
 ```bash
-python3 train_PINO3d.py --config_path configs/***.yaml --num_gpus 1 
+python3 train_PINO3d.py --config_path configs/***.yaml 
 ```
-see .yaml files under folder `configs` for example. 
+Configuration file format: see .yaml files under folder `configs` for example.
+
+To pretrain neural operator, use
+```bash
+python3 pretrain.py --config_path configs/pretrain/**.yaml
+```

@@ -1,5 +1,6 @@
 data:
   datapath: 'data/NS_fine_Re200_T128_part0.npy'
+  datapath2: 'data/NS_fine_Re200_T128_part1.npy'
   Re: 200
   total_num: 100
   offset: 0

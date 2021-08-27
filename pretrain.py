@@ -159,7 +159,6 @@ if __name__ == '__main__':
     parser = ArgumentParser(description='Basic paser')
     parser.add_argument('--config_path', type=str, help='Path to the configuration file')
     parser.add_argument('--log', action='store_true', help='Turn on the wandb')
-    parser.add_argument('--new', action='store_true', help='Use new data loader')
     options = parser.parse_args()
 
     config_file = options.config_path
@@ -169,9 +168,8 @@ if __name__ == '__main__':
     data_config = config['data']
 
     # prepare dataloader for training with data
-    if options.new:
-        datapath2 = data_config['datapath'].replace('part0', 'part1')
-        loader = NSLoader(datapath1=data_config['datapath'], datapath2=datapath2,
+    if 'datapath2' in data_config:
+        loader = NSLoader(datapath1=data_config['datapath'], datapath2=data_config['datapath2'],
                           nx=data_config['nx'], nt=data_config['nt'],
                           sub=data_config['sub'], sub_t=data_config['sub_t'],
                           N=data_config['total_num'],
