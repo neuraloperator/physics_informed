@@ -1,19 +1,15 @@
 data:
-  datapath: 'data/NS_fine_Re500_T128_part0.npy'
-  datapath2: 'data/NS_fine_Re500_T128_part1.npy'
+  datapath: 'data/NS_fine_Re500_s2048_T100.npy'
   Re: 500
   total_num: 100
   offset: 0
   n_sample: 200
-  time_interval: 1
-  nx: 128
+  time_interval: 0.5
+  nx: 256
   nt: 128
   sub: 1
-  sub_t: 1
+  sub_t: 2
   shuffle: True
-  num_ics: 200
-  S2: 128
-  T2: 128
 
 model:
   layers: [64, 64, 64, 64, 64]
@@ -24,18 +20,20 @@ model:
 
 train:
   batchsize: 1
-  epochs: 150
+  epochs: 125
   milestones: [25, 50, 75, 100]
   base_lr: 0.001
   scheduler_gamma: 0.5
-  ic_loss: 5.0
+  ic_loss: 1.0
   f_loss: 1.0
-  xy_loss: 0.0
+  xy_loss: 5.0
   save_dir: 'Re500-FDM'
-  save_name: 'PINO-pretrain-Re500-1s-eqn256.pt'
+  save_name: 'PINO-pretrain-05s-256.pt'
 
 others:
   project: 'PINO-pretrain'
-  group: 'Re500-1s-eqn'
+  group: 'Re500-0.5s-256'
+
+
 
 

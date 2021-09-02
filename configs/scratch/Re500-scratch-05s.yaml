@@ -2,26 +2,26 @@ data:
   datapath: 'data/NS_fine_Re500_s2048_T100.npy'
   Re: 500
   total_num: 100
-  offset: 199
+  offset: 0
   n_sample: 1
   time_interval: 0.5
   nx: 256
   nt: 128
-  sub: 2
+  sub: 1
   sub_t: 1
   shuffle: False
 
 model:
-  layers: [32, 32, 32, 32, 32]
-  modes1: [20, 20, 20, 20]
-  modes2: [20, 20, 20, 20]
-  modes3: [20, 20, 20, 20]
+  layers: [64, 64, 64, 64, 64]
+  modes1: [8, 8, 8, 8]
+  modes2: [8, 8, 8, 8]
+  modes3: [8, 8, 8, 8]
   fc_dim: 128
 
 train:
   batchsize: 1
-  epochs: 9000
-  milestones: [500, 1500, 3000, 4000, 5000]
+  epochs: 8000
+  milestones: [1000, 2000, 3000, 4000, 5000, 6000]
   base_lr: 0.0025
   scheduler_gamma: 0.5
   ic_loss: 5.0
@@ -31,7 +31,7 @@ train:
   save_name: 'PINO-scratch-T100-05s.pt'
 
 others:
-  project: 'PINO-finetune'
-  group: 'Re500-0.5s-scratch'
+  project: 'PINO-scratch-05'
+  group: 'Re500'
 
 

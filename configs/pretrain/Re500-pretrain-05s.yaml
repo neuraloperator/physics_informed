@@ -9,7 +9,7 @@ data:
   nx: 128
   nt: 128
   sub: 1
-  sub_t: 1
+  sub_t: 2
   shuffle: True
   num_ics: 200
   S2: 128
@@ -28,14 +28,14 @@ train:
   milestones: [25, 50, 75, 100]
   base_lr: 0.001
   scheduler_gamma: 0.5
-  ic_loss: 5.0
+  ic_loss: 1.0
   f_loss: 1.0
-  xy_loss: 0.0
+  xy_loss: 5.0
   save_dir: 'Re500-FDM'
-  save_name: 'PINO-pretrain-Re500-1s-eqn256.pt'
+  save_name: 'PINO-pretrain-Re500-05s.pt'
 
 others:
   project: 'PINO-pretrain'
-  group: 'Re500-1s-eqn'
+  group: 'Re500-1s'
 
 
