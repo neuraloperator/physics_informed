@@ -10,7 +10,7 @@ from train_utils.datasets import NSLoader
 from train_utils.utils import save_checkpoint
 from train_utils.losses import LpLoss, PINO_loss3d, get_forcing
 from train_utils.train_3d import train
-from models.one import FNet
+from models.trial import FNet
 from argparse import ArgumentParser
 
 

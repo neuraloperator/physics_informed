@@ -70,22 +70,23 @@ def get_grid(N, T, s):
     return grid, gridt, gridx
 
 
-def get_grid3d(S, T):
-    gridx = torch.tensor(np.linspace(0, 1, S + 1)[:-1], dtype=torch.float)
+def get_grid3d(S, T, time_scale=1.0, device='cpu'):
+    gridx = torch.tensor(np.linspace(0, 1, S + 1)[:-1], dtype=torch.float, device=device)
     gridx = gridx.reshape(1, S, 1, 1, 1).repeat([1, 1, S, T, 1])
-    gridy = torch.tensor(np.linspace(0, 1, S + 1)[:-1], dtype=torch.float)
+    gridy = torch.tensor(np.linspace(0, 1, S + 1)[:-1], dtype=torch.float, device=device)
     gridy = gridy.reshape(1, 1, S, 1, 1).repeat([1, S, 1, T, 1])
-    gridt = torch.tensor(np.linspace(0, 1, T), dtype=torch.float)
+    gridt = torch.tensor(np.linspace(0, 1 * time_scale, T), dtype=torch.float, device=device)
     gridt = gridt.reshape(1, 1, 1, T, 1).repeat([1, S, S, 1, 1])
     return gridx, gridy, gridt
 
 
-def convert_ic(u0, N, S, T):
+def convert_ic(u0, N, S, T, time_scale=1.0):
     u0 = u0.reshape(N, S, S, 1, 1).repeat([1, 1, 1, T, 1])
-    gridx, gridy, gridt = get_grid3d(S, T)
+    gridx, gridy, gridt = get_grid3d(S, T, time_scale=time_scale, device=u0.device)
     a_data = torch.cat((gridx.repeat([N, 1, 1, 1, 1]), gridy.repeat([N, 1, 1, 1, 1]),
                         gridt.repeat([N, 1, 1, 1, 1]), u0), dim=-1)
     return a_data
+
 
 
 def requires_grad(model, flag=True):

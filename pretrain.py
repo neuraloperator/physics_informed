@@ -70,6 +70,17 @@ def mixed_train(model,              # model of neural operator
         train_f = 0.0
         test_l2 = 0.0
         err_eqn = 0.0
+        #TODO: 1. generate ICs online
+        #      2. configuration file: add option for a loader's size
+        #      3. Adapt the template below
+        #      4.
+        for i in range(10):
+            pass
+            #call train data
+        for j in range(1):
+            # train equation
+            pass
+
         for x, y in train_loader:
             # Stage 1: train with data
             x, y = x.to(device), y.to(device)
@@ -123,7 +134,7 @@ def mixed_train(model,              # model of neural operator
         train_f /= len(train_loader)
         train_loss /= len(train_loader)
         test_l2 /= len(train_loader)
-        err_eqn /= len(a_loader)
+        err_eqn /= len(train_loader)  # a_loader length
         t2 = default_timer()
         if use_tqdm:
             pbar.set_description(

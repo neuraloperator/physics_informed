@@ -125,9 +125,9 @@ class NSLoader(object):
             N:
             t_interval:
         '''
-        self.N = N
         self.S = nx // sub
         self.T = int(nt * t_interval) // sub_t + 1
+        self.time_scale = t_interval
         data1 = np.load(datapath1)
         data1 = torch.tensor(data1, dtype=torch.float)[..., ::sub_t, ::sub, ::sub]
 
@@ -153,7 +153,7 @@ class NSLoader(object):
             a_data = self.data[-n_sample:, :, :, 0].reshape(n_sample, self.S, self.S)
             u_data = self.data[-n_sample:].reshape(n_sample, self.S, self.S, self.T)
         a_data = a_data.reshape(n_sample, self.S, self.S, 1, 1).repeat([1, 1, 1, self.T, 1])
-        gridx, gridy, gridt = get_grid3d(self.S, self.T)
+        gridx, gridy, gridt = get_grid3d(self.S, self.T, time_scale=self.time_scale)
         a_data = torch.cat((gridx.repeat([n_sample, 1, 1, 1, 1]), gridy.repeat([n_sample, 1, 1, 1, 1]),
                             gridt.repeat([n_sample, 1, 1, 1, 1]), a_data), dim=-1)
         dataset = torch.utils.data.TensorDataset(a_data, u_data)
@@ -182,7 +182,7 @@ class NSLoader(object):
             data: tensor with size N x 129 x 128 x 128
 
         Returns:
-            output: (4*N-1) x 64 x 128 x 128
+            output: (4*N-1) x 65 x 128 x 128
         '''
         T = data.shape[1] // 2
         interval = data.shape[1] // 4
