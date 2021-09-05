@@ -92,8 +92,8 @@ if __name__ == '__main__':
 
     idx = data_config['offset']
     n_sample = data_config['n_sample']
-    print(f'Test instance: {idx} to {idx+n_sample}'
-          f'Time cost = mean: {time_cost.mean()}; std_err: {time_cost.std(ddof=1) / math.sqrt(len(a_loader))}; \n'
+    print(f'Test instance: {idx} to {idx+n_sample}; \n'
+          f'Time cost = mean: {time_cost.mean()}s; std_err: {time_cost.std(ddof=1) / math.sqrt(len(a_loader))}s; \n'
           f'Solver resolution: {loader.S} x {loader.S} x {loader.T}; \n'
           f'Test L2 error = mean: {test_err.mean()}; std_err: {test_err.std(ddof=1) / math.sqrt(len(a_loader))}')
 
