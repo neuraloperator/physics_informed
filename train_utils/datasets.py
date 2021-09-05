@@ -9,7 +9,16 @@ except ImportError:
 
 import torch
 from torch.utils.data import Dataset
-from train_utils.utils import get_grid3d, vor2vel
+from .utils import get_grid3d, vor2vel, convert_ic
+
+
+def online_loader(sampler, S, T, time_scale, batchsize=1):
+    while True:
+        u0 = sampler.sample(batchsize)
+        a = convert_ic(u0, batchsize,
+                       S, T,
+                       time_scale=time_scale)
+        yield a
 
 
 def sample_data(loader):

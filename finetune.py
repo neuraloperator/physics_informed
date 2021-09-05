@@ -66,6 +66,10 @@ def subprocess_fn(rank, args):
     if args.distributed:
         model = DDP(model, device_ids=[rank], broadcast_buffers=False)
 
+    # Only finetune the last two layers.
+    # To finetune the whole model, comment out the code for params_to_update
+    # and change the optimizer construction step to:
+    # Adam(model.parameters(), beta=(0.9, 0.999), lr=config['train']['base_lr'])
     requires_grad(model, False)
     requires_grad(model.sp_convs[-1], True)
     requires_grad(model.ws[-1], True)
@@ -86,10 +90,11 @@ def subprocess_fn(rank, args):
           loader, train_loader,
           optimizer, scheduler,
           forcing, config,
-          rank,
+          rank=rank,
           log=args.log,
           project=config['others']['project'],
-          group=config['others']['group'])
+          group=config['others']['group'],
+          profile=True)
 
     if args.distributed:
         cleanup()

@@ -2,12 +2,12 @@ data:
   datapath: 'data/NS_fine_Re500_s2048_T100.npy'
   Re: 500
   total_num: 100
-  offset: 300
-  n_sample: 10
+  offset: 303
+  n_sample: 1
   time_interval: 0.5
   nx: 256
   nt: 128
-  sub: 8
+  sub: 2
   sub_t: 1
   shuffle: True
 
@@ -21,7 +21,7 @@ model:
 train:
   batchsize: 1
   epochs: 8000
-  milestones: [1000, 2000, 3000, 4000, 5000, 6000]
+  milestones: [1000, 2000, 3000, 4000, 5000, 6000, 7000]
   base_lr: 0.0025
   scheduler_gamma: 0.5
   ic_loss: 5.0
@@ -29,10 +29,10 @@ train:
   xy_loss: 0.0
   save_dir: 'Re500-FDM'
   save_name: 'PINO-Re500-05.pt'
-  ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-Re500-1s.pt'
+  ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-05s-256.pt'
 
 others:
   project: 'PINO-transfer-0.5s'
-  group: 'Re500to500'
+  group: 'Re500to500-128'
 
 
