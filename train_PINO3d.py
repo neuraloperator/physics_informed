@@ -12,6 +12,7 @@ from train_utils.data_utils import data_sampler
 from train_utils.losses import get_forcing
 from train_utils.train_3d import train
 from train_utils.distributed import setup, cleanup
+from train_utils.utils import requires_grad
 
 from models import FNN3d
 
@@ -39,10 +40,10 @@ def subprocess_fn(rank, args):
                           sub=data_config['sub'], sub_t=data_config['sub_t'],
                           N=data_config['total_num'],
                           t_interval=data_config['time_interval'])
-
+    if args.start != -1:
+        config['data']['offset'] = args.start
     trainset = loader.make_dataset(data_config['n_sample'],
-                                   start=data_config['offset'],
-                                   train=data_config['shuffle'])
+                               start=data_config['offset'])
     train_loader = DataLoader(trainset, batch_size=config['train']['batchsize'],
                               sampler=data_sampler(trainset,
                                                    shuffle=data_config['shuffle'],
@@ -65,7 +66,20 @@ def subprocess_fn(rank, args):
     if args.distributed:
         model = DDP(model, device_ids=[rank], broadcast_buffers=False)
 
-    optimizer = Adam(model.parameters(), betas=(0.9, 0.999),
+    if 'twolayer' in config['train'] and config['train']['twolayer']:
+        requires_grad(model, False)
+        requires_grad(model.sp_convs[-1], True)
+        requires_grad(model.ws[-1], True)
+        requires_grad(model.fc1, True)
+        requires_grad(model.fc2, True)
+        params = []
+        for param in model.parameters():
+            if param.requires_grad == True:
+                params.append(param)
+    else:
+        params = model.parameters()
+
+    optimizer = Adam(params, betas=(0.9, 0.999),
                      lr=config['train']['base_lr'])
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
                                                      milestones=config['train']['milestones'],
@@ -95,6 +109,7 @@ if __name__ == '__main__':
     parser.add_argument('--config_path', type=str, help='Path to the configuration file')
     parser.add_argument('--log', action='store_true', help='Turn on the wandb')
     parser.add_argument('--num_gpus', type=int, help='Number of GPUs', default=1)
+    parser.add_argument('--start', type=int, default=-1, help='start index')
     args = parser.parse_args()
     args.distributed = args.num_gpus > 1
 

@@ -1,31 +1,33 @@
 #! /bin/bash
-CUDA_VISIBLE_DEVICES=1 python3 run_pino3d.py \
---config_path configs/transfer/Re100to250-1s.yaml \
---start 0 \
---stop 40 \
+CUDA_VISIBLE_DEVICES=1 python3 train_PINO3d.py \
+--config_path configs/scratch/Re500-scratch-05s.yaml \
+--start 1 \
 --log;
-CUDA_VISIBLE_DEVICES=1 python3 run_pino3d.py \
---config_path configs/transfer/Re200to250-1s.yaml \
---start 0 \
---stop 40 \
+CUDA_VISIBLE_DEVICES=1 python3 train_PINO3d.py \
+--config_path configs/scratch/Re500-scratch-05s.yaml \
+--start 2 \
 --log;
-CUDA_VISIBLE_DEVICES=1 python3 run_pino3d.py \
---config_path configs/transfer/Re250to250-1s.yaml \
---start 0 \
---stop 40 \
+CUDA_VISIBLE_DEVICES=1 python3 train_PINO3d.py \
+--config_path configs/scratch/Re500-scratch-05s.yaml \
+--start 3 \
 --log;
-CUDA_VISIBLE_DEVICES=1 python3 run_pino3d.py \
---config_path configs/transfer/Re300to250-1s.yaml \
---start 0 \
---stop 40 \
+CUDA_VISIBLE_DEVICES=1 python3 train_PINO3d.py \
+--config_path configs/scratch/Re500-scratch-05s.yaml \
+--start 4 \
 --log;
-CUDA_VISIBLE_DEVICES=1 python3 run_pino3d.py \
---config_path configs/transfer/Re350to250-1s.yaml \
---start 0 \
---stop 40 \
+CUDA_VISIBLE_DEVICES=1 python3 train_PINO3d.py \
+--config_path configs/scratch/Re500-scratch-05s.yaml \
+--start 5 \
 --log;
-CUDA_VISIBLE_DEVICES=1 python3 run_pino3d.py \
---config_path configs/transfer/Re400to250-1s.yaml \
---start 0 \
---stop 40 \
+CUDA_VISIBLE_DEVICES=1 python3 train_PINO3d.py \
+--config_path configs/scratch/Re500-scratch-05s.yaml \
+--start 6 \
+--log;
+CUDA_VISIBLE_DEVICES=1 python3 train_PINO3d.py \
+--config_path configs/scratch/Re500-scratch-05s.yaml \
+--start 7 \
+--log;
+CUDA_VISIBLE_DEVICES=1 python3 train_PINO3d.py \
+--config_path configs/scratch/Re500-scratch-05s.yaml \
+--start 8 \
 --log;

@@ -4,6 +4,14 @@ import torch
 
 
 def vor2vel(w):
+    '''
+    Convert vorticity into velocity
+    Args:
+        w: vorticity with shape (batchsize, num_x, num_y, num_t)
+
+    Returns:
+        ux, uy with the same shape
+    '''
     batchsize = w.size(0)
     nx = w.size(1)
     ny = w.size(2)

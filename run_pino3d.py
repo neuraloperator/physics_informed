@@ -1,19 +1,21 @@
+import random
 import yaml
 
 import torch
-from train_utils import Adam, NSLoader, get_forcing, LpLoss
+from torch.utils.data import DataLoader
+
+from train_utils import Adam, NSLoader, get_forcing
 from train_utils.train_3d import train
 
 from models import FNN3d
 from argparse import ArgumentParser
+from train_utils.utils import requires_grad
 
 
-def run_instance(ind, loader, config, data_config):
-    train_loader = loader.make_loader(n_sample=data_config['n_sample'],
-                                      batch_size=config['train']['batchsize'],
-                                      start=ind,
-                                      train=data_config['shuffle'])
-    config['data']['offset'] = ind
+def run_instance(loader, config, data_config):
+    trainset = loader.make_dataset(data_config['n_sample'],
+                                   start=data_config['offset'])
+    train_loader = DataLoader(trainset, batch_size=config['train']['batchsize'])
     model = FNN3d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
                   modes3=config['model']['modes3'],
@@ -26,7 +28,22 @@ def run_instance(ind, loader, config, data_config):
         model.load_state_dict(ckpt['model'])
         print('Weights loaded from %s' % ckpt_path)
 
-    optimizer = Adam(model.parameters(), betas=(0.9, 0.999),
+    if 'twolayer' in config['train'] and config['train']['twolayer']:
+        requires_grad(model, False)
+        requires_grad(model.sp_convs[-1], True)
+        requires_grad(model.ws[-1], True)
+        requires_grad(model.fc1, True)
+        requires_grad(model.fc2, True)
+        params = []
+        for param in model.parameters():
+            if param.requires_grad == True:
+                params.append(param)
+    else:
+        params = model.parameters()
+
+    beta1 = config['train']['beta1'] if 'beta1' in config['train'] else 0.9
+    beta2 = config['train']['beta2'] if 'beta2' in config['train'] else 0.999
+    optimizer = Adam(params, betas=(beta1, beta2),
                      lr=config['train']['base_lr'])
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
                                                      milestones=config['train']['milestones'],
@@ -36,14 +53,15 @@ def run_instance(ind, loader, config, data_config):
           loader, train_loader,
           optimizer, scheduler,
           forcing, config,
-          device,
+          rank=0,
           log=options.log,
           project=config['others']['project'],
           group=config['others']['group'],
-          use_tqdm=False)
+          use_tqdm=True)
 
 
 if __name__ == '__main__':
+    torch.backends.cudnn.benchmark = True
     parser = ArgumentParser(description='Basic paser')
     parser.add_argument('--config_path', type=str, help='Path to the configuration file')
     parser.add_argument('--start', type=int, help='Start index of test instance')
@@ -65,5 +83,11 @@ if __name__ == '__main__':
                       t_interval=data_config['time_interval'])
     for i in range(options.start, options.stop):
         print('Start training on instance %d' % i)
-        run_instance(i, loader, config, data_config)
+        config['data']['offset'] = i
+        data_config['offset'] = i
+        seed = random.randint(1, 10000)
+        print(f'Random seed :{seed}')
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        run_instance(loader, config, data_config)
     print('Done!')

@@ -29,11 +29,12 @@ train:
   ic_loss: 5.0
   f_loss: 1.0
   xy_loss: 0
-  save_dir: 'Re500-FDM'
-  save_name: 'PINO-scratch-05s.pt'
+  save_dir: 'Re500'
+  save_name: 'PINO-fintune-05s.pt'
+  ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-Re500-05s-4k1k.pt'
 
 others:
   project: 'PINO-Re500-ICLR'
-  group: 'Re500-scratch-128'
+  group: 'Re500-finetune-128-4k1'
 
 

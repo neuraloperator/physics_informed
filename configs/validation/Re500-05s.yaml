@@ -1,0 +1,30 @@
+data:
+  datapath: 'data/NS_fine_Re500_T128_part2.npy'
+  Re: 500
+  total_num: 100
+  offset: 0
+  n_sample: 300
+  time_interval: 0.5
+  nx: 128
+  nt: 128
+  sub: 2
+  
+  sub_t: 1
+  shuffle: False
+
+model:
+  layers: [64, 64, 64, 64, 64]
+  modes1: [8, 8, 8, 8]
+  modes2: [8, 8, 8, 8]
+  modes3: [8, 8, 8, 8]
+  fc_dim: 128
+
+train:
+  batchsize: 1
+  ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-Re500-05s-eqn.pt'
+
+others:
+  project: 'PINO-None'
+  group: 'eval'
+
+

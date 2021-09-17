@@ -75,12 +75,12 @@ def subprocess_fn(rank, args):
     requires_grad(model.ws[-1], True)
     requires_grad(model.fc1, True)
     requires_grad(model.fc2, True)
-    params_to_udpate = []
+    params_to_update = []
     for param in model.parameters():
         if param.requires_grad == True:
-            params_to_udpate.append(param)
+            params_to_update.append(param)
 
-    optimizer = Adam(params_to_udpate, betas=(0.9, 0.999),
+    optimizer = Adam(params_to_update, betas=(0.9, 0.999),
                      lr=config['train']['base_lr'])
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
                                                      milestones=config['train']['milestones'],

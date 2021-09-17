@@ -20,8 +20,8 @@ model:
 
 train:
   batchsize: 1
-  epochs: 2500
-  milestones: [1000, 1500, 2000]
+  epochs: 6000
+  milestones: [1000, 3000, 5000]
   base_lr: 0.0025
   beta1: 0.9
   beta2: 0.999
@@ -29,11 +29,13 @@ train:
   ic_loss: 5.0
   f_loss: 1.0
   xy_loss: 0
-  save_dir: 'Re500-FDM'
-  save_name: 'PINO-scratch-05s.pt'
+  save_dir: 'Re500'
+  save_name: 'PINO-fintune-05s.pt'
+  ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-Re500-05s-4k.pt'
+  twolayer: True
 
 others:
   project: 'PINO-Re500-ICLR'
-  group: 'Re500-scratch-128'
+  group: 'Re500-finetune-128-4k4-2layer'
 
 

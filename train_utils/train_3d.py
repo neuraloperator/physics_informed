@@ -49,6 +49,7 @@ def train(model,
     if use_tqdm:
         pbar = tqdm(pbar, dynamic_ncols=True, smoothing=0.05)
     zero = torch.zeros(1).to(rank)
+    t2 = t1 = 0
     for ep in pbar:
         model.train()
         loss_dict = {'train_loss': 0.0,
@@ -201,6 +202,11 @@ def mixed_train(model,              # model of neural operator
             test_l2 += loss_l2.item()
             train_loss += total_loss.item()
             train_f += loss_f.item()
+        if num_data_iter != 0:
+            train_ic /= num_data_iter
+            train_f /= num_data_iter
+            train_loss /= num_data_iter
+            test_l2 /= num_data_iter
         # train with random ICs
         for _ in range(num_eqn_iter):
             new_a = next(a_loader)
@@ -218,12 +224,9 @@ def mixed_train(model,              # model of neural operator
             optimizer.step()
 
             err_eqn += eqn_loss.item()
+
         scheduler.step()
         t2 = default_timer()
-        train_ic /= num_data_iter
-        train_f /= num_data_iter
-        train_loss /= num_data_iter
-        test_l2 /= num_data_iter
         err_eqn /= num_eqn_iter
         if use_tqdm:
             pbar.set_description(
