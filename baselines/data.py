@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from .utils import get_4dgrid, get_2dgird, concat, get_3dgrid
+from .utils import get_4dgrid, get_2dgird, concat, get_3dgrid, get_xytgrid
 from train_utils.utils import vor2vel
 
 
@@ -129,19 +129,30 @@ class NSdata(object):
         else:
             raise ValueError(f'No component {component} ')
 
-        boundary0 = value[0, ::2, ::2, 0:1]     # 32x32x1
-
-        boundary1 = value[0, ::2, ::2, -1:]     # 32x32x1
+        boundary0 = value[0, :, :, 0:1]     # 64x64x1, boundary on t=0
+        # boundary1 = value[0, :, :, -1:]     # 64x64x1, boundary on t=0.5
+        boundary2 = value[0, 0:1, :, :]     # 1x64x65, boundary on x=0
+        boundary3 = value[0, -1:, :, :]     # 1x64x65, boundary on x=1
+        boundary4 = value[0, :, 0:1, :]     # 64x1x65, boundary on y=0
+        boundary5 = value[0, :, -1:, :]     # 64x1x65, boundary on y=1
 
         part0 = np.ravel(boundary0)
-        part1 = np.ravel(boundary1)
-        boundary = np.concatenate([part0, part1], axis=0)[:, np.newaxis]
+        # part1 = np.ravel(boundary1)
+        part2 = np.ravel(boundary2)
+        part3 = np.ravel(boundary3)
+        part4 = np.ravel(boundary4)
+        part5 = np.ravel(boundary5)
+        boundary = np.concatenate([part0,
+                                   part2, part3,
+                                   part4, part5],
+                                  axis=0)[:, np.newaxis]
+        # boundary = part0[:, np.newaxis]
         return boundary
         # bd_solnx0 = self.data[0, 0:1, ::2, ::2]     # num_y//2 x (num_t //2 +1)
         # bd_solny0 = self.data[0, ::2, 0:1, ::2]     # num_x //2 x (num_t //2 + 1)
         # bd_solnx1 = self.data[0, -1:, ]
 
-    def get_boundary_points(self, num_x, num_y):
+    def get_boundary_points(self, num_x, num_y, num_t):
         '''
         Args:
             num_x:
@@ -150,25 +161,85 @@ class NSdata(object):
         Returns:
             points: N by 3 array
         '''
-        x_arr = np.linspace(0, 1, num=num_x, endpoint=False)
-        y_arr = np.linspace(0, 1, num=num_y, endpoint=False)
-        xx, yy = np.meshgrid(x_arr, y_arr, indexing='ij')
+        x_arr = np.linspace(0, 2 * np.pi, num=num_x, endpoint=False)
+        y_arr = np.linspace(0, 2 * np.pi, num=num_y, endpoint=False)
+        xx, yy = np.meshgrid(x_arr, y_arr)
         xarr = np.ravel(xx)
         yarr = np.ravel(yy)
         tarr = np.zeros_like(xarr)
-        point0 = np.stack([xarr, yarr, tarr], axis=0).T
+        point0 = np.stack([xarr, yarr, tarr], axis=0).T     # (64x64x1, 3), boundary on t=0
 
-        x_arr = np.linspace(0, 1, num=num_x, endpoint=False)
-        y_arr = np.linspace(0, 1, num=num_y, endpoint=False)
-        xx, yy = np.meshgrid(x_arr, y_arr, indejing='ij')
-        xarr = np.ravel(xx)
+        # tarr = np.ones_like(xarr) * self.time_scale
+        # point1 = np.stack([xarr, yarr, tarr], axis=0).T     # (64x64x1, 3), boundary on t=0.5
+
+        t_arr = np.linspace(0, self.time_scale, num=num_t)
+        yy, tt = np.meshgrid(y_arr, t_arr)
         yarr = np.ravel(yy)
-        tarr = np.zeros_like(xarr)
-        point1 = np.stack([xarr, yarr, tarr], axis=0).T
-        points = np.concatenate([point0, point1], axis=0)
+        tarr = np.ravel(tt)
+        xarr = np.zeros_like(yarr)
+        point2 = np.stack([xarr, yarr, tarr], axis=0).T     # (1x64x65, 3), boundary on x=0
 
+        xarr = np.ones_like(yarr) * 2 * np.pi
+        point3 = np.stack([xarr, yarr, tarr], axis=0).T     # (1x64x65, 3), boundary on x=1
+
+        xx, tt = np.meshgrid(x_arr, t_arr)
+        xarr = np.ravel(xx)
+        tarr = np.ravel(tt)
+        yarr = np.zeros_like(xarr)
+        point4 = np.stack([xarr, yarr, tarr], axis=0).T     # (64x1x65, 3), boundary on y=0
+
+        yarr = np.ones_like(xarr) * 2 * np.pi
+        point5 = np.stack([xarr, yarr, tarr], axis=0).T     # (64x1x65, 3), boundary on y=1
+
+        points = np.concatenate([point0,
+                                 point2, point3,
+                                 point4, point5],
+                                axis=0)
         return points
 
+    def get_test_xyt(self):
+        '''
+
+        Returns:
+            points: (x, y, t) array with shape (S * S * T, 3)
+            values: (u, v, w) array with shape (S * S * T, 3)
+
+        '''
+        points = get_xytgrid(S=self.S, T=self.T,
+                             bot=[0, 0, 0],
+                             top=[2 * np.pi, 2 * np.pi, self.time_scale])
+        u_val = np.ravel(self.vel_u)
+        v_val = np.ravel(self.vel_v)
+        w_val = np.ravel(self.vor)
+        values = np.stack([u_val, v_val, w_val], axis=0).T
+        return points, values
+
+
+    @staticmethod
+    def extract(data):
+        '''
+        Extract data with time range 0-0.5, 0.25-0.75, 0.5-1.0, 0.75-1.25,...
+        Args:
+            data: tensor with size N x 129 x 128 x 128
+
+        Returns:
+            output: (4*N-1) x 65 x 128 x 128
+        '''
+        T = data.shape[1] // 2
+        interval = data.shape[1] // 4
+        N = data.shape[0]
+        new_data = torch.zeros(4 * N - 1, T + 1, data.shape[2], data.shape[3])
+        for i in range(N):
+            for j in range(4):
+                if i == N - 1 and j == 3:
+                    # reach boundary
+                    break
+                if j != 3:
+                    new_data[i * 4 + j] = data[i, interval * j:interval * j + T + 1]
+                else:
+                    new_data[i * 4 + j, 0: interval] = data[i, interval * j:interval * j + interval]
+                    new_data[i * 4 + j, interval: T + 1] = data[i + 1, 0:interval + 1]
+        return new_data
 
 
 

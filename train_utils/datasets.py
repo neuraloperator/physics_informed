@@ -178,8 +178,11 @@ class NSLoader(object):
             u_data = self.data[-n_sample:].reshape(n_sample, self.S, self.S, self.T)
         a_data = a_data.reshape(n_sample, self.S, self.S, 1, 1).repeat([1, 1, 1, self.T, 1])
         gridx, gridy, gridt = get_grid3d(self.S, self.T)
-        a_data = torch.cat((gridx.repeat([n_sample, 1, 1, 1, 1]), gridy.repeat([n_sample, 1, 1, 1, 1]),
-                            gridt.repeat([n_sample, 1, 1, 1, 1]), a_data), dim=-1)
+        a_data = torch.cat((
+            gridx.repeat([n_sample, 1, 1, 1, 1]),
+            gridy.repeat([n_sample, 1, 1, 1, 1]),
+            gridt.repeat([n_sample, 1, 1, 1, 1]),
+            a_data), dim=-1)
         dataset = torch.utils.data.TensorDataset(a_data, u_data)
         return dataset
 

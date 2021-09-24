@@ -4,6 +4,28 @@ import torch
 import torch.autograd as autograd
 
 
+def get_xytgrid(S, T, bot=[0, 0, 0], top=[1, 1, 1]):
+    '''
+    Args:
+        S: number of points on each spatial domain
+        T: number of points on temporal domain including endpoint
+        bot: list or tuple, lower bound on each dimension
+        top: list or tuple, upper bound on each dimension
+
+    Returns:
+        (S * S * T, 3) array
+    '''
+    x_arr = np.linspace(bot[0], top[0], num=S, endpoint=False)
+    y_arr = np.linspace(bot[1], top[1], num=S, endpoint=False)
+    t_arr = np.linspace(bot[2], top[2], num=T)
+    xgrid, ygrid, tgrid = np.meshgrid(x_arr, y_arr, t_arr)
+    xaxis = np.ravel(xgrid)
+    yaxis = np.ravel(ygrid)
+    taxis = np.ravel(tgrid)
+    points = np.stack([xaxis, yaxis, taxis], axis=0).T
+    return points
+
+
 def get_2dgird(num=31):
     x = np.linspace(-1, 1, num)
     y = np.linspace(-1, 1, num)
