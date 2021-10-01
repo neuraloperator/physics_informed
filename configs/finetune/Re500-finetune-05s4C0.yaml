@@ -31,10 +31,10 @@ train:
   xy_loss: 0
   save_dir: 'Re500'
   save_name: 'PINO-fintune-05s.pt'
-  ckpt: 'checkpoints/Re500-FDM/pretrain-Re500-05s-4000.pt'
+  ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-Re500-05s-4C0.pt'
 
 others:
   project: 'PINO-Re500-ICLR'
-  group: 'Re500-finetune-128-4k'
+  group: 'Re500-finetune-128-4C0'
 
 

@@ -78,6 +78,22 @@ def get_grid(N, T, s):
     return grid, gridt, gridx
 
 
+def get_2dgrid(S):
+    '''
+    get array of points on 2d grid in (0,1)^2
+    Args:
+        S: resolution
+
+    Returns:
+        points: flattened grid, ndarray (N, 2)
+    '''
+    xarr = np.linspace(0, 1, S)
+    yarr = np.linspace(0, 1, S)
+    xx, yy = np.meshgrid(xarr, yarr, indexing='ij')
+    points = np.stack([xx.ravel(), yy.ravel()], axis=0).T
+    return points
+
+
 def get_grid3d(S, T, time_scale=1.0, device='cpu'):
     gridx = torch.tensor(np.linspace(0, 1, S + 1)[:-1], dtype=torch.float, device=device)
     gridx = gridx.reshape(1, S, 1, 1, 1).repeat([1, 1, S, T, 1])

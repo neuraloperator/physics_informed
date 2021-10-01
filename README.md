@@ -5,7 +5,9 @@
 - wandb
 - tqdm
 
-## Description
+## Data description
+
+## Training scripts
 To train on Navier Stokes equation, use
 ```bash
 python3 train_PINO3d.py --config_path configs/***.yaml 
@@ -23,3 +25,9 @@ To train Navier Stokes equations sequentially without running `train_PINO3d.py` 
 ```bash
 python3 run_pino3d.py --config_path configs/[configuration file name].yaml --start [index of the first data] --stop [which data to stop]
 ```
+
+## Operator learning
+### Train
+
+### Evaluate error of operator
+`python3 val_operator.py --config_path configs/validate/Re500-05s.yaml`

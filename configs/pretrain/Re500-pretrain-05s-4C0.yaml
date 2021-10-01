@@ -3,14 +3,13 @@ data:
   Re: 500
   total_num: 4000
   offset: 0
-  n_sample: 4000
+  n_sample: 400
   time_interval: 0.5
   nx: 64
   nt: 64
   sub: 1
   sub_t: 1
   shuffle: True
-  num_ics: 300
   S2: 128
   T2: 65
 
@@ -31,12 +30,12 @@ train:
   f_loss: 1.0
   xy_loss: 5.0
   save_dir: 'Re500-FDM'
-  save_name: 'PINO-pretrain-Re500-05s-0C1.pt'
-  data_iter: 0
-  eqn_iter: 1
+  save_name: 'PINO-pretrain-Re500-05s-4C0.pt'
+  data_iter: 4
+  eqn_iter: 0
 
 others:
   project: 'PINO-pretrain-ICLR'
-  group: 'Re500-05s-0C1'
+  group: 'Re500-05s-4C0'
 
 

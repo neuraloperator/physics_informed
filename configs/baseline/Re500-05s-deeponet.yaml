@@ -1,0 +1,35 @@
+data:
+  datapath: '/mnt/md1/zongyi/NS_fft_Re500_T4000.npy'
+  Re: 500
+  total_num: 4000
+  offset: 0
+  n_sample: 4000
+  time_interval: 0.5
+  nx: 64
+  nt: 64
+  sub: 1
+  sub_t: 1
+  shuffle: False
+  data_val: 'data/NS_Re500_s256_T100_test.npy'
+  val_nx: 256
+  val_nt: 128
+  val_sub: 4
+  val_subt: 2
+
+model:
+  layers: [40, 40]
+  activation: 'relu'
+
+train:
+  batchsize: 1
+  epochs: 100
+  milestones: [25000, 50000, 75000]
+  base_lr: 0.001
+
+  ckpt: 'checkpoints/Re500-FDM/pretrain-Re500-05s-4000.pt'
+
+others:
+  project: 'PINO-None'
+  group: 'eval'
+
+

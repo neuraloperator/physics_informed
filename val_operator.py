@@ -40,7 +40,7 @@ if __name__ == '__main__':
         ckpt = torch.load(ckpt_path)
         model.load_state_dict(ckpt['model'])
         print('Weights loaded from %s' % ckpt_path)
-
+    print(f'Resolution : {loader.S}x{loader.S}x{loader.T}')
     forcing = get_forcing(loader.S).to(device)
     evaluate(model,
              loader,

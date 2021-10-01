@@ -1,0 +1,33 @@
+data:
+  datapath: '/mnt/md1/zongyi/piececonst_r421_N1024_smooth1.mat'
+  datapath2: '/mnt/md1/zongyi/piececonst_r421_N1024_smooth2.mat'
+  offset: 0
+  train_num: 1000
+  test_num: 200
+  nx: 421
+  sub: 7
+
+model:
+  layers: [64, 64, 64, 64, 64]
+  modes1: [8, 8, 8, 8]
+  modes2: [8, 8, 8, 8]
+  modes3: [8, 8, 8, 8]
+  fc_dim: 128
+
+train:
+  batchsize: 1
+  epochs: 1000
+  milestones: [200, 400, 600, 800]
+  base_lr: 0.001
+  scheduler_gamma: 0.5
+  ic_loss: 1.0
+  f_loss: 1.0
+  xy_loss: 5.0
+  save_dir: 'darcy-FDM'
+  save_name: 'darcy-pretrain.pt'
+
+others:
+  project: 'PINO-pretrain'
+  group: 'Re100-1s-tanh'
+
+

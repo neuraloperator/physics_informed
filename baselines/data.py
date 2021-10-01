@@ -73,10 +73,10 @@ class BelflowData(object):
 class NSdata(object):
     def __init__(self, datapath1,
                  nx, nt,
-                 offset=0,
+                 offset=0, num=1,
                  datapath2=None,
                  sub=1, sub_t=1,
-                 N=100, t_interval=1.0):
+                 vel=False, t_interval=1.0):
         '''
         Load data from npy and reshape to (N, X, Y, T)
         Args:
@@ -103,14 +103,34 @@ class NSdata(object):
             data1 = self.extract(data1)
             if datapath2 is not None:
                 data2 = self.extract(data2)
+        # transpose data into (N, S, S, T)
         part1 = data1.permute(0, 2, 3, 1)
         if datapath2 is not None:
             part2 = data2.permute(0, 2, 3, 1)
             self.data = torch.cat((part1, part2), dim=0)
         else:
             self.data = part1
-        self.vor = self.data[offset: offset + 1, :, :, :]
-        self.vel_u, self.vel_v = vor2vel(self.vor)  # Compute velocity from vorticity
+        self.vor = self.data[offset: offset + num, :, :, :]
+        if vel:
+            self.vel_u, self.vel_v = vor2vel(self.vor)  # Compute velocity from vorticity
+
+    def get_operator_data(self):
+        '''
+        fetch data formated for deepOnet
+        Returns:
+            X: (N x S x S x T, SxS + 3)
+            y: (N x S x S x T, 1)
+        '''
+        N = self.vor.shape[0]
+        a_arr = np.reshape(self.vor[:, :, :, 0], (N, -1))               # (N, SxS)
+        a_part = np.repeat(a_arr, self.S * self.S * self.T, axis=0)     # (N x S x S x T, SxS)
+        coords = get_xytgrid(S=self.S, T=self.T,
+                             bot=[0, 0, 0],
+                             top=[2 * np.pi, 2 * np.pi, self.time_scale])   # (SxSxT, 3)
+        x_part = np.repeat(coords, N, axis=0)       # (NxSxSxT, 3)
+        X_train = np.concatenate([a_part, x_part], axis=1)
+        y_train = np.ravel(self.vor)
+        return X_train, y_train
 
     def get_boundary_value(self, component=0):
         '''
@@ -129,12 +149,12 @@ class NSdata(object):
         else:
             raise ValueError(f'No component {component} ')
 
-        boundary0 = value[0, :, :, 0:1]     # 64x64x1, boundary on t=0
-        # boundary1 = value[0, :, :, -1:]     # 64x64x1, boundary on t=0.5
-        boundary2 = value[0, 0:1, :, :]     # 1x64x65, boundary on x=0
-        boundary3 = value[0, -1:, :, :]     # 1x64x65, boundary on x=1
-        boundary4 = value[0, :, 0:1, :]     # 64x1x65, boundary on y=0
-        boundary5 = value[0, :, -1:, :]     # 64x1x65, boundary on y=1
+        boundary0 = value[0, :, :, 0:1]     # 128x128x1, boundary on t=0
+        # boundary1 = value[0, :, :, -1:]     # 128x128x1, boundary on t=0.5
+        boundary2 = value[0, 0:1, :, :]     # 1x128x65, boundary on x=0
+        boundary3 = value[0, -1:, :, :]     # 1x128x65, boundary on x=1
+        boundary4 = value[0, :, 0:1, :]     # 128x1x65, boundary on y=0
+        boundary5 = value[0, :, -1:, :]     # 128x1x65, boundary on y=1
 
         part0 = np.ravel(boundary0)
         # part1 = np.ravel(boundary1)
@@ -163,33 +183,33 @@ class NSdata(object):
         '''
         x_arr = np.linspace(0, 2 * np.pi, num=num_x, endpoint=False)
         y_arr = np.linspace(0, 2 * np.pi, num=num_y, endpoint=False)
-        xx, yy = np.meshgrid(x_arr, y_arr)
+        xx, yy = np.meshgrid(x_arr, y_arr, indexing='ij')
         xarr = np.ravel(xx)
         yarr = np.ravel(yy)
         tarr = np.zeros_like(xarr)
-        point0 = np.stack([xarr, yarr, tarr], axis=0).T     # (64x64x1, 3), boundary on t=0
+        point0 = np.stack([xarr, yarr, tarr], axis=0).T     # (128x128x1, 3), boundary on t=0
 
         # tarr = np.ones_like(xarr) * self.time_scale
-        # point1 = np.stack([xarr, yarr, tarr], axis=0).T     # (64x64x1, 3), boundary on t=0.5
+        # point1 = np.stack([xarr, yarr, tarr], axis=0).T     # (128x128x1, 3), boundary on t=0.5
 
         t_arr = np.linspace(0, self.time_scale, num=num_t)
-        yy, tt = np.meshgrid(y_arr, t_arr)
+        yy, tt = np.meshgrid(y_arr, t_arr, indexing='ij')
         yarr = np.ravel(yy)
         tarr = np.ravel(tt)
         xarr = np.zeros_like(yarr)
-        point2 = np.stack([xarr, yarr, tarr], axis=0).T     # (1x64x65, 3), boundary on x=0
+        point2 = np.stack([xarr, yarr, tarr], axis=0).T     # (1x128x65, 3), boundary on x=0
 
         xarr = np.ones_like(yarr) * 2 * np.pi
-        point3 = np.stack([xarr, yarr, tarr], axis=0).T     # (1x64x65, 3), boundary on x=1
+        point3 = np.stack([xarr, yarr, tarr], axis=0).T     # (1x128x65, 3), boundary on x=2pi
 
-        xx, tt = np.meshgrid(x_arr, t_arr)
+        xx, tt = np.meshgrid(x_arr, t_arr, indexing='ij')
         xarr = np.ravel(xx)
         tarr = np.ravel(tt)
         yarr = np.zeros_like(xarr)
-        point4 = np.stack([xarr, yarr, tarr], axis=0).T     # (64x1x65, 3), boundary on y=0
+        point4 = np.stack([xarr, yarr, tarr], axis=0).T     # (128x1x65, 3), boundary on y=0
 
         yarr = np.ones_like(xarr) * 2 * np.pi
-        point5 = np.stack([xarr, yarr, tarr], axis=0).T     # (64x1x65, 3), boundary on y=1
+        point5 = np.stack([xarr, yarr, tarr], axis=0).T     # (128x1x65, 3), boundary on y=2pi
 
         points = np.concatenate([point0,
                                  point2, point3,
@@ -242,6 +262,42 @@ class NSdata(object):
         return new_data
 
 
+class DeepOnetNS(Dataset):
+    '''
+    Dataset class customized for DeepONet's input format
+    '''
+    def __init__(self, datapath,
+                 nx, nt,
+                 offset=0, num=1,
+                 sub=1, sub_t=1,
+                 t_interval=1.0):
+        self.S = nx // sub
+        self.T = int(nt * t_interval) // sub_t + 1
+        self.time_scale = t_interval
+        self.N = num
+        data = np.load(datapath)
+        data = torch.tensor(data, dtype=torch.float)[..., ::sub_t, ::sub, ::sub]
+        if t_interval == 0.5:
+                    data = NSdata.extract(data)
+        # transpose data into (N, S, S, T)
+        data = data.permute(0, 2, 3, 1)
+        self.vor = data[offset: offset + num, :, :, :]
+        points = get_xytgrid(S=self.S, T=self.T,
+                             bot=[0, 0, 0],
+                             top=[2 * np.pi, 2 * np.pi, self.time_scale])
+        self.xyt = torch.tensor(points, dtype=torch.float)
+        # (SxSxT, 3)
 
+    def __len__(self):
+        return self.N * self.S * self.S * self.T
+
+    def __getitem__(self, idx):
+        num_per_instance = self.S ** 2 * self.T
+        instance_id = idx // num_per_instance
+        pos_id = idx % num_per_instance
+        point = self.xyt[pos_id]
+        u0 = self.vor[instance_id, :, :, 0].reshape(-1)
+        y = self.vor[instance_id].reshape(-1)[pos_id]
+        return u0, point, y
 
 

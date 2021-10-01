@@ -3,6 +3,68 @@ import torch
 import torch.nn.functional as F
 
 
+def FDM_Darcy(u, a, D=1):
+    batchsize = u.size(0)
+    size = u.size(1)
+    u = u.reshape(batchsize, size, size)
+    a = a.reshape(batchsize, size, size)
+    dx = D / (size - 1)
+    dy = dx
+
+    # ux: (batch, size-2, size-2)
+    ux = (u[:, 2:, 1:-1] - u[:, :-2, 1:-1]) / (2 * dx)
+    uy = (u[:, 1:-1, 2:] - u[:, 1:-1, :-2]) / (2 * dy)
+
+    # ax = (a[:, 2:, 1:-1] - a[:, :-2, 1:-1]) / (2 * dx)
+    # ay = (a[:, 1:-1, 2:] - a[:, 1:-1, :-2]) / (2 * dy)
+    # uxx = (u[:, 2:, 1:-1] -2*u[:,1:-1,1:-1] +u[:, :-2, 1:-1]) / (dx**2)
+    # uyy = (u[:, 1:-1, 2:] -2*u[:,1:-1,1:-1] +u[:, 1:-1, :-2]) / (dy**2)
+
+    a = a[:, 1:-1, 1:-1]
+    # u = u[:, 1:-1, 1:-1]
+    # Du = -(ax*ux + ay*uy + a*uxx + a*uyy)
+
+    # inner1 = torch.mean(a*(ux**2 + uy**2), dim=[1,2])
+    # inner2 = torch.mean(f*u, dim=[1,2])
+    # return 0.5*inner1 - inner2
+
+    aux = a * ux
+    auy = a * uy
+    auxx = (aux[:, 2:, 1:-1] - aux[:, :-2, 1:-1]) / (2 * dx)
+    auyy = (auy[:, 1:-1, 2:] - auy[:, 1:-1, :-2]) / (2 * dy)
+    Du = - (auxx + auyy)
+    return Du
+
+
+def darcy_loss(u, a):
+    batchsize = u.size(0)
+    size = u.size(1)
+    u = u.reshape(batchsize, size, size)
+    a = a.reshape(batchsize, size, size)
+    lploss = LpLoss(size_average=True)
+
+    index_x = torch.cat([torch.tensor(range(0, size)), (size - 1) * torch.ones(size), torch.tensor(range(size-1, 1, -1)),
+                         torch.zeros(size)], dim=0).long()
+    index_y = torch.cat([(size - 1) * torch.ones(size), torch.tensor(range(size-1, 1, -1)), torch.zeros(size),
+                         torch.tensor(range(0, size))], dim=0).long()
+
+    boundary_u = u[:, index_x, index_y]
+    truth_u = torch.zeros(boundary_u.shape, device=u.device)
+    loss_u = lploss.abs(boundary_u, truth_u)
+
+    Du = FDM_Darcy(u, a)
+    f = torch.ones(Du.shape, device=u.device)
+    loss_f = lploss.rel(Du, f)
+
+    # im = (Du-f)[0].detach().cpu().numpy()
+    # plt.imshow(im)
+    # plt.show()
+
+    # loss_f = FDM_Darcy(u, a)
+    # loss_f = torch.mean(loss_f)
+    return loss_f, loss_u
+
+
 def FDM_NS_vorticity(w, v=1/40, t_interval=1.0):
     batchsize = w.size(0)
     nx = w.size(1)

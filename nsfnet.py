@@ -4,8 +4,10 @@ from argparse import ArgumentParser
 import yaml
 import tensorflow as tf
 import deepxde as dde
+from deepxde.optimizers.config import set_LBFGS_options
 import numpy as np
 from baselines.data import NSdata
+import csv
 
 Re = 500
 
@@ -47,40 +49,30 @@ def pde(x, u):
     return [eqn1, eqn2, eqn3, eqn4]
 
 
-if __name__ == '__main__':
+def train(offset, config, args):
     spatial_domain = dde.geometry.Rectangle(xmin=[0, 0], xmax=[2 * np.pi, 2 * np.pi])
     temporal_domain = dde.geometry.TimeDomain(0, 0.5)
     st_domain = dde.geometry.GeometryXTime(spatial_domain, temporal_domain)
 
     seed = random.randint(1, 10000)
     print(f'Random seed :{seed}')
-
-    parser = ArgumentParser(description='Basic paser')
-    parser.add_argument('--config_path', type=str, help='Path to the configuration file')
-    parser.add_argument('--log', action='store_true', help='Turn on the wandb')
-    parser.add_argument('--num_gpus', type=int, help='Number of GPUs', default=1)
-    parser.add_argument('--start', type=int, default=-1, help='start index')
-    args = parser.parse_args()
-
-    config_file = args.config_path
-    with open(config_file, 'r') as stream:
-        config = yaml.load(stream, yaml.FullLoader)
-
     # construct dataloader
     data_config = config['data']
     if 'datapath2' in data_config:
         dataset = NSdata(datapath1=data_config['datapath'],
                          datapath2=data_config['datapath2'],
+                         offset=offset, num=1,
                          nx=data_config['nx'], nt=data_config['nt'],
                          sub=data_config['sub'], sub_t=data_config['sub_t'],
-                         N=data_config['total_num'],
+                         vel=True,
                          t_interval=data_config['time_interval'])
     else:
         dataset = NSdata(datapath1=data_config['datapath'],
-                          nx=data_config['nx'], nt=data_config['nt'],
-                          sub=data_config['sub'], sub_t=data_config['sub_t'],
-                          N=data_config['total_num'],
-                          t_interval=data_config['time_interval'])
+                         offset=offset, num=1,
+                         nx=data_config['nx'], nt=data_config['nt'],
+                         sub=data_config['sub'], sub_t=data_config['sub_t'],
+                         vel=True,
+                         t_interval=data_config['time_interval'])
     num_boundary_points = dataset.S
     points = dataset.get_boundary_points(num_x=num_boundary_points, num_y=num_boundary_points,
                                          num_t=dataset.T)
@@ -100,16 +92,18 @@ if __name__ == '__main__':
             boundary_v,
             boundary_w
         ],
-        num_domain=10000,
-        num_boundary=40000,
+        num_domain=6000,
+        num_boundary=18000,
         num_test=1000,
     )
 
-    net = dde.maps.FNN([3] + 6 * [50] + [3], 'tanh', 'Glorot normal')
+    net = dde.maps.FNN([3] + 4 * [50] + [3], 'tanh', 'Glorot normal')
+    # net = dde.maps.STMsFFN([3] + 4 * [50] + [3], 'tanh', 'Glorot normal', [50], [50])
     model = dde.Model(data, net)
 
-    model.compile('adam', lr=1e-3, loss_weights=[1, 1, 1, 1, 100, 100, 100])
+    model.compile('adam', lr=1e-2, loss_weights=[1, 1, 1, 1, 100, 100, 100])
     model.train(epochs=15000)
+    set_LBFGS_options(maxiter=10000)
     model.compile('L-BFGS', loss_weights=[1, 1, 1, 1, 100, 100, 100])
     model.train()
 
@@ -127,9 +121,32 @@ if __name__ == '__main__':
     u_err = dde.metrics.l2_relative_error(vel_u_truth, vel_u_pred)
     v_err = dde.metrics.l2_relative_error(vel_v_truth, vel_v_pred)
     vor_err = dde.metrics.l2_relative_error(vor_truth, vor_pred)
-
+    print(f'Instance index : {offset}')
     print(f'L2 relative error in u: {u_err}')
     print(f'L2 relative error in v: {v_err}')
     print(f'L2 relative error in vorticity: {vor_err}')
+    with open(args.logfile, 'a') as f:
+        writer = csv.writer(f)
+        writer.writerow([offset, u_err, v_err, vor_err])
+
+
+if __name__ == '__main__':
+    parser = ArgumentParser(description='Basic paser')
+    parser.add_argument('--config_path', type=str, help='Path to the configuration file')
+    parser.add_argument('--logfile', type=str, help='path to save log')
+    parser.add_argument('--start', type=int, default=0, help='start index')
+    parser.add_argument('--stop', type=int, default=1, help='stopping index')
+    args = parser.parse_args()
+
+    config_file = args.config_path
+    with open(config_file, 'r') as stream:
+        config = yaml.load(stream, yaml.FullLoader)
+
+    with open(args.logfile, 'a') as f:
+        writer = csv.writer(f)
+        writer.writerow(['Index', 'Error in u', 'Error in v', 'Error in w'])
+
+    for i in range(args.start, args.stop):
+        train(i, config, args)
 
 

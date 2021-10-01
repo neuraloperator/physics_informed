@@ -3,7 +3,7 @@ data:
   Re: 500
   total_num: 4000
   offset: 0
-  n_sample: 4000
+  n_sample: 400
   time_interval: 0.5
   nx: 64
   nt: 64
@@ -23,20 +23,20 @@ model:
 
 train:
   batchsize: 1
-  epochs: 100000
-  milestones: [25000, 50000, 75000]
+  epochs: 40000
+  milestones: [10000, 20000, 30000]
   base_lr: 0.001
   scheduler_gamma: 0.5
   ic_loss: 1.0
   f_loss: 1.0
   xy_loss: 5.0
   save_dir: 'Re500-FDM'
-  save_name: 'PINO-pretrain-Re500-05s-4k1k.pt'
+  save_name: 'PINO-pretrain-Re500-05s-4C4.pt'
   data_iter: 4
-  eqn_iter: 1
+  eqn_iter: 4
 
 others:
   project: 'PINO-pretrain-ICLR'
-  group: 'Re500-05s-4k1k'
+  group: 'Re500-05s-4C4'
 
 

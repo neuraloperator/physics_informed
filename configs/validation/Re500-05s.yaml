@@ -7,8 +7,7 @@ data:
   time_interval: 0.5
   nx: 128
   nt: 128
-  sub: 2
-  
+  sub: 1
   sub_t: 1
   shuffle: False
 
@@ -21,7 +20,7 @@ model:
 
 train:
   batchsize: 1
-  ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-Re500-05s-eqn.pt'
+  ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-Re500-05s-4C1.pt'
 
 others:
   project: 'PINO-None'

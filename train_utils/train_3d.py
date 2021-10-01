@@ -227,7 +227,8 @@ def mixed_train(model,              # model of neural operator
 
         scheduler.step()
         t2 = default_timer()
-        err_eqn /= num_eqn_iter
+        if num_eqn_iter != 0:
+            err_eqn /= num_eqn_iter
         if use_tqdm:
             pbar.set_description(
                 (

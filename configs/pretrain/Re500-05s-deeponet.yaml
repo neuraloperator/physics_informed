@@ -1,0 +1,38 @@
+data:
+  datapath: '/mnt/md1/zongyi/NS_fft_Re500_T4000.npy'
+  Re: 500
+  total_num: 4000
+  offset: 0
+  n_sample: 400
+  time_interval: 0.5
+  nx: 64
+  nt: 64
+  sub: 1
+  sub_t: 1
+  shuffle: True
+  S2: 128
+  T2: 65
+
+model:
+  branch_layers: [100, 100]
+  trunk_layers: [100, 100]
+
+train:
+  batchsize: 100000
+  epochs: 10000
+  milestones: [2500, 5000, 7500]
+  base_lr: 0.001
+  scheduler_gamma: 0.5
+  ic_loss: 1.0
+  f_loss: 1.0
+  xy_loss: 5.0
+  save_dir: 'Re500-deepOnet'
+  save_name: 'DeepONet-pretrain-Re500.pt'
+  data_iter: 4
+  eqn_iter: 0
+
+others:
+  project: 'PINO-pretrain-ICLR'
+  group: 'Re500-05s-deepONet'
+
+

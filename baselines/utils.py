@@ -18,7 +18,7 @@ def get_xytgrid(S, T, bot=[0, 0, 0], top=[1, 1, 1]):
     x_arr = np.linspace(bot[0], top[0], num=S, endpoint=False)
     y_arr = np.linspace(bot[1], top[1], num=S, endpoint=False)
     t_arr = np.linspace(bot[2], top[2], num=T)
-    xgrid, ygrid, tgrid = np.meshgrid(x_arr, y_arr, t_arr)
+    xgrid, ygrid, tgrid = np.meshgrid(x_arr, y_arr, t_arr, indexing='ij')
     xaxis = np.ravel(xgrid)
     yaxis = np.ravel(ygrid)
     taxis = np.ravel(tgrid)
