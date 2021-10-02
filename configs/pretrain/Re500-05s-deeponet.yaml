@@ -10,26 +10,19 @@ data:
   sub: 1
   sub_t: 1
   shuffle: True
-  S2: 128
-  T2: 65
 
 model:
-  branch_layers: [100, 100]
-  trunk_layers: [100, 100]
+  branch_layers: [100, 100, 100]
+  trunk_layers: [100, 100, 100]
 
 train:
-  batchsize: 100000
-  epochs: 10000
+  batchsize: 20
+  epochs: 10001
   milestones: [2500, 5000, 7500]
   base_lr: 0.001
   scheduler_gamma: 0.5
-  ic_loss: 1.0
-  f_loss: 1.0
-  xy_loss: 5.0
   save_dir: 'Re500-deepOnet'
   save_name: 'DeepONet-pretrain-Re500.pt'
-  data_iter: 4
-  eqn_iter: 0
 
 others:
   project: 'PINO-pretrain-ICLR'

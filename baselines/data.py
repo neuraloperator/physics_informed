@@ -301,3 +301,46 @@ class DeepOnetNS(Dataset):
         return u0, point, y
 
 
+class DeepONetCPNS(Dataset):
+    '''
+        Dataset class customized for DeepONet cartesian product's input format
+        '''
+
+    def __init__(self, datapath,
+                 nx, nt,
+                 offset=0, num=1,
+                 sub=1, sub_t=1,
+                 t_interval=1.0):
+        self.S = nx // sub
+        self.T = int(nt * t_interval) // sub_t + 1
+        self.time_scale = t_interval
+        self.N = num
+        data = np.load(datapath)
+        data = torch.tensor(data, dtype=torch.float)[..., ::sub_t, ::sub, ::sub]
+        if t_interval == 0.5:
+            data = NSdata.extract(data)
+        # transpose data into (N, S, S, T)
+        data = data.permute(0, 2, 3, 1)
+        self.vor = data[offset: offset + num, :, :, :]
+        points = get_xytgrid(S=self.S, T=self.T,
+                             bot=[0, 0, 0],
+                             top=[2 * np.pi, 2 * np.pi, self.time_scale])
+        self.xyt = torch.tensor(points, dtype=torch.float)
+        # (SxSxT, 3)
+
+    def __len__(self):
+        return self.N
+
+    def __getitem__(self, idx):
+        '''
+
+        Args:
+            idx:
+
+        Returns:
+            u0: (batchsize, u0_dim)
+            y: (batchsize, SxSxT)
+        '''
+        u0 = self.vor[idx, :, :, 0].reshape(-1)
+        y = self.vor[idx, :, :, :].reshape(-1)
+        return u0, y

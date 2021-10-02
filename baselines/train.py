@@ -1,126 +1,124 @@
-import torch
-import torch.autograd as autograd
-from train_utils.utils import save_checkpoint, zero_grad
-from train_utils.losses import LpLoss
-from .utils import cal_mixgrad
 from tqdm import tqdm
 
-try:
-    import wandb
-except ImportError:
-    wandb = None
+import torch
+from torch.utils.data import DataLoader
+from torch.optim import Adam
+from torch.optim.lr_scheduler import MultiStepLR
+
+from baselines.model import DeepONet, DeepONetCP
+from baselines.data import DeepOnetNS, DeepONetCPNS
+from train_utils.losses import LpLoss
+from train_utils.utils import save_checkpoint
+from train_utils.data_utils import sample_data
 
 
-class Baselinetrainer(object):
-    def __init__(self, model,
-                 device=torch.device('cpu'),
-                 log=False, log_args=None):
-        self.model = model.to(device)
-        self.device = device
-        self.log_init(log, log_args)
+def train_deeponet_cp(config):
+    '''
+    Train Cartesian product DeepONet
+    Args:
+        config:
 
-    def prepare_data(self, dataset):
-        # collocation points
-        self.col_xyzt = torch.from_numpy(dataset.col_xyzt).to(self.device).float()
-        self.col_uvwp = torch.from_numpy(dataset.col_uvwp).to(self.device).float()
-        # boundary points
-        self.bd_xyzt = torch.from_numpy(dataset.bd_xyzt).to(self.device).float()
-        self.bd_uvwp = torch.from_numpy(dataset.bd_uvwp).to(self.device).float()
-        # initial condition
-        self.ini_xyzt = torch.from_numpy(dataset.ini_xyzt).to(self.device).float()
-        self.ini_uvwp = torch.from_numpy(dataset.ini_uvwp).to(self.device).float()
+    Returns:
+    '''
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    data_config = config['data']
+    batch_size = config['train']['batchsize']
+    dataset = DeepONetCPNS(datapath=data_config['datapath'],
+                           nx=data_config['nx'], nt=data_config['nt'],
+                           sub=data_config['sub'], sub_t=data_config['sub_t'],
+                           offset=data_config['offset'], num=data_config['n_sample'],
+                           t_interval=data_config['time_interval'])
+    train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    u0_dim = dataset.S ** 2
+    model = DeepONetCP(branch_layer=[u0_dim] + config['model']['branch_layers'],
+                       trunk_layer=[3] + config['model']['trunk_layers']).to(device)
+    optimizer = Adam(model.parameters(), lr=config['train']['base_lr'])
+    scheduler = MultiStepLR(optimizer, milestones=config['train']['milestones'],
+                            gamma=config['train']['scheduler_gamma'])
+    pbar = range(config['train']['epochs'])
+    pbar = tqdm(pbar, dynamic_ncols=True, smoothing=0.1)
+    myloss = LpLoss(size_average=True)
+    model.train()
 
-    def train_LBFGS(self, dataset,
-                    optimizer):
-        pass
+    for e in pbar:
+        train_loss = 0.0
+        for x, y in train_loader:
+            x = x.to(device)  # initial condition, (batchsize, u0_dim)
+            grid = dataset.xyt
+            grid = grid.to(device)  # grid value, (SxSxT, 3)
+            y = y.to(device)  # ground truth, (batchsize, SxSxT)
 
-    def train_adam(self,
-                   optimizer,
-                   alpha=100.0, beta=100.0,
-                   iter_num=10,
-                   path='beltrami', name='test.pt',
-                   scheduler=None, re=1.0):
-        self.model.train()
-        self.col_xyzt.requires_grad = True
-        mse = torch.nn.MSELoss()
-        pbar = tqdm(range(iter_num), dynamic_ncols=True, smoothing=0.01)
-        for e in pbar:
-            optimizer.zero_grad()
-            zero_grad(self.col_xyzt)
+            pred = model(x, grid)
+            loss = myloss(pred, y)
 
-            pred_bd_uvwp = self.model(self.bd_xyzt)
-            bd_loss = mse(pred_bd_uvwp[0:3], self.bd_uvwp[0:3])
-
-            pred_ini_uvwp = self.model(self.ini_xyzt)
-            ini_loss = mse(pred_ini_uvwp[0:3], self.ini_uvwp[0:3])
-
-            pred_col_uvwp = self.model(self.col_xyzt)
-            f_loss = self.loss_f(pred_col_uvwp, self.col_xyzt, re=re)
-            gt_loss = mse(pred_col_uvwp, self.col_uvwp)
-            total_loss = alpha * bd_loss + beta * ini_loss + f_loss + gt_loss * 100
-            total_loss.backward()
+            model.zero_grad()
+            loss.backward()
             optimizer.step()
-            if scheduler is not None:
-                scheduler.step()
 
-            pbar.set_description(
-                (
-                    f'Total loss: {total_loss.item():.6f}, f loss: {f_loss.item():.7f} '
-                    f'Boundary loss : {bd_loss.item():.7f}, initial loss: {ini_loss.item():.7f} '
-                    f'Gt loss: {gt_loss.item():.6f}'
-                )
+            train_loss += loss.item() * y.shape[0]
+        train_loss /= len(dataset)
+        scheduler.step()
+
+        pbar.set_description(
+            (
+                f'Epoch: {e}; Averaged train loss: {train_loss:.5f}; '
             )
-            if e % 500 == 0:
-                u_err, v_err, w_err = self.eval_error()
-                print(f'u error: {u_err}, v error: {v_err}, w error: {w_err}')
-        save_checkpoint(path, name, self.model)
+        )
+        if e % 500 == 0:
+            print(f'Epoch: {e}, averaged train loss: {train_loss:.5f}')
+            save_checkpoint(config['train']['save_dir'],
+                            config['train']['save_name'].replace('.pt', f'_{e}.pt'),
+                            model, optimizer)
 
-    def eval_error(self):
-        lploss = LpLoss()
-        self.model.eval()
-        with torch.no_grad():
-            pred_uvwp = self.model(self.col_xyzt)
-            u_error = lploss(pred_uvwp[:, 0], self.col_uvwp[:, 0])
-            v_error = lploss(pred_uvwp[:, 1], self.col_uvwp[:, 1])
-            w_error = lploss(pred_uvwp[:, 2], self.col_uvwp[:, 2])
-        return u_error.item(), v_error.item(), w_error.item()
 
-    @staticmethod
-    def log_init(log, log_args):
-        if wandb and log:
-            wandb.init(project=log_args['project'],
-                       entity='hzzheng-pino',
-                       config=log_args,
-                       tags=['BelflowData'])
+def train_deeponet(config):
+    '''
+    train plain DeepOnet
+    Args:
+        config:
 
-    @staticmethod
-    def loss_f(uvwp, xyzt, re=1.0):
-        '''
-        Index table
-        u: 0, v: 1, w: 2, p: 3
-        x: 0, y: 1, z: 2, t: 3
+    Returns:
 
-        Args:
-            uvwp: output of model - (u, v, w, p)
-            xyzt: input of model - (x, y, z, t)
-            re: Reynolds number
+    '''
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    data_config = config['data']
+    dataset = DeepOnetNS(datapath=data_config['datapath'],
+                         nx=data_config['nx'], nt=data_config['nt'],
+                         sub=data_config['sub'], sub_t=data_config['sub_t'],
+                         offset=data_config['offset'], num=data_config['n_sample'],
+                         t_interval=data_config['time_interval'])
+    train_loader = DataLoader(dataset, batch_size=config['train']['batchsize'], shuffle=False)
 
-        Returns:
-            residual of NS
-        '''
-        u_xyzt, u_xx, u_yy, u_zz = cal_mixgrad(uvwp[:, 0], xyzt)
-        v_xyzt, v_xx, v_yy, v_zz = cal_mixgrad(uvwp[:, 1], xyzt)
-        w_xyzt, w_xx, w_yy, w_zz = cal_mixgrad(uvwp[:, 2], xyzt)
-        p_xyzt, = autograd.grad(outputs=[uvwp[:, 3].sum()], inputs=xyzt,
-                                create_graph=True)
+    u0_dim = dataset.S ** 2
+    model = DeepONet(branch_layer=[u0_dim] + config['model']['branch_layers'],
+                     trunk_layer=[3] + config['model']['trunk_layers']).to(device)
+    optimizer = Adam(model.parameters(), lr=config['train']['base_lr'])
+    scheduler = MultiStepLR(optimizer, milestones=config['train']['milestones'],
+                            gamma=config['train']['scheduler_gamma'])
 
-        evp4 = u_xyzt[:, 0] + v_xyzt[:, 1] + w_xyzt[:, 2]
+    pbar = range(config['train']['epochs'])
+    pbar = tqdm(pbar, dynamic_ncols=True, smoothing=0.1)
+    myloss = LpLoss(size_average=True)
+    model.train()
+    loader = sample_data(train_loader)
+    for e in pbar:
+        u0, x, y = next(loader)
+        u0 = u0.to(device)
+        x = x.to(device)
+        y = y.to(device)
+        pred = model(u0, x)
+        loss = myloss(pred, y)
+        model.zero_grad()
+        loss.backward()
+        optimizer.step()
+        scheduler.step()
 
-        evp1 = u_xyzt[:, 3] + torch.sum(uvwp[:, :3] * u_xyzt[:, :3], dim=1) \
-               + p_xyzt[:, 0] - (u_xx + u_yy + u_zz) / re
-        evp2 = v_xyzt[:, 3] + torch.sum(uvwp[:, :3] * v_xyzt[:, :3], dim=1) \
-               + p_xyzt[:, 1] - (v_xx + v_yy + v_zz) / re
-        evp3 = w_xyzt[:, 3] + torch.sum(uvwp[:, :3] * w_xyzt[:, :3], dim=1) \
-               + p_xyzt[:, 2] - (w_xx + w_yy + w_zz) / re
-
-        return torch.mean(evp1 ** 2 + evp2 ** 2 + evp3 ** 2 + evp4 ** 2)
+        pbar.set_description(
+            (
+                f'Epoch: {e}; Train loss: {loss.item():.5f}; '
+            )
+        )
+    save_checkpoint(config['train']['save_dir'],
+                    config['train']['save_name'],
+                    model, optimizer)
+    print('Done!')
