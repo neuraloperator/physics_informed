@@ -4,6 +4,70 @@ import torch
 import torch.autograd as autograd
 
 
+def get_3dboundary_points(num_x,                # number of points on x axis
+                          num_y,                # number of points on y axis
+                          num_t,                # number of points on t axis
+                          bot=(0, 0, 0),        # lower bound
+                          top=(1.0, 1.0, 1.0)   # upper bound
+                          ):
+    x_top, y_top, t_top = top
+    x_bot, y_bot, t_bot = bot
+
+    x_arr = np.linspace(x_bot, x_top, num=num_x, endpoint=False)
+    y_arr = np.linspace(y_bot, y_top, num=num_y, endpoint=False)
+    xx, yy = np.meshgrid(x_arr, y_arr, indexing='ij')
+    xarr = np.ravel(xx)
+    yarr = np.ravel(yy)
+    tarr = np.ones_like(xarr) * t_bot
+    point0 = np.stack([xarr, yarr, tarr], axis=0).T  # (SxSx1, 3), boundary on t=0
+
+    t_arr = np.linspace(t_bot, t_top, num=num_t)
+    yy, tt = np.meshgrid(y_arr, t_arr, indexing='ij')
+    yarr = np.ravel(yy)
+    tarr = np.ravel(tt)
+    xarr = np.ones_like(yarr) * x_bot
+    point2 = np.stack([xarr, yarr, tarr], axis=0).T  # (1xSxT, 3), boundary on x=0
+
+    xarr = np.ones_like(yarr) * x_top
+    point3 = np.stack([xarr, yarr, tarr], axis=0).T  # (1xSxT, 3), boundary on x=2pi
+
+    xx, tt = np.meshgrid(x_arr, t_arr, indexing='ij')
+    xarr = np.ravel(xx)
+    tarr = np.ravel(tt)
+    yarr = np.ones_like(xarr) * y_bot
+    point4 = np.stack([xarr, yarr, tarr], axis=0).T  # (128x1x65, 3), boundary on y=0
+
+    yarr = np.ones_like(xarr) * y_top
+    point5 = np.stack([xarr, yarr, tarr], axis=0).T  # (128x1x65, 3), boundary on y=2pi
+
+    points = np.concatenate([point0,
+                             point2, point3,
+                             point4, point5],
+                            axis=0)
+    return points
+
+
+def get_3dboundary(value):
+    boundary0 = value[0, :, :, 0:1]  # 128x128x1, boundary on t=0
+    # boundary1 = value[0, :, :, -1:]     # 128x128x1, boundary on t=0.5
+    boundary2 = value[0, 0:1, :, :]  # 1x128x65, boundary on x=0
+    boundary3 = value[0, -1:, :, :]  # 1x128x65, boundary on x=1
+    boundary4 = value[0, :, 0:1, :]  # 128x1x65, boundary on y=0
+    boundary5 = value[0, :, -1:, :]  # 128x1x65, boundary on y=1
+
+    part0 = np.ravel(boundary0)
+    # part1 = np.ravel(boundary1)
+    part2 = np.ravel(boundary2)
+    part3 = np.ravel(boundary3)
+    part4 = np.ravel(boundary4)
+    part5 = np.ravel(boundary5)
+    boundary = np.concatenate([part0,
+                               part2, part3,
+                               part4, part5],
+                              axis=0)[:, np.newaxis]
+    return boundary
+
+
 def get_xytgrid(S, T, bot=[0, 0, 0], top=[1, 1, 1]):
     '''
     Args:
@@ -74,14 +138,6 @@ def vel2vor(u, v, x, y):
     v_x, = autograd.grad(outputs=[v.sum()], inputs=[x], create_graph=True)
     vorticity = - u_y + v_x
     return vorticity
-
-
-def net_NS(x, y, t, model):
-    out = model(torch.cat([x, y, t], dim=1))
-    u = out[:, 0]
-    v = out[:, 1]
-    p = out[:, 2]
-    return u, v, p
 
 
 def sub_mse(vec):

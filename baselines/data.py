@@ -1,73 +1,84 @@
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from .utils import get_4dgrid, get_2dgird, concat, get_3dgrid, get_xytgrid
+from .utils import get_xytgrid, get_3dboundary, get_3dboundary_points
 from train_utils.utils import vor2vel
+import scipy.io
+import h5py
 
 
-class BelflowData(object):
-    def __init__(self, npt_col=11, npt_boundary=31, npt_init=11):
-        self.Ne = npt_col ** 4
-        self.Nb = npt_boundary ** 2 * 6
-        self.col_xyzt, self.col_uvwp = self.get_collocation(npt_col)
-        self.bd_xyzt, self.bd_uvwp = self.sample_boundary(npt_boundary)
-        self.ini_xyzt, self.ini_uvwp = self.get_init(npt_init)
-
-    @staticmethod
-    def get_collocation(num=11):
-        xyzt = get_4dgrid(num)
-        uvwp = BelflowData.cal_uvwp(xyzt)
-        return xyzt, uvwp
-
-    @staticmethod
-    def get_init(num=11):
-        xyz = get_3dgrid(num)
-        ts = np.zeros((xyz.shape[0], 1))
-        coord = np.hstack((xyz, ts))
-        uvwp = BelflowData.cal_uvwp(coord)
-        return coord, uvwp
-
-    @staticmethod
-    def sample_boundary(num=31):
+class NSLong(object):
+    def __init__(self,
+                 datapath,
+                 nx, nt,
+                 time_scale,
+                 offset=0,
+                 num=1, vel=False):
         '''
-        Sample boundary data on each face
+        Load data from mat
         Args:
-            num:
+            datapath: path to data file
+            nx: number of points in each spatial domain
+            nt: number of points in temporal domain
+            offset: index of the instance
+            num: number of instances
+            vel: compute velocity from vorticity if True
+        '''
+
+        self.time_scale = time_scale
+        self.S = nx
+        self.T = nt
+
+        with h5py.File(datapath, mode='r') as file:
+            raw = file['u']
+            data = np.array(raw)
+        vor = torch.tensor(data, dtype=torch.float).permute(3, 1, 2, 0)
+        self.vor = vor[offset: offset + num, :, :, :]     # num x 64 x 64 x 50
+        if vel:
+            self.vel_u, self.vel_v = vor2vel(self.vor, L=1.0)
+
+    def get_boundary_value(self, component=0):
+        '''
+            Get the boundary value for component-th output
+            Args:
+                component: int, 0: velocity_u; 1: velocity_v; 2: vorticity;
+            Returns:
+                value: N by 1 array, boundary value of the component
+        '''
+        if component == 0:
+            value = self.vel_u
+        elif component == 1:
+            value = self.vel_v
+        elif component == 2:
+            value = self.vor
+        else:
+            raise ValueError(f'No component {component} ')
+
+        boundary = get_3dboundary(value)
+        return boundary
+
+    def get_boundary_points(self, num_x, num_y, num_t):
+        points = get_3dboundary_points(num_x, num_y, num_t,
+                                       bot=(0,0,0),
+                                       top=(1, 1, self.time_scale))
+        return points
+
+    def get_test_xyt(self):
+        '''
 
         Returns:
+            points: (x, y, t) array with shape (S * S * T, 3)
+            values: (u, v, w) array with shape (S * S * T, 3)
 
         '''
-        samples = get_2dgird(num)
-        dataList = []
-        offset = range(3)
-        z = np.ones((samples.shape[0], 1))
-        signs = [-1, 1]
-        for i in offset:
-            for sign in signs:
-                dataList.append(concat(samples, z*sign, offset=i))
-        bd_xyzt = np.vstack(dataList)
-        bd_uvwp = BelflowData.cal_uvwp(bd_xyzt)
-        return bd_xyzt, bd_uvwp
-
-    @staticmethod
-    def cal_uvwp(xyzt, a=1, d=1):
-        x, y, z = xyzt[:, 0:1], xyzt[:, 1:2], xyzt[:, 2:3]
-        t = xyzt[:, -1:]
-        comp_x = a * x + d * y
-        comp_y = a * y + d * z
-        comp_z = a * z + d * x
-        u = -a * np.exp(- d ** 2 * t) * (np.exp(a * x) * np.sin(comp_y)
-                                         + np.exp(a * z) * np.cos(comp_x))
-        v = -a * np.exp(- d ** 2 * t) * (np.exp(a * y) * np.sin(comp_z)
-                                         + np.exp(a * x) * np.cos(comp_y))
-        w = -a * np.exp(- d ** 2 * t) * (np.exp(a * z) * np.sin(comp_x)
-                                         + np.exp(a * y) * np.cos(comp_z))
-        p = - 0.5 * a ** 2 * np.exp(-2 * d ** 2 * t) \
-            * (np.exp(2 * a * x) + np.exp(2 * a * y) + np.exp(2 * a * z) +
-               2 * np.sin(comp_x) * np.cos(comp_z) * np.exp(a * (y + z)) +
-               2 * np.sin(comp_y) * np.cos(comp_x) * np.exp(a * (z + x)) +
-               2 * np.sin(comp_z) * np.cos(comp_y) * np.exp(a * (x + y)))
-        return np.hstack((u, v, w, p))
+        points = get_xytgrid(S=self.S, T=self.T,
+                             bot=[0, 0, 0],
+                             top=[1, 1, self.time_scale])
+        u_val = np.ravel(self.vel_u)
+        v_val = np.ravel(self.vel_v)
+        w_val = np.ravel(self.vor)
+        values = np.stack([u_val, v_val, w_val], axis=0).T
+        return points, values
 
 
 class NSdata(object):
@@ -81,9 +92,10 @@ class NSdata(object):
         Load data from npy and reshape to (N, X, Y, T)
         Args:
             datapath1: path to data
-            nx: number of points on each spatial domain
-            nt: number of points on temporal domain
+            nx: number of points in each spatial domain
+            nt: number of points in temporal domain
             offset: index of the instance
+            num: number of instances
             datapath2: path to second part of data, default None
             sub: downsample interval of spatial domain
             sub_t: downsample interval of temporal domain
@@ -114,24 +126,6 @@ class NSdata(object):
         if vel:
             self.vel_u, self.vel_v = vor2vel(self.vor)  # Compute velocity from vorticity
 
-    def get_operator_data(self):
-        '''
-        fetch data formated for deepOnet
-        Returns:
-            X: (N x S x S x T, SxS + 3)
-            y: (N x S x S x T, 1)
-        '''
-        N = self.vor.shape[0]
-        a_arr = np.reshape(self.vor[:, :, :, 0], (N, -1))               # (N, SxS)
-        a_part = np.repeat(a_arr, self.S * self.S * self.T, axis=0)     # (N x S x S x T, SxS)
-        coords = get_xytgrid(S=self.S, T=self.T,
-                             bot=[0, 0, 0],
-                             top=[2 * np.pi, 2 * np.pi, self.time_scale])   # (SxSxT, 3)
-        x_part = np.repeat(coords, N, axis=0)       # (NxSxSxT, 3)
-        X_train = np.concatenate([a_part, x_part], axis=1)
-        y_train = np.ravel(self.vor)
-        return X_train, y_train
-
     def get_boundary_value(self, component=0):
         '''
         Get the boundary value for component-th output
@@ -149,28 +143,8 @@ class NSdata(object):
         else:
             raise ValueError(f'No component {component} ')
 
-        boundary0 = value[0, :, :, 0:1]     # 128x128x1, boundary on t=0
-        # boundary1 = value[0, :, :, -1:]     # 128x128x1, boundary on t=0.5
-        boundary2 = value[0, 0:1, :, :]     # 1x128x65, boundary on x=0
-        boundary3 = value[0, -1:, :, :]     # 1x128x65, boundary on x=1
-        boundary4 = value[0, :, 0:1, :]     # 128x1x65, boundary on y=0
-        boundary5 = value[0, :, -1:, :]     # 128x1x65, boundary on y=1
-
-        part0 = np.ravel(boundary0)
-        # part1 = np.ravel(boundary1)
-        part2 = np.ravel(boundary2)
-        part3 = np.ravel(boundary3)
-        part4 = np.ravel(boundary4)
-        part5 = np.ravel(boundary5)
-        boundary = np.concatenate([part0,
-                                   part2, part3,
-                                   part4, part5],
-                                  axis=0)[:, np.newaxis]
-        # boundary = part0[:, np.newaxis]
+        boundary = get_3dboundary(value)
         return boundary
-        # bd_solnx0 = self.data[0, 0:1, ::2, ::2]     # num_y//2 x (num_t //2 +1)
-        # bd_solny0 = self.data[0, ::2, 0:1, ::2]     # num_x //2 x (num_t //2 + 1)
-        # bd_solnx1 = self.data[0, -1:, ]
 
     def get_boundary_points(self, num_x, num_y, num_t):
         '''
@@ -181,40 +155,43 @@ class NSdata(object):
         Returns:
             points: N by 3 array
         '''
-        x_arr = np.linspace(0, 2 * np.pi, num=num_x, endpoint=False)
-        y_arr = np.linspace(0, 2 * np.pi, num=num_y, endpoint=False)
-        xx, yy = np.meshgrid(x_arr, y_arr, indexing='ij')
-        xarr = np.ravel(xx)
-        yarr = np.ravel(yy)
-        tarr = np.zeros_like(xarr)
-        point0 = np.stack([xarr, yarr, tarr], axis=0).T     # (128x128x1, 3), boundary on t=0
-
-        # tarr = np.ones_like(xarr) * self.time_scale
-        # point1 = np.stack([xarr, yarr, tarr], axis=0).T     # (128x128x1, 3), boundary on t=0.5
-
-        t_arr = np.linspace(0, self.time_scale, num=num_t)
-        yy, tt = np.meshgrid(y_arr, t_arr, indexing='ij')
-        yarr = np.ravel(yy)
-        tarr = np.ravel(tt)
-        xarr = np.zeros_like(yarr)
-        point2 = np.stack([xarr, yarr, tarr], axis=0).T     # (1x128x65, 3), boundary on x=0
-
-        xarr = np.ones_like(yarr) * 2 * np.pi
-        point3 = np.stack([xarr, yarr, tarr], axis=0).T     # (1x128x65, 3), boundary on x=2pi
-
-        xx, tt = np.meshgrid(x_arr, t_arr, indexing='ij')
-        xarr = np.ravel(xx)
-        tarr = np.ravel(tt)
-        yarr = np.zeros_like(xarr)
-        point4 = np.stack([xarr, yarr, tarr], axis=0).T     # (128x1x65, 3), boundary on y=0
-
-        yarr = np.ones_like(xarr) * 2 * np.pi
-        point5 = np.stack([xarr, yarr, tarr], axis=0).T     # (128x1x65, 3), boundary on y=2pi
-
-        points = np.concatenate([point0,
-                                 point2, point3,
-                                 point4, point5],
-                                axis=0)
+        points = get_3dboundary_points(num_x, num_y, num_t,
+                                       bot=(0, 0, 0),
+                                       top=(2 * np.pi, 2 * np.pi, self.time_scale))
+        # x_arr = np.linspace(0, 2 * np.pi, num=num_x, endpoint=False)
+        # y_arr = np.linspace(0, 2 * np.pi, num=num_y, endpoint=False)
+        # xx, yy = np.meshgrid(x_arr, y_arr, indexing='ij')
+        # xarr = np.ravel(xx)
+        # yarr = np.ravel(yy)
+        # tarr = np.zeros_like(xarr)
+        # point0 = np.stack([xarr, yarr, tarr], axis=0).T     # (128x128x1, 3), boundary on t=0
+        #
+        # # tarr = np.ones_like(xarr) * self.time_scale
+        # # point1 = np.stack([xarr, yarr, tarr], axis=0).T     # (128x128x1, 3), boundary on t=0.5
+        #
+        # t_arr = np.linspace(0, self.time_scale, num=num_t)
+        # yy, tt = np.meshgrid(y_arr, t_arr, indexing='ij')
+        # yarr = np.ravel(yy)
+        # tarr = np.ravel(tt)
+        # xarr = np.zeros_like(yarr)
+        # point2 = np.stack([xarr, yarr, tarr], axis=0).T     # (1x128x65, 3), boundary on x=0
+        #
+        # xarr = np.ones_like(yarr) * 2 * np.pi
+        # point3 = np.stack([xarr, yarr, tarr], axis=0).T     # (1x128x65, 3), boundary on x=2pi
+        #
+        # xx, tt = np.meshgrid(x_arr, t_arr, indexing='ij')
+        # xarr = np.ravel(xx)
+        # tarr = np.ravel(tt)
+        # yarr = np.zeros_like(xarr)
+        # point4 = np.stack([xarr, yarr, tarr], axis=0).T     # (128x1x65, 3), boundary on y=0
+        #
+        # yarr = np.ones_like(xarr) * 2 * np.pi
+        # point5 = np.stack([xarr, yarr, tarr], axis=0).T     # (128x1x65, 3), boundary on y=2pi
+        #
+        # points = np.concatenate([point0,
+        #                          point2, point3,
+        #                          point4, point5],
+        #                         axis=0)
         return points
 
     def get_test_xyt(self):

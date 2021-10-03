@@ -1,0 +1,31 @@
+data:
+  datapath: 'data/ns_V1e-3_N5000_T50.mat'
+  vis: 0.001
+  total_num: 5000
+  offset: 4900
+  n_sample: 1
+  time_scale: 49
+  nx: 64
+  nt: 50
+  sub: 1      # not used here
+  sub_t: 1    # not used here
+  shuffle: True
+
+model:
+  layers: [3, 100, 100, 100, 100, 3]
+
+train:
+  epochs: 15000
+  milestones: [1000, 1500, 2000]
+  base_lr: 0.0025
+  beta1: 0.9
+  beta2: 0.999
+  scheduler_gamma: 0.5
+  ic_loss: 5.0
+  f_loss: 1.0
+  xy_loss: 0
+  save_dir: 'Re500-FDM'
+  save_name: 'PINO-scratch-05s.pt'
+
+log:
+  logfile: 'log/pinns-50s.csv'

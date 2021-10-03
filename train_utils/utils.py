@@ -3,7 +3,7 @@ import numpy as np
 import torch
 
 
-def vor2vel(w):
+def vor2vel(w, L=2 * np.pi):
     '''
     Convert vorticity into velocity
     Args:
@@ -34,8 +34,8 @@ def vor2vel(w):
     lap[0, 0, 0, 0] = 1.0
     f_h = w_h / lap
 
-    ux_h = 1j * k_y * f_h
-    uy_h = -1j * k_x * f_h
+    ux_h = 2 * np.pi / L * 1j * k_y * f_h
+    uy_h = -2 * np.pi / L * 1j * k_x * f_h
 
     ux = torch.fft.irfft2(ux_h[:, :, :k_max + 1], dim=[1, 2])
     uy = torch.fft.irfft2(uy_h[:, :, :k_max + 1], dim=[1, 2])
