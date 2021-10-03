@@ -94,6 +94,16 @@ def get_2dgrid(S):
     return points
 
 
+def torch2dgrid(num_x, num_y, bot=(0,0), top=(1,1)):
+    x_bot, y_bot = bot
+    x_top, y_top = top
+    x_arr = torch.linspace(x_bot, x_top, steps=num_x)
+    y_arr = torch.linspace(y_bot, y_top, steps=num_y)
+    xx, yy = torch.meshgrid(x_arr, y_arr)
+    mesh = torch.stack([xx, yy], dim=2)
+    return mesh
+
+
 def get_grid3d(S, T, time_scale=1.0, device='cpu'):
     gridx = torch.tensor(np.linspace(0, 1, S + 1)[:-1], dtype=torch.float, device=device)
     gridx = gridx.reshape(1, S, 1, 1, 1).repeat([1, 1, S, T, 1])

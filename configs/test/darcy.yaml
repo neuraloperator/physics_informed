@@ -3,7 +3,7 @@ data:
   datapath: '/mnt/md1/zongyi/piececonst_r421_N1024_smooth2.mat'
   total_num: 1000
   offset: 0
-  n_sample: 1000
+  n_sample: 500
   nx: 421
   sub: 7
   shuffle: False
@@ -12,7 +12,10 @@ model:
   layers: [64, 64, 64, 64, 64]
   modes1: [8, 8, 8, 8]
   modes2: [8, 8, 8, 8]
+  modes3: [8, 8, 8, 8]
   fc_dim: 128
+  activation: gelu
+
 
 train:
   batchsize: 1
@@ -25,8 +28,6 @@ train:
   xy_loss: 5.0
   save_dir: 'Darcy'
   save_name: 'PINO-pretrain-4C0.pt'
-  data_iter: 4
-  eqn_iter: 0
 
 others:
   project: 'PINO-Darcy'

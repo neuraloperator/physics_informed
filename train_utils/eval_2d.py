@@ -1,0 +1,56 @@
+from tqdm import tqdm
+import numpy as np
+
+import torch
+
+from .losses import LpLoss, darcy_loss
+
+try:
+    import wandb
+except ImportError:
+    wandb = None
+
+
+def eval_darcy(model,
+               dataloader,
+               config,
+               device,
+               use_tqdm=True):
+    model.eval()
+    myloss = LpLoss(size_average=True)
+    if use_tqdm:
+        pbar = tqdm(dataloader, dynamic_ncols=True, smoothing=0.05)
+    else:
+        pbar = dataloader
+
+    mesh = dataloader.dataset.mesh
+    mollifier = torch.sin(np.pi * mesh[..., 0]) * torch.cos(np.pi * mesh[..., 1]) * 0.001
+    mollifier = mollifier.to(device)
+    f_val = 0.0
+    test_err = 0.0
+
+    with torch.no_grad():
+        for x, y in pbar:
+            x, y = x.to(device), y.to(device)
+
+            pred = model(x).reshape(y.shape)
+            pred = pred * mollifier
+
+            data_loss = myloss(pred, y)
+            a = x[..., 0]
+            f_loss = darcy_loss(pred, a)
+
+            test_err += data_loss.item() * y.shape[0]
+            f_val += f_loss.item() * y.shape[0]
+
+            if use_tqdm:
+                pbar.set_description(
+                    (
+                        f'Equation error: {f_loss.item():.5f}, test l2 error: {data_loss.item()}'
+                    )
+                )
+    f_val /= len(dataloader.dataset)
+    test_err /= len(dataloader.dataset)
+
+    print(f'==Averaged relative L2 error is: {test_err}==\n'
+          f'==Averaged equation error is: {f_val}==')

@@ -7,7 +7,11 @@ from .basics import SpectralConv2d
 
 
 class FNN2d(nn.Module):
-    def __init__(self, modes1, modes2, width, layers=None, in_dim=3, out_dim=1):
+    def __init__(self, modes1, modes2,
+                 width=64, fc_dim=128,
+                 layers=None,
+                 in_dim=3, out_dim=1,
+                 activation='tanh'):
         super(FNN2d, self).__init__()
 
         """
@@ -41,8 +45,16 @@ class FNN2d(nn.Module):
         self.ws = nn.ModuleList([nn.Conv1d(in_size, out_size, 1)
                                  for in_size, out_size in zip(self.layers, self.layers[1:])])
 
-        self.fc1 = nn.Linear(layers[-1], 128)
-        self.fc2 = nn.Linear(128, out_dim)
+        self.fc1 = nn.Linear(layers[-1], fc_dim)
+        self.fc2 = nn.Linear(fc_dim, out_dim)
+        if activation =='tanh':
+            self.activation = F.tanh
+        elif activation == 'gelu':
+            self.activation = F.gelu
+        elif activation == 'relu':
+            self.activation == F.relu
+        else:
+            raise ValueError(f'{activation} is not supported')
 
     def forward(self, x):
         '''
@@ -63,10 +75,10 @@ class FNN2d(nn.Module):
             x2 = w(x.view(batchsize, self.layers[i], -1)).view(batchsize, self.layers[i+1], size_x, size_y)
             x = x1 + x2
             if i != length - 1:
-                x = torch.tanh(x)
+                x = self.activation(x)
         x = x.permute(0, 2, 3, 1)
         x = self.fc1(x)
-        x = torch.tanh(x)
+        x = self.activation(x)
         x = self.fc2(x)
         return x
 

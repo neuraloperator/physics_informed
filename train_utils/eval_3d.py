@@ -12,17 +12,20 @@ except ImportError:
     wandb = None
 
 
-def evaluate(model,  # model
-             loader,  # dataset instance
-             dataloader,  # dataloader
-             forcing,  # forcing
-             config,  # configuration dict
-             device,  # device id
-             log=False,
-             project='PINO-default',
-             group='FDM',
-             tags=['Nan'],
-             use_tqdm=True):
+def eval_ns(model,  # model
+            loader,  # dataset instance
+            dataloader,  # dataloader
+            forcing,  # forcing
+            config,  # configuration dict
+            device,  # device id
+            log=False,
+            project='PINO-default',
+            group='FDM',
+            tags=['Nan'],
+            use_tqdm=True):
+    '''
+    Evaluate the model for Navier Stokes equation
+    '''
     if wandb and log:
         run = wandb.init(project=project,
                          entity='hzzheng-pino',

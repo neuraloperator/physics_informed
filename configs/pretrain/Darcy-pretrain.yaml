@@ -9,25 +9,24 @@ data:
 
 model:
   layers: [64, 64, 64, 64, 64]
-  modes1: [8, 8, 8, 8]
-  modes2: [8, 8, 8, 8]
-  modes3: [8, 8, 8, 8]
+  modes1: [20, 20, 20, 20]
+  modes2: [20, 20, 20, 20]
   fc_dim: 128
+  activation: gelu
 
 train:
-  batchsize: 1
-  epochs: 1000
-  milestones: [200, 400, 600, 800]
+  batchsize: 20
+  epochs: 500
+  milestones: [100, 200, 300, 400]
   base_lr: 0.001
   scheduler_gamma: 0.5
-  ic_loss: 1.0
   f_loss: 1.0
-  xy_loss: 5.0
+  xy_loss: 0.0
   save_dir: 'darcy-FDM'
   save_name: 'darcy-pretrain.pt'
 
 others:
-  project: 'PINO-pretrain'
-  group: 'Re100-1s-tanh'
+  project: 'PINO-Darcy-pretrain'
+  group: 'gelu'
 
 

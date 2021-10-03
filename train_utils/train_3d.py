@@ -51,7 +51,6 @@ def train(model,
     zero = torch.zeros(1).to(rank)
     t2 = t1 = 0
     for ep in pbar:
-        model.train()
         loss_dict = {'train_loss': 0.0,
                      'train_ic': 0.0,
                      'train_f': 0.0,

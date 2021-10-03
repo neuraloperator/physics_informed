@@ -9,7 +9,7 @@ except ImportError:
 
 import torch
 from torch.utils.data import Dataset
-from .utils import get_grid3d,convert_ic
+from .utils import get_grid3d, convert_ic, torch2dgrid
 
 
 def online_loader(sampler, S, T, time_scale, batchsize=1):
@@ -297,12 +297,14 @@ class DarcyFlow(Dataset):
         u = data['sol']
         self.a = torch.tensor(a[offset: offset + num, ::sub, ::sub], dtype=torch.float)
         self.u = torch.tensor(u[offset: offset + num, ::sub, ::sub], dtype=torch.float)
+        self.mesh = torch2dgrid(self.S, self.S)
 
     def __len__(self):
         return self.a.shape[0]
 
     def __getitem__(self, item):
-        pass
+        fa = self.a[item]
+        return torch.cat([fa.unsqueeze(2), self.mesh], dim=2), self.u[item]
 
 
 

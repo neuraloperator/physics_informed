@@ -5,13 +5,19 @@
 - wandb
 - tqdm
 - scipy
+- h5py
 - numpy
-- DeepXDE for baseline
+- DeepXDE:latest
+- tensorflow 2.4.0
 
 ## Data description
 ### Burgers equation
 
 ### Darcy flow 
+- spatial domain: $x\in (0,1)^2$
+- Data file: `piececonst_r421_N1024_smooth1.mat`, `piececonst_r421_N1024_smooth2.mat`
+- Raw data shape: 1024x421x421
+
 
 ### Long roll out of Navier Stokes equation
 - spatial domain: $x\in (0, 1)^2$
@@ -29,16 +35,29 @@ Data file: `nv_V1e-3_N5000_T50.mat`, with shape 50 x 64 x 64 x 5000
 
 Test data: `NS_Re500_s256_T100_test.npy`
 
-Configuration file format: see `.yaml` files under folder `configs` for example.
+Configuration file format: see `.yaml` files under folder `configs` for detail. 
+
+## Code for Darcy Flow
+
+### Operator learning
+To run PINO for Darcy Flow, use, e.g., 
+```bash
+python3 train_operator.py --config_path configs/pretrain/Darcy-pretrain.yaml
+```
+
+### Test-time optimization
+
+### Baseline
+
 ## Code for Navier Stokes equation
 ### Train PINO for short time period
-To run operator learning, use
+To run operator learning, use, e.g., 
 ```bash
-python3 train_operator.py --config_path configs/pretrain/[configuration file name].yaml
+python3 train_operator.py --config_path configs/pretrain/Re500-pretrain-05s-4C0.yaml
 ```
 To evaluate trained operator, use
 ```bash
-python3 val_operator.py --config_path configs/test/Re500-05s.yaml
+python3 eval_operator.py --config_path configs/test/Re500-05s.yaml
 ```
 To run test-time optimization, use
 ```bash
