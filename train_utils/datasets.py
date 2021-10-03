@@ -9,7 +9,7 @@ except ImportError:
 
 import torch
 from torch.utils.data import Dataset
-from .utils import get_grid3d, vor2vel, convert_ic
+from .utils import get_grid3d,convert_ic
 
 
 def online_loader(sampler, S, T, time_scale, batchsize=1):
@@ -285,57 +285,24 @@ class BurgerData(Dataset):
         return X_u, u
 
 
-class NS40data(Dataset):
-    def __init__(self, datapath, nx, nt, sub=1, sub_t=1, N=1000, index=1):
-        self.N = N
-        self.S = nx // sub
-        self.T = nt // sub_t + 1
-        data = np.load(datapath)
-        data = torch.tensor(data, dtype=torch.float)[..., ::sub, ::sub]
-        self.data = self.rearrange(data, sub_t)[-index]
-        self.x, self.y, self.t, self.vor = self.sample_xyt()
-        self.ux, self.uy = self.convert2vel()
-        self.u_gt = self.ux.reshape(-1).unsqueeze(0).permute(1, 0)
-        self.v_gt = self.ux.reshape(-1).unsqueeze(0).permute(1, 0)
+class DarcyFlow(Dataset):
+    def __init__(self,
+                 datapath,
+                 nx, sub,
+                 offset=0,
+                 num=1):
+        self.S = int(nx // sub) + 1
+        data = scipy.io.loadmat(datapath)
+        a = data['coeff']
+        u = data['sol']
+        self.a = torch.tensor(a[offset: offset + num, ::sub, ::sub], dtype=torch.float)
+        self.u = torch.tensor(u[offset: offset + num, ::sub, ::sub], dtype=torch.float)
 
     def __len__(self):
-        return len(self.x)
+        return self.a.shape[0]
 
-    def __getitem__(self, idx):
-        return self.x[idx], self.y[idx], self.t[idx], self.vor[idx], self.u_gt[idx], self.v_gt[idx]
+    def __getitem__(self, item):
+        pass
 
-    def convert2vel(self):
-        ux, uy = vor2vel(self.data.unsqueeze(0))
-        return ux, uy
-
-    def rearrange(self, data, sub_t):
-        new_data = torch.zeros(self.N, self.S, self.S, self.T)
-        for i in range(self.N):
-            new_data[i] = data[i * 64: (i + 1) * 64 + 1: sub_t].permute(1, 2, 0)
-        return new_data
-
-    def get_boundary(self):
-        bd_vor = self.data[:, :, 0].reshape(-1).unsqueeze(0).permute(1, 0)
-
-        xs = torch.tensor(np.linspace(0, 1, self.S + 1)[:-1], dtype=torch.float)
-        ys = torch.tensor(np.linspace(0, 1, self.S + 1)[:-1], dtype=torch.float)
-        gridx, gridy = torch.meshgrid(xs, ys)
-        bd_x = gridx.reshape(-1).unsqueeze(0).permute(1, 0)
-        bd_y = gridy.reshape(-1).unsqueeze(0).permute(1, 0)
-        bd_t = torch.zeros_like(bd_x)
-        ux = self.ux[:, :, :, 0].reshape(-1).unsqueeze(0).permute(1, 0)
-        uy = self.uy[:, :, :, 0].reshape(-1).unsqueeze(0).permute(1, 0)
-        return bd_x, bd_y, bd_t, bd_vor, ux, uy
-
-    def sample_xyt(self, sub=1):
-        xs = torch.tensor(np.linspace(0, 1, self.S + 1)[:-1], dtype=torch.float)[::sub]
-        ys = torch.tensor(np.linspace(0, 1, self.S + 1)[:-1], dtype=torch.float)[::sub]
-        ts = torch.tensor(np.linspace(0, 1, self.T), dtype=torch.float)[::sub]
-        gridx, gridy, gridt = torch.meshgrid(xs, ys, ts)
-        x = gridx.reshape(-1).unsqueeze(0).permute(1, 0)
-        y = gridy.reshape(-1).unsqueeze(0).permute(1, 0)
-        t = torch.zeros_like(x)
-        vor = self.data[::sub, ::sub, ::sub].reshape(-1).unsqueeze(0).permute(1, 0)
-        return x, y, t, vor
 
 

@@ -14,7 +14,7 @@ from train_utils.train_3d import train
 from train_utils.distributed import setup, cleanup
 from train_utils.utils import requires_grad
 
-from models import FNN3d
+from models import FNN3d, FNN2d
 
 
 def subprocess_fn(rank, args):

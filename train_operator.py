@@ -5,23 +5,12 @@ import torch
 
 from solver.random_fields import GaussianRF
 from train_utils import Adam
-from train_utils.datasets import NSLoader, online_loader
+from train_utils.datasets import NSLoader, online_loader, DarcyFlow
 from train_utils.train_3d import mixed_train
 from models import FNN3d
 
 
-if __name__ == '__main__':
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
-    # parse options
-    parser = ArgumentParser(description='Basic paser')
-    parser.add_argument('--config_path', type=str, help='Path to the configuration file')
-    parser.add_argument('--log', action='store_true', help='Turn on the wandb')
-    options = parser.parse_args()
-
-    config_file = options.config_path
-    with open(config_file, 'r') as stream:
-        config = yaml.load(stream, yaml.FullLoader)
+def train_3d(config):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     data_config = config['data']
 
@@ -81,3 +70,30 @@ if __name__ == '__main__':
                 log=options.log,
                 project=config['others']['project'],
                 group=config['others']['group'])
+
+
+def train_2d(config):
+    data_config = config['data']
+    dataset = DarcyFlow(data_config['datapath'],
+                        nx=data_config['nx'], sub=data_config['sub'],
+                        offset=data_config['offset'], num=data_config['n_sample'])
+    print('Done!')
+
+
+if __name__ == '__main__':
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+    # parse options
+    parser = ArgumentParser(description='Basic paser')
+    parser.add_argument('--config_path', type=str, help='Path to the configuration file')
+    parser.add_argument('--log', action='store_true', help='Turn on the wandb')
+    options = parser.parse_args()
+
+    config_file = options.config_path
+    with open(config_file, 'r') as stream:
+        config = yaml.load(stream, yaml.FullLoader)
+
+    if 'name' in config['data'] and config['data']['name'] == 'Darcy':
+        train_2d(config)
+    else:
+        train_3d(config)

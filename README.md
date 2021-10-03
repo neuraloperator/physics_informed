@@ -19,7 +19,7 @@
 - forcing: $0.1(\sin(2\pi(x_1+x_2)) + \cos(2\pi(x_1+x_2)))$
 - viscosity = 0.001
 
-Data file: `nv_V1e-3_N5000_T50.mat`, with shape 5000 x 64 x 64 x 50 
+Data file: `nv_V1e-3_N5000_T50.mat`, with shape 50 x 64 x 64 x 5000 
 ### Navier Stokes with Reynolds number 500
 - spatial domain: $x\in (0, 2\pi)^2$
 - temporal domain: $t \in \[0, 0.5\]$
