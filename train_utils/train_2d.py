@@ -36,7 +36,7 @@ def train_2d_operator(model,
     if use_tqdm:
         pbar = tqdm(pbar, dynamic_ncols=True, smoothing=0.1)
     mesh = train_loader.dataset.mesh
-    mollifier = torch.sin(np.pi * mesh[..., 0]) * torch.cos(np.pi * mesh[..., 1]) * 0.001
+    mollifier = torch.sin(np.pi * mesh[..., 0]) * torch.sin(np.pi * mesh[..., 1]) * 0.001
     mollifier = mollifier.to(rank)
     for e in pbar:
         loss_dict = {'train_loss': 0.0,

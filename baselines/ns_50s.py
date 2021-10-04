@@ -54,6 +54,7 @@ def pde(x, u):
 def train_longtime(offset, config, args):
     seed = random.randint(1, 10000)
     print(f'Random seed :{seed}')
+    np.random.seed(seed)
     # construct dataloader
     data_config = config['data']
     spatial_domain = dde.geometry.Rectangle(xmin=[0, 0], xmax=[1, 1])

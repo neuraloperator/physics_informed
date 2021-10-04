@@ -24,7 +24,7 @@ def eval_darcy(model,
         pbar = dataloader
 
     mesh = dataloader.dataset.mesh
-    mollifier = torch.sin(np.pi * mesh[..., 0]) * torch.cos(np.pi * mesh[..., 1]) * 0.001
+    mollifier = torch.sin(np.pi * mesh[..., 0]) * torch.sin(np.pi * mesh[..., 1]) * 0.001
     mollifier = mollifier.to(device)
     f_val = 0.0
     test_err = 0.0

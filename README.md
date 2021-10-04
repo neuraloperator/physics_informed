@@ -26,14 +26,18 @@
 - viscosity = 0.001
 
 Data file: `nv_V1e-3_N5000_T50.mat`, with shape 50 x 64 x 64 x 5000 
+
+- train set: -1-4799
+- test set: 4799-4999
 ### Navier Stokes with Reynolds number 500
 - spatial domain: $x\in (0, 2\pi)^2$
 - temporal domain: $t \in \[0, 0.5\]$
 - forcing: $-4\cos(4x_2)$
 - Reynolds number: 500
 
+Train set: 
 
-Test data: `NS_Re500_s256_T100_test.npy`
+Test set: `NS_Re500_s256_T100_test.npy`
 
 Configuration file format: see `.yaml` files under folder `configs` for detail. 
 
@@ -44,8 +48,16 @@ To run PINO for Darcy Flow, use, e.g.,
 ```bash
 python3 train_operator.py --config_path configs/pretrain/Darcy-pretrain.yaml
 ```
+To evaluate operator for Darcy Flow, use, e.g., 
+```bash
+python3 eval_operator.py --config_path configs/test/darcy.yaml
+```
 
 ### Test-time optimization
+To do test-time optimization for Darcy Flow, use, e.g., 
+```bash
+python3 run_pino2d.py --config_path configs/finetune/Darcy-finetune.yaml --start [starting index] --stop [stopping index]
+```
 
 ### Baseline
 

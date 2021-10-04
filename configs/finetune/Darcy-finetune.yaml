@@ -1,0 +1,33 @@
+data:
+  name: 'Darcy'
+  datapath: '/mnt/md1/zongyi/piececonst_r421_N1024_smooth2.mat'
+  total_num: 1024
+  offset: 500
+  n_sample: 1
+  nx: 421
+  sub: 7
+
+model:
+  layers: [64, 64, 64, 64, 64]
+  modes1: [20, 20, 20, 20]
+  modes2: [20, 20, 20, 20]
+  fc_dim: 128
+  activation: gelu
+
+train:
+  batchsize: 1
+  epochs: 500
+  milestones: [100, 200, 300, 400]
+  base_lr: 0.0025
+  scheduler_gamma: 0.5
+  f_loss: 1.0
+  xy_loss: 0.0
+  save_dir: 'darcy-FDM'
+  save_name: 'darcy-finetune-pino.pt'
+  ckpt: 'checkpoints/darcy-FDM/darcy-pretrain-eqn.pt'
+
+others:
+  project: 'ICLR-Darcy-finetune'
+  group: 'gelu-pino-eqn'
+
+

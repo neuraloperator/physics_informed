@@ -51,7 +51,7 @@ def test_2d(config):
     dataset = DarcyFlow(data_config['datapath'],
                         nx=data_config['nx'], sub=data_config['sub'],
                         offset=data_config['offset'], num=data_config['n_sample'])
-    dataloader = DataLoader(dataset, batch_size=config['train']['batchsize'], shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=config['train']['batchsize'], shuffle=False)
     print(device)
     model = FNN2d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
@@ -75,5 +75,10 @@ if __name__ == '__main__':
     config_file = options.config_path
     with open(config_file, 'r') as stream:
         config = yaml.load(stream, yaml.FullLoader)
+
+    if 'name' in config['data'] and config['data']['name'] == 'Darcy':
+        test_2d(config)
+    else:
+        test_3d(config)
 
 

@@ -16,17 +16,17 @@ model:
 
 train:
   batchsize: 20
-  epochs: 500
-  milestones: [100, 200, 300, 400]
+  epochs: 300
+  milestones: [100, 150, 200]
   base_lr: 0.001
   scheduler_gamma: 0.5
   f_loss: 1.0
-  xy_loss: 0.0
+  xy_loss: 5.0
   save_dir: 'darcy-FDM'
-  save_name: 'darcy-pretrain.pt'
+  save_name: 'darcy-pretrain-pino.pt'
 
 others:
   project: 'PINO-Darcy-pretrain'
-  group: 'gelu'
+  group: 'gelu-pino'
 
 

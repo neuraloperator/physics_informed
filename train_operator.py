@@ -75,12 +75,13 @@ def train_3d(args, config):
 
 
 def train_2d(args, config):
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     data_config = config['data']
+
     dataset = DarcyFlow(data_config['datapath'],
                         nx=data_config['nx'], sub=data_config['sub'],
                         offset=data_config['offset'], num=data_config['n_sample'])
     train_loader = DataLoader(dataset, batch_size=config['train']['batchsize'], shuffle=True)
-    print(device)
     model = FNN2d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
                   fc_dim=config['model']['fc_dim'],
@@ -93,7 +94,6 @@ def train_2d(args, config):
         model.load_state_dict(ckpt['model'])
         print('Weights loaded from %s' % ckpt_path)
 
-    print('Done!')
     optimizer = Adam(model.parameters(), betas=(0.9, 0.999),
                          lr=config['train']['base_lr'])
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
