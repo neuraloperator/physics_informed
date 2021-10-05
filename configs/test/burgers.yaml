@@ -1,0 +1,27 @@
+data:
+  name: 'Darcy'
+  datapath: 'data/burgers_pino.mat'
+  total_num: 1000
+  offset: 800
+  n_sample: 200
+  nx: 128
+  nt: 100
+  sub: 1
+  sub_t: 1
+
+model:
+  layers: [16, 24, 24, 32, 32]
+  modes1: [15, 12, 9, 9]
+  modes2: [15, 12, 9, 9]
+  fc_dim: 128
+  activation: gelu
+
+test:
+  batchsize: 1
+  ckpt: 'checkpoints/burgers-FDM/burgers-pretrain-pino.pt'
+
+log:
+  project: 'PINO-burgers-test'
+  group: 'gelu-test'
+
+

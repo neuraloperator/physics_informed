@@ -24,10 +24,10 @@ train:
   xy_loss: 0.0
   save_dir: 'darcy-FDM'
   save_name: 'darcy-finetune-pino.pt'
-  ckpt: 'checkpoints/darcy-FDM/darcy-pretrain-eqn.pt'
+  ckpt: 'checkpoints/darcy-FDM/darcy-pretrain-pino.pt'
 
 others:
   project: 'ICLR-Darcy-finetune'
-  group: 'gelu-pino-eqn'
+  group: 'gelu-pino-pino'
 
 

@@ -9,8 +9,8 @@ data:
   shuffle: False
 
 model:
-  branch_layers: [50, 50, 50, 50, 50, 50, 50, 50]
-  trunk_layers: [50, 50, 50, 50, 50, 50, 50, 50]
+  branch_layers: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50]
+  trunk_layers: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50]
   activation: tanh
 
 test:
