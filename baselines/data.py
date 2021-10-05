@@ -2,9 +2,31 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 from .utils import get_xytgrid, get_3dboundary, get_3dboundary_points
-from train_utils.utils import vor2vel
+from train_utils.utils import vor2vel, torch2dgrid
 import scipy.io
 import h5py
+
+
+class DarcyFlow(Dataset):
+    def __init__(self,
+                 datapath,
+                 nx, sub,
+                 offset=0,
+                 num=1):
+        self.S = int(nx // sub) + 1
+        data = scipy.io.loadmat(datapath)
+        a = data['coeff']
+        u = data['sol']
+        self.a = torch.tensor(a[offset: offset + num, ::sub, ::sub], dtype=torch.float)
+        self.u = torch.tensor(u[offset: offset + num, ::sub, ::sub], dtype=torch.float)
+        self.mesh = torch2dgrid(self.S, self.S)
+
+    def __len__(self):
+        return self.a.shape[0]
+
+    def __getitem__(self, item):
+        fa = self.a[item]
+        return fa.reshape(-1), self.u[item].reshape(-1)
 
 
 class NSLong(object):

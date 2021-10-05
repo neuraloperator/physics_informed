@@ -26,8 +26,8 @@ def eval_darcy(model,
     mesh = dataloader.dataset.mesh
     mollifier = torch.sin(np.pi * mesh[..., 0]) * torch.sin(np.pi * mesh[..., 1]) * 0.001
     mollifier = mollifier.to(device)
-    f_val = 0.0
-    test_err = 0.0
+    f_val = []
+    test_err = []
 
     with torch.no_grad():
         for x, y in pbar:
@@ -40,17 +40,19 @@ def eval_darcy(model,
             a = x[..., 0]
             f_loss = darcy_loss(pred, a)
 
-            test_err += data_loss.item() * y.shape[0]
-            f_val += f_loss.item() * y.shape[0]
-
+            test_err.append(data_loss.item())
+            f_val.append(f_loss.item())
             if use_tqdm:
                 pbar.set_description(
                     (
                         f'Equation error: {f_loss.item():.5f}, test l2 error: {data_loss.item()}'
                     )
                 )
-    f_val /= len(dataloader.dataset)
-    test_err /= len(dataloader.dataset)
+    mean_f_err = np.mean(f_val)
+    std_f_err  = np.std(f_val, ddof=1) / np.sqrt(len(f_val))
 
-    print(f'==Averaged relative L2 error is: {test_err}==\n'
-          f'==Averaged equation error is: {f_val}==')
+    mean_err = np.mean(test_err)
+    std_err = np.std(test_err, ddof=1) / np.sqrt(len(test_err))
+
+    print(f'==Averaged relative L2 error mean: {mean_err}, std error: {std_err}==\n'
+          f'==Averaged equation error mean: {mean_f_err}, std error: {std_f_err}==')

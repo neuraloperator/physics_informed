@@ -50,6 +50,35 @@ def pde(x, u):
     return [eqn1, eqn2, eqn3, eqn4]
 
 
+def eval(model, dataset,
+         step,
+         offset, config):
+    '''
+    evaluate test error for the model over dataset
+    '''
+    test_points, test_vals = dataset.get_test_xyt()
+
+    pred = model.predict(test_points)
+    vel_u_truth = test_vals[:, 0]
+    vel_v_truth = test_vals[:, 1]
+    vor_truth = test_vals[:, 2]
+
+    vel_u_pred = pred[:, 0]
+    vel_v_pred = pred[:, 1]
+    vor_pred = pred[:, 2]
+
+    u_err = dde.metrics.l2_relative_error(vel_u_truth, vel_u_pred)
+    v_err = dde.metrics.l2_relative_error(vel_v_truth, vel_v_pred)
+    vor_err = dde.metrics.l2_relative_error(vor_truth, vor_pred)
+    print(f'Instance index : {offset}')
+    print(f'L2 relative error in u: {u_err}')
+    print(f'L2 relative error in v: {v_err}')
+    print(f'L2 relative error in vorticity: {vor_err}')
+    with open(config['log']['logfile'], 'a') as f:
+        writer = csv.writer(f)
+        writer.writerow([offset, u_err, v_err, vor_err, step])
+
+
 def train(offset, config, args):
     spatial_domain = dde.geometry.Rectangle(xmin=[0, 0], xmax=[2 * np.pi, 2 * np.pi])
     temporal_domain = dde.geometry.TimeDomain(0, 0.5)
@@ -57,6 +86,7 @@ def train(offset, config, args):
 
     seed = random.randint(1, 10000)
     print(f'Random seed :{seed}')
+    np.random.seed(seed)
     # construct dataloader
     data_config = config['data']
     if 'datapath2' in data_config:
@@ -103,29 +133,34 @@ def train(offset, config, args):
     model = dde.Model(data, net)
 
     model.compile('adam', lr=1e-3, loss_weights=[1, 1, 1, 1, 100, 100, 100])
-    model.train(epochs=15000)
-    set_LBFGS_options(maxiter=10000)
-    model.compile('L-BFGS', loss_weights=[1, 1, 1, 1, 100, 100, 100])
-    model.train()
+    epochs = config['train']['epochs'] // 500
 
-    test_points, test_vals = dataset.get_test_xyt()
+    for i in range(epochs):
+        model.train(epochs=500, display_every=500)
+        eval(model, dataset, i * 1000, offset, config)
+    print('Done!')
+    # set_LBFGS_options(maxiter=10000)
+    # model.compile('L-BFGS', loss_weights=[1, 1, 1, 1, 100, 100, 100])
+    # model.train()
 
-    pred = model.predict(test_points)
-    vel_u_truth = test_vals[:, 0]
-    vel_v_truth = test_vals[:, 1]
-    vor_truth = test_vals[:, 2]
-
-    vel_u_pred = pred[:, 0]
-    vel_v_pred = pred[:, 1]
-    vor_pred = pred[:, 2]
-
-    u_err = dde.metrics.l2_relative_error(vel_u_truth, vel_u_pred)
-    v_err = dde.metrics.l2_relative_error(vel_v_truth, vel_v_pred)
-    vor_err = dde.metrics.l2_relative_error(vor_truth, vor_pred)
-    print(f'Instance index : {offset}')
-    print(f'L2 relative error in u: {u_err}')
-    print(f'L2 relative error in v: {v_err}')
-    print(f'L2 relative error in vorticity: {vor_err}')
-    with open(args.logfile, 'a') as f:
-        writer = csv.writer(f)
-        writer.writerow([offset, u_err, v_err, vor_err])
+    # test_points, test_vals = dataset.get_test_xyt()
+    #
+    # pred = model.predict(test_points)
+    # vel_u_truth = test_vals[:, 0]
+    # vel_v_truth = test_vals[:, 1]
+    # vor_truth = test_vals[:, 2]
+    #
+    # vel_u_pred = pred[:, 0]
+    # vel_v_pred = pred[:, 1]
+    # vor_pred = pred[:, 2]
+    #
+    # u_err = dde.metrics.l2_relative_error(vel_u_truth, vel_u_pred)
+    # v_err = dde.metrics.l2_relative_error(vel_v_truth, vel_v_pred)
+    # vor_err = dde.metrics.l2_relative_error(vor_truth, vor_pred)
+    # print(f'Instance index : {offset}')
+    # print(f'L2 relative error in u: {u_err}')
+    # print(f'L2 relative error in v: {v_err}')
+    # print(f'L2 relative error in vorticity: {vor_err}')
+    # with open(args.logfile, 'a') as f:
+    #     writer = csv.writer(f)
+    #     writer.writerow([offset, u_err, v_err, vor_err])

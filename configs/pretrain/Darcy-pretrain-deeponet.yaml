@@ -1,0 +1,28 @@
+data:
+  name: 'Darcy'
+  datapath: '/mnt/md1/zongyi/piececonst_r421_N1024_smooth1.mat'
+  total_num: 1024
+  offset: 0
+  n_sample: 1000
+  nx: 421
+  sub: 7
+
+model:
+  branch_layers: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50]
+  trunk_layers: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50]
+  activation: tanh
+
+train:
+  batchsize: 20
+  epochs: 2000
+  milestones: [400, 800, 1200]
+  base_lr: 0.001
+  scheduler_gamma: 0.5
+  save_dir: 'darcy-deeponet'
+  save_name: 'darcy-pretrain-deeponet.pt'
+
+others:
+  project: 'PINO-Darcy-pretrain'
+  group: 'deeponet'
+
+

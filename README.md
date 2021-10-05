@@ -12,6 +12,7 @@
 
 ## Data description
 ### Burgers equation
+`burgers_pino.mat`
 
 ### Darcy flow 
 - spatial domain: $x\in (0,1)^2$
@@ -60,6 +61,15 @@ python3 run_pino2d.py --config_path configs/finetune/Darcy-finetune.yaml --start
 ```
 
 ### Baseline
+To run DeepONet, use, e.g., 
+```bash
+python3 deeponet.py --config_path configs/pretrain/Darcy-pretrain-deeponet.yaml --mode train 
+```
+To test DeepONet, use, e.g., 
+```bash
+python3 deeponet.py --config_path configs/test/darcy.yaml --mode test
+```
+
 
 ## Code for Navier Stokes equation
 ### Train PINO for short time period
@@ -86,18 +96,17 @@ python3 run_pino3d.py --config_path configs/[configuration file name].yaml --sta
 ### Baseline for short time period
 To train DeepONet, use 
 ```bash
-python3 deeponet_ns.py --config_path configs/[configuration file].yaml --mode train
+python3 deeponet.py --config_path configs/[configuration file].yaml --mode train
 ```
 
 To test DeepONet, use 
 ```bash
-python3 deeponet_ns.py --config_path configs/[configuration file].yaml --mode test
+python3 deeponet.py --config_path configs/[configuration file].yaml --mode test
 ```
 
-To train and test PINNs, use 
+To train and test PINNs, use, e.g.,  
 ```bash
-python3 nsfnet.py --config_path configs/[configuration name].yaml 
---logfile [log file path] --start [starting index] --stop [stopping index]
+python3 nsfnet.py --config_path configs/Re500-pinns-05s.yaml --start [starting index] --stop [stopping index]
 ```
 ### Baseline for long roll out
 To train and test PINNs, use

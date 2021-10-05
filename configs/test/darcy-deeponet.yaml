@@ -9,15 +9,13 @@ data:
   shuffle: False
 
 model:
-  layers: [64, 64, 64, 64, 64]
-  modes1: [20, 20, 20, 20]
-  modes2: [20, 20, 20, 20]
-  fc_dim: 128
-  activation: gelu
+  branch_layers: [50, 50, 50, 50, 50, 50, 50, 50]
+  trunk_layers: [50, 50, 50, 50, 50, 50, 50, 50]
+  activation: tanh
 
 test:
   batchsize: 1
-  ckpt: 'checkpoints/darcy-FDM/darcy-pretrain-eqn.pt'
+  ckpt: 'checkpoints/darcy-deeponet/darcy-pretrain-deeponet.pt'
 
 others:
   project: 'PINO-Darcy'

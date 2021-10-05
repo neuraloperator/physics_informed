@@ -1,8 +1,8 @@
 from argparse import ArgumentParser
 import yaml
 
-from baselines.ns_05s import train
-from baselines.ns_50s import train_longtime
+from baselines.pinns_ns_05s import train
+from baselines.pinns_ns_50s import train_longtime
 import csv
 
 
@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     with open(config['log']['logfile'], 'a') as f:
         writer = csv.writer(f)
-        writer.writerow(['Index', 'Error in u', 'Error in v', 'Error in w'])
+        writer.writerow(['Index', 'Error in u', 'Error in v', 'Error in w', 'Step'])
 
     for i in range(args.start, args.stop):
         print(f'Start to solve instance {i}')
