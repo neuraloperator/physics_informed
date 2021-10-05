@@ -46,12 +46,12 @@ Configuration file format: see `.yaml` files under folder `configs` for detail.
 ### Train PINO
 To run PINO for Burgers equation, use, e.g.,
 ```bash 
-python3 train_burgers.py --config_path configs/pretrain/burger
+python3 train_burgers.py --config_path configs/pretrain/burgers-pretrain.yaml --mode train
 ```
 
 To test PINO for burgers equation, use, e.g., 
 ```bash
-python3 train_burgers.py --config_path configs/
+python3 train_burgers.py --config_path configs/test/burgers.yaml --mode test
 ```
 
 ## Code for Darcy Flow
