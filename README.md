@@ -42,6 +42,13 @@ Test set: `NS_Re500_s256_T100_test.npy`
 
 Configuration file format: see `.yaml` files under folder `configs` for detail. 
 
+## Code for Burgers equation
+### Train PINO
+To run PINO for Burgers equation, use, e.g.,
+```bash 
+python3 train_burgers.py --config_path configs/pretrain/burger
+```
+
 ## Code for Darcy Flow
 
 ### Operator learning
@@ -119,7 +126,3 @@ To run solver, use
 ```bash
 python3 run_solver.py --config_path configs/[configuration file name].yaml
 ```
-
-## Code for Burgers equation 
-
-### Train PINO

@@ -1,0 +1,35 @@
+data:
+  name: 'Darcy'
+  datapath: 'data/burgers_pino.mat'
+  total_num: 1000
+  offset: 800
+  n_sample: 200
+  nx: 128
+  nt: 100
+  sub: 1
+  sub_t: 1
+
+model:
+  layers: [16, 24, 24, 32, 32]
+  modes1: [15, 12, 9, 9]
+  modes2: [15, 12, 9, 9]
+  fc_dim: 128
+  activation: gelu
+
+train:
+  batchsize: 20
+  epochs: 1000
+  milestones: [250, 500, 750]
+  base_lr: 0.001
+  scheduler_gamma: 0.5
+  ic_loss: 10.0
+  f_loss: 1.0
+  xy_loss: 0.0
+  save_dir: 'burgers-FDM'
+  save_name: 'burgers-pretrain-pino.pt'
+
+log:
+  project: 'PINO-burgers-pretrain'
+  group: 'gelu-pino'
+
+

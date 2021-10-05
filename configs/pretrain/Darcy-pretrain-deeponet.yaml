@@ -8,8 +8,8 @@ data:
   sub: 7
 
 model:
-  branch_layers: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50]
-  trunk_layers: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50]
+  branch_layers: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50]
+  trunk_layers: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50]
   activation: tanh
 
 train:

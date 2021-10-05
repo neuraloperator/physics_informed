@@ -21,7 +21,7 @@ def test_3d(config):
                       t_interval=data_config['time_interval'])
 
     eval_loader = loader.make_loader(n_sample=data_config['n_sample'],
-                                     batch_size=config['train']['batchsize'],
+                                     batch_size=config['test']['batchsize'],
                                      start=data_config['offset'],
                                      train=data_config['shuffle'])
     model = FNN3d(modes1=config['model']['modes1'],
@@ -30,8 +30,8 @@ def test_3d(config):
                   fc_dim=config['model']['fc_dim'],
                   layers=config['model']['layers']).to(device)
 
-    if 'ckpt' in config['train']:
-        ckpt_path = config['train']['ckpt']
+    if 'ckpt' in config['test']:
+        ckpt_path = config['test']['ckpt']
         ckpt = torch.load(ckpt_path)
         model.load_state_dict(ckpt['model'])
         print('Weights loaded from %s' % ckpt_path)
@@ -51,7 +51,7 @@ def test_2d(config):
     dataset = DarcyFlow(data_config['datapath'],
                         nx=data_config['nx'], sub=data_config['sub'],
                         offset=data_config['offset'], num=data_config['n_sample'])
-    dataloader = DataLoader(dataset, batch_size=config['train']['batchsize'], shuffle=False)
+    dataloader = DataLoader(dataset, batch_size=config['test']['batchsize'], shuffle=False)
     print(device)
     model = FNN2d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
@@ -59,8 +59,8 @@ def test_2d(config):
                   layers=config['model']['layers'],
                   activation=config['model']['activation']).to(device)
     # Load from checkpoint
-    if 'ckpt' in config['train']:
-        ckpt_path = config['train']['ckpt']
+    if 'ckpt' in config['test']:
+        ckpt_path = config['test']['ckpt']
         ckpt = torch.load(ckpt_path)
         model.load_state_dict(ckpt['model'])
         print('Weights loaded from %s' % ckpt_path)

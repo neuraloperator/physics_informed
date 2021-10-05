@@ -91,12 +91,8 @@ class BurgersLoader(object):
         self.y_data = dataloader.read_field('output')[:, ::sub_t, ::sub]
 
     def make_loader(self, n_sample, batch_size, start=0, train=True):
-        if train:
-            Xs = self.x_data[start:start + n_sample]
-            ys = self.y_data[start:start + n_sample]
-        else:
-            Xs = self.x_data[-n_sample:]
-            ys = self.y_data[-n_sample:]
+        Xs = self.x_data[start:start + n_sample]
+        ys = self.y_data[start:start + n_sample]
 
         if self.new:
             gridx = torch.tensor(np.linspace(0, 1, self.s + 1)[:-1], dtype=torch.float)
