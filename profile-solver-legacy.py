@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
         c += bsize
         t1 = default_timer()
-        print(j, c, t1 - t0)
+        print(f'Time cost {t1 - t0} s')
     torch.save(
         {
             'a': a.cpu(),

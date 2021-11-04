@@ -3,11 +3,11 @@ data:
   Re: 500
   total_num: 100
   offset: 0
-  n_sample: 1
+  n_sample: 20
   time_interval: 0.5
   nx: 256
   nt: 128
-  sub: 2
+  sub: 4
   sub_t: 1
   shuffle: True
 

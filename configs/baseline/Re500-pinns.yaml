@@ -1,0 +1,30 @@
+data:
+  datapath: 'data/NS_Re500_s256_T100_test.npy'
+  Re: 500
+  total_num: 100
+  offset: 0
+  n_sample: 1
+  time_interval: 0.5
+  nx: 256
+  nt: 128
+  sub: 4
+  sub_t: 1
+  shuffle: True
+
+train:
+  batchsize: 1
+  epochs: 5000
+  base_lr: 0.001
+  num_domain: 5000
+  num_boundary: 10000
+  num_test: 100
+  ic_loss: 5.0
+  f_loss: 1.0
+  xy_loss: 0
+  log_step: 100
+
+others:
+  project: 'PINO-Re500-ICLR'
+  group: 'Re500-PINNs-long'
+
+

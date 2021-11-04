@@ -7,7 +7,7 @@ data:
   time_interval: 0.5
   nx: 256
   nt: 128
-  sub: 2
+  sub: 4
   sub_t: 1
   shuffle: True
 
@@ -32,9 +32,10 @@ train:
   save_dir: 'Re500'
   save_name: 'PINO-fintune-05s.pt'
   ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-Re500-05s-4C1.pt'
+  profile: True
 
 others:
   project: 'PINO-Re500-ICLR'
-  group: 'Re500-finetune-128-4C1'
+  group: 'Re500-finetune-128-4C1-profile-long'
 
 

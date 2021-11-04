@@ -7,7 +7,7 @@ data:
   time_interval: 0.5
   nx: 256
   nt: 128
-  sub: 2
+  sub: 4
   sub_t: 1
   shuffle: True
 
@@ -20,12 +20,13 @@ model:
 
 train:
   batchsize: 1
-  epochs: 10000
+  epochs: 5000
   milestones: [1000, 1500, 2000]
-  base_lr: 0.0025
-  beta1: 0.9
-  beta2: 0.999
-  scheduler_gamma: 0.5
+  base_lr: 0.001
+  num_domain: 5000
+  num_boundary: 10000
+  num_test: 100
+  log_step: 100
 
 log:
   project: 'PINO-Re500-ICLR'

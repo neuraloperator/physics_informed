@@ -3,6 +3,7 @@ training for Navier Stokes with Reynolds number 500, 0.5 second time period
 '''
 import csv
 import random
+from timeit import default_timer
 import deepxde as dde
 from deepxde.optimizers.config import set_LBFGS_options
 import numpy as np
@@ -51,7 +52,7 @@ def pde(x, u):
 
 
 def eval(model, dataset,
-         step,
+         step, time_cost,
          offset, config):
     '''
     evaluate test error for the model over dataset
@@ -76,7 +77,7 @@ def eval(model, dataset,
     print(f'L2 relative error in vorticity: {vor_err}')
     with open(config['log']['logfile'], 'a') as f:
         writer = csv.writer(f)
-        writer.writerow([offset, u_err, v_err, vor_err, step])
+        writer.writerow([offset, u_err, v_err, vor_err, step, time_cost])
 
 
 def train(offset, config, args):
@@ -123,21 +124,30 @@ def train(offset, config, args):
             boundary_v,
             boundary_w
         ],
-        num_domain=6000,
-        num_boundary=18000,
-        num_test=1000,
+        num_domain=config['train']['num_domain'],
+        num_boundary=config['train']['num_boundary'],
+        num_test=config['train']['num_test'],
     )
 
     net = dde.maps.FNN([3] + 4 * [50] + [3], 'tanh', 'Glorot normal')
     # net = dde.maps.STMsFFN([3] + 4 * [50] + [3], 'tanh', 'Glorot normal', [50], [50])
     model = dde.Model(data, net)
 
-    model.compile('adam', lr=1e-3, loss_weights=[1, 1, 1, 1, 100, 100, 100])
-    epochs = config['train']['epochs'] // 500
+    model.compile('adam', lr=config['train']['base_lr'], loss_weights=[1, 1, 1, 1, 100, 100, 100])
+    if 'log_step' in config['train']:
+        step_size = config['train']['log_step']
+    else:
+        step_size = 100
+    epochs = config['train']['epochs'] // step_size
 
     for i in range(epochs):
-        model.train(epochs=500, display_every=500)
-        eval(model, dataset, i * 1000, offset, config)
+        time_start = default_timer()
+        model.train(epochs=step_size, display_every=step_size)
+        time_end = default_timer()
+        eval(model, dataset, i * step_size,
+             time_cost=time_end - time_start,
+             offset=offset,
+             config=config)
     print('Done!')
     # set_LBFGS_options(maxiter=10000)
     # model.compile('L-BFGS', loss_weights=[1, 1, 1, 1, 100, 100, 100])
