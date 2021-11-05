@@ -3,13 +3,13 @@ data:
   Re: 500
   total_num: 100
   offset: 0
-  n_sample: 20
+  n_sample: 1
   time_interval: 0.5
   nx: 256
   nt: 128
   sub: 4
   sub_t: 1
-  shuffle: False
+  shuffle: True
 
 model:
   layers: [64, 64, 64, 64, 64]
@@ -18,12 +18,24 @@ model:
   modes3: [8, 8, 8, 8]
   fc_dim: 128
 
-test:
+train:
   batchsize: 1
+  epochs: 2500
+  milestones: [1000, 1500, 2000]
+  base_lr: 0.0025
+  beta1: 0.9
+  beta2: 0.999
+  scheduler_gamma: 0.5
+  ic_loss: 5.0
+  f_loss: 1.0
+  xy_loss: 0
+  save_dir: 'Re500'
+  save_name: 'PINO-fintune-05s.pt'
   ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-Re500-05s-4k1k.pt'
+  profile: True
 
 others:
-  project: 'PINO-None'
-  group: 'eval'
+  project: 'PINO-Re500-ICLR'
+  group: 'Re500-finetune-128-4k1-profile'
 
 
