@@ -17,7 +17,8 @@ def solve(a,
           res_t,
           end,
           Re,
-          n=4):
+          n=4,
+          delta_t=1e-3):
     '''
     Given initial condition a, solve for u in time interval [0, end]
     Args:
@@ -36,7 +37,7 @@ def solve(a,
     sol = torch.zeros((res_x, res_x, res_t + 1), device=a.device)
     sol[:, :, 0] = a
     for j in range(res_t):
-        solver.advance(dt, delta_t=1e-3)
+        solver.advance(dt, delta_t=delta_t)
         sol[:, :, 1 + j] = solver.vorticity().squeeze(0)
     return sol
 
@@ -46,6 +47,7 @@ if __name__ == '__main__':
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     parser = ArgumentParser(description='Basic paser')
     parser.add_argument('--config_path', type=str, help='Path to the configuration file')
+    parser.add_argument('--deltat', type=float, default=1e-3, help='delta T')
     args = parser.parse_args()
     config_file = args.config_path
     with open(config_file, 'r') as stream:
@@ -76,7 +78,8 @@ if __name__ == '__main__':
                      res_t=loader.T - 1,
                      end=data_config['time_interval'],
                      Re=data_config['Re'],
-                     n=4)
+                     n=4,
+                     delta_t=args.deltat)
         torch.cuda.synchronize()
         t2 = default_timer()
 
