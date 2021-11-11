@@ -13,9 +13,6 @@ from train_utils.utils import requires_grad
 
 
 def run_instance(loader, config, data_config):
-    seed = random.randint(1, 10000)
-    print(f'Random seed :{seed}')
-    torch.manual_seed(seed)
     trainset = loader.make_dataset(data_config['n_sample'],
                                    start=data_config['offset'])
     train_loader = DataLoader(trainset, batch_size=config['train']['batchsize'])
@@ -60,7 +57,8 @@ def run_instance(loader, config, data_config):
           log=options.log,
           project=config['others']['project'],
           group=config['others']['group'],
-          use_tqdm=True)
+          use_tqdm=True,
+          profile=config['train']['profile'])
 
 
 if __name__ == '__main__':

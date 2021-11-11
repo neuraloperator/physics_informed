@@ -9,7 +9,7 @@ import csv
 if __name__ == '__main__':
     parser = ArgumentParser(description='Basic paser')
     parser.add_argument('--config_path', type=str, help='Path to the configuration file')
-    parser.add_argument('--long', action='store_true', help='path to save log')
+    parser.add_argument('--log', action='store_true', help='log the results')
     parser.add_argument('--start', type=int, default=0, help='start index')
     parser.add_argument('--stop', type=int, default=1, help='stopping index')
     args = parser.parse_args()
@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     with open(config['log']['logfile'], 'a') as f:
         writer = csv.writer(f)
-        writer.writerow(['Index', 'Error in u', 'Error in v', 'Error in w', 'Step'])
+        writer.writerow(['Index', 'Error in u', 'Error in v', 'Error in w', 'Step', 'Time cost'])
 
     for i in range(args.start, args.stop):
         print(f'Start to solve instance {i}')

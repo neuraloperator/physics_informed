@@ -49,7 +49,7 @@ def train(model,
     if use_tqdm:
         pbar = tqdm(pbar, dynamic_ncols=True, smoothing=0.05)
     zero = torch.zeros(1).to(rank)
-    t2 = t1 = 0
+
     for ep in pbar:
         loss_dict = {'train_loss': 0.0,
                      'train_ic': 0.0,

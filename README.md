@@ -1,5 +1,14 @@
 # PINO
 
+![PINO Diagram](docs/pino-diagram4.png)
+
+[comment]: <> (![Results on Navier Stokes equation]&#40;docs/solver-pino.png&#41;)
+
+<img src="docs/solver-pino.png" alt="Results on Navier Stokes equation" width="720" height="501"/>
+
+**Physics-informed Neural Operator for Learning Partial Differential Equation**
+
+Abstract: *Machine learning methods have recently shown promise in solving partial differential equations (PDEs). They can be classified into two broad categories: solution function approximation and operator learning. The Physics-Informed Neural Network (PINN) is an example of the former while the Fourier neural operator (FNO) is an example of the latter. Both these approaches have shortcomings. The optimization in PINN is challenging and prone to failure, especially on multi-scale dynamic systems. FNO does not suffer from this optimization issue since it carries out supervised learning on a given dataset, but obtaining such data may be too expensive or infeasible. In this work, we propose the physics-informed neural operator (PINO), where we combine the operating-learning and function-optimization frameworks, and this improves convergence rates and accuracy over both PINN and FNO models. In the operator-learning phase, PINO learns the solution operator over multiple instances of the parametric PDE family. In the test-time optimization phase, PINO optimizes the pre-trained operator ansatz for the querying instance of the PDE. Experiments show PINO outperforms previous ML methods on many popular PDE families while retaining the extraordinary speed-up of FNO compared to solvers. In particular, PINO accurately solves long temporal transient flows and  Kolmogorov flows, while PINN and other methods fail to converge.*
 ## Requirements
 - Pytorch 1.8.0 or later
 - wandb
@@ -36,9 +45,14 @@ Data file: `nv_V1e-3_N5000_T50.mat`, with shape 50 x 64 x 64 x 5000
 - forcing: $-4\cos(4x_2)$
 - Reynolds number: 500
 
-Train set: 
+Train set: data of shape (N, T, X, Y) where N is the number of instances, T is temporal resolution, X, Y are spatial resolutions. 
+1. `NS_fft_Re500_T4000.npy` : 4000x64x64x65
+2. `NS_fine_Re500_T128_part0.npy`: 100x129x128x128
+3. `NS_fine_Re500_T128_part1.npy`: 100x129x128x128
 
-Test set: `NS_Re500_s256_T100_test.npy`
+Test set: data of shape (N, T, X, Y) where N is the number of instances, T is temporal resolution, X, Y are spatial resolutions. 
+1. `NS_Re500_s256_T100_test.npy`: 100x129x256x256
+2. `NS_fine_Re500_T128_part2.npy`: 100x129x128x128
 
 Configuration file format: see `.yaml` files under folder `configs` for detail. 
 
@@ -129,5 +143,5 @@ python3 nsfnet.py --config_path configs/scratch/NS-50s.yaml --long --start [star
 ### Pseudospectral solver for Navier Stokes equation
 To run solver, use 
 ```bash
-python3 run_solver.py --config_path configs/[configuration file name].yaml
+python3 run_solver.py --config_path configs/Re500-0.5s.yaml
 ```

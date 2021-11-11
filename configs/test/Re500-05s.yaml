@@ -18,7 +18,7 @@ model:
   modes3: [8, 8, 8, 8]
   fc_dim: 128
 
-train:
+test:
   batchsize: 1
   ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-Re500-05s-4C1.pt'
 

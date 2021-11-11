@@ -38,7 +38,7 @@ def eval_ns(model,  # model
     S, T = loader.S, loader.T
     t_interval = config['data']['time_interval']
     # eval settings
-    batch_size = config['train']['batchsize']
+    batch_size = config['test']['batchsize']
 
     model.eval()
     myloss = LpLoss(size_average=True)
@@ -48,7 +48,7 @@ def eval_ns(model,  # model
         pbar = dataloader
     loss_dict = {'train_f': 0.0,
                  'test_l2': 0.0}
-
+    start_time = default_timer()
     with torch.no_grad():
         for x, y in pbar:
             x, y = x.to(device), y.to(device)
@@ -67,10 +67,12 @@ def eval_ns(model,  # model
                         f'Train f error: {loss_f.item():.5f}; Test l2 error: {loss_l2.item():.5f}'
                     )
                 )
+    end_time = default_timer()
     test_l2 = loss_dict['test_l2'].item() / len(dataloader)
     loss_f = loss_dict['train_f'].item() / len(dataloader)
     print(f'==Averaged relative L2 error is: {test_l2}==\n'
           f'==Averaged equation error is: {loss_f}==')
+    print(f'Time cost: {end_time - start_time} s')
     if device == 0:
         if wandb and log:
             wandb.log(

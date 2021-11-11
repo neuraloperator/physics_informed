@@ -3,13 +3,13 @@ data:
   Re: 500
   total_num: 100
   offset: 0
-  n_sample: 1
+  n_sample: 20
   time_interval: 0.5
   nx: 256
   nt: 128
-  sub: 2
+  sub: 4
   sub_t: 1
-  shuffle: True
+  shuffle: False
 
 model:
   layers: [64, 64, 64, 64, 64]
@@ -18,19 +18,12 @@ model:
   modes3: [8, 8, 8, 8]
   fc_dim: 128
 
-train:
+test:
   batchsize: 1
-  epochs: 10000
-  milestones: [1000, 1500, 2000]
-  base_lr: 0.0025
-  beta1: 0.9
-  beta2: 0.999
-  scheduler_gamma: 0.5
+  ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-Re500-05s-4k1k.pt'
 
-log:
-  project: 'PINO-Re500-ICLR'
-  group: 'Re500-PINNs'
-  logfile: 'log/pinns-plot.csv'
-
+others:
+  project: 'PINO-None'
+  group: 'eval'
 
 
