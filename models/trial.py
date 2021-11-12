@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from .basics import SpectralConv3d
+from torch.utils.checkpoint import checkpoint
 
 
 class FNet(nn.Module):
@@ -165,3 +166,44 @@ class FNO3d(nn.Module):
         x = torch.tanh(x)
         x = self.fc2(x)
         return x
+
+
+class CIFAR10Model(nn.Module):
+    def __init__(self, use_checkpoint=False):
+        super().__init__()
+        self.use_checkpoint = use_checkpoint
+        self.cnn_block_1 = nn.Sequential(*[
+            nn.Conv2d(3, 32, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, 3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2)
+        ])
+        self.dropout_1 = nn.Dropout(0.25)
+        self.cnn_block_2 = nn.Sequential(*[
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2)
+        ])
+        self.dropout_2 = nn.Dropout(0.25)
+        self.flatten = lambda inp: torch.flatten(inp, 1)
+        self.linearize = nn.Sequential(*[
+            nn.Linear(64 * 8 * 8, 512),
+            nn.ReLU()
+        ])
+        self.dropout_3 = nn.Dropout(0.5)
+        self.out = nn.Linear(512, 10)
+
+    def forward(self, X):
+
+        X = checkpoint(self.cnn_block_1, X)
+        X = self.dropout_1(X)
+        X = checkpoint(self.cnn_block_2, X)
+        X = self.dropout_2(X)
+        X = self.flatten(X)
+        X = self.linearize(X)
+        X = self.dropout_3(X)
+        X = self.out(X)
+        return X

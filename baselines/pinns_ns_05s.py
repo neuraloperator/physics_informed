@@ -129,7 +129,9 @@ def train(offset, config, args):
         num_test=config['train']['num_test'],
     )
 
-    net = dde.maps.FNN([3] + 4 * [50] + [3], 'tanh', 'Glorot normal')
+    net = dde.maps.FNN(config['model']['layers'],
+                       config['model']['activation'],
+                       'Glorot normal')
     # net = dde.maps.STMsFFN([3] + 4 * [50] + [3], 'tanh', 'Glorot normal', [50], [50])
     model = dde.Model(data, net)
 

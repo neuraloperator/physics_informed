@@ -169,3 +169,31 @@ class SpectralConv3d(nn.Module):
         #Return to physical space
         x = torch.fft.irfftn(out_ft, s=(x.size(2), x.size(3), x.size(4)), dim=[2,3,4])
         return x
+
+
+class FourierBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, modes1, modes2, modes3, activation='tanh'):
+        super(FourierBlock, self).__init__()
+        self.in_channel = in_channels
+        self.out_channel = out_channels
+        self.speconv = SpectralConv3d(in_channels, out_channels, modes1, modes2, modes3)
+        self.linear = nn.Conv1d(in_channels, out_channels, 1)
+        if activation == 'tanh':
+            self.activation = torch.tanh_
+        elif activation == 'gelu':
+            self.activation = nn.GELU
+        elif activation == 'none':
+            self.activation = None
+        else:
+            raise ValueError(f'{activation} is not supported')
+
+    def forward(self, x):
+        '''
+        input x: (batchsize, channel width, x_grid, y_grid, t_grid)
+        '''
+        x1 = self.speconv(x)
+        x2 = self.linear(x.view(x.shape[0], self.in_channel, -1))
+        out = x1 + x2.view(x.shape[0], self.out_channel, x.shape[2], x.shape[3], x.shape[4])
+        if self.activation is not None:
+            out = self.activation(out)
+        return out
