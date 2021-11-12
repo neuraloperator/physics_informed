@@ -13,7 +13,7 @@ data:
 
 model:
   layers: [3, 50, 50, 50, 50, 3]
-  activation: tanh
+  activation: LAAF-10 tanh
 
 train:
   batchsize: 1
