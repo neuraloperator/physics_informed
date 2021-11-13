@@ -13,13 +13,13 @@ data:
 
 model:
   layers: [3, 50, 50, 50, 50, 3]
-  activation: LAAF-10 tanh
+  activation: LAAF-100 tanh
 
 train:
   batchsize: 1
   epochs: 5000
   milestones: [1000, 1500, 2000]
-  base_lr: 0.001
+  base_lr: 0.1
   num_domain: 5000
   num_boundary: 10000
   num_test: 100
@@ -28,7 +28,7 @@ train:
 log:
   project: 'PINO-Re500-ICLR'
   group: 'Re500-PINNs'
-  logfile: 'log/pinns-plot.csv'
+  logfile: 'log/pinns-plot01.csv'
 
 
 
