@@ -81,10 +81,6 @@ def eval(model, dataset,
 
 
 def train(offset, config, args):
-    spatial_domain = dde.geometry.Rectangle(xmin=[0, 0], xmax=[2 * np.pi, 2 * np.pi])
-    temporal_domain = dde.geometry.TimeDomain(0, 0.5)
-    st_domain = dde.geometry.GeometryXTime(spatial_domain, temporal_domain)
-
     seed = random.randint(1, 10000)
     print(f'Random seed :{seed}')
     np.random.seed(seed)
@@ -105,6 +101,9 @@ def train(offset, config, args):
                          sub=data_config['sub'], sub_t=data_config['sub_t'],
                          vel=True,
                          t_interval=data_config['time_interval'])
+    spatial_domain = dde.geometry.Rectangle(xmin=[0, 0], xmax=[2 * np.pi, 2 * np.pi])
+    temporal_domain = dde.geometry.TimeDomain(0, data_config['time_interval'])
+    st_domain = dde.geometry.GeometryXTime(spatial_domain, temporal_domain)
     num_boundary_points = dataset.S
     points = dataset.get_boundary_points(num_x=num_boundary_points, num_y=num_boundary_points,
                                          num_t=dataset.T)

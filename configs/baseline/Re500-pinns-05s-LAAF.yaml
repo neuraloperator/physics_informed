@@ -13,13 +13,14 @@ data:
 
 model:
   layers: [3, 50, 50, 50, 50, 3]
-  activation: LAAF-100 tanh
+  activation: LAAF-10
+  tanh
 
 train:
   batchsize: 1
   epochs: 5000
   milestones: [1000, 1500, 2000]
-  base_lr: 0.1
+  base_lr: 0.01
   num_domain: 5000
   num_boundary: 10000
   num_test: 100
