@@ -9,3 +9,4 @@ checkpoints
 *.ipynb
 *.pt
 *.pth
+tensordiffeq

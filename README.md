@@ -17,6 +17,7 @@ Abstract: *Machine learning methods have recently shown promise in solving parti
 - h5py
 - numpy
 - DeepXDE:latest
+- Latest code from tensordiffeq github master branch (Not tensordiffeq 0.19)
 - tensorflow 2.4.0
 
 ## Data description
@@ -132,12 +133,24 @@ python3 deeponet.py --config_path configs/[configuration file].yaml --mode test
 
 To train and test PINNs, use, e.g.,  
 ```bash
-python3 nsfnet.py --config_path configs/Re500-pinns-05s.yaml --start [starting index] --stop [stopping index]
+python3 pinns.py --config_path configs/baseline/Re500-pinns-05s.yaml --start [starting index] --stop [stopping index]
 ```
+
+To train and test PINNs-LAAF, use, e.g., 
+```bash
+python3 pinns.py configs/baseline/Re500-pinns-05s-LAAF.yaml --start [starting index] --stop [stopping index]
+```
+
+To train and test SA-PINNs, first copy the latest code of tensordiffeq under the working directory.
+Then run: 
+```bash 
+python3 pinns.py configs/baseline/Re500-pinns-05s-SA.yaml --start [starting index] --stop [stopping index]
+```
+
 ### Baseline for long roll out
 To train and test PINNs, use
 ```bash
-python3 nsfnet.py --config_path configs/scratch/NS-50s.yaml --long --start [starting index] --stop [stopping index]
+python3 pinns.py --config_path configs/scratch/NS-50s.yaml --long --start [starting index] --stop [stopping index]
 ```
 
 ### Pseudospectral solver for Navier Stokes equation

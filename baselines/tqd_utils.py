@@ -24,7 +24,7 @@ class PointsIC(BC):
         self.dicts_ = [item for item in self.domain.domaindict if item['identifier'] != self.domain.time_var]
         self.dict_ = next(item for item in self.domain.domaindict if item["identifier"] == self.domain.time_var)
         self.compile()
-        self.create_target()
+        self.create_target(self.values)
 
     def create_input(self):
         dims = self.get_not_dims(self.domain.time_var)
@@ -37,8 +37,7 @@ class PointsIC(BC):
             mesh = mesh[self.nums]
         return mesh
 
-    def create_target(self):
-        fun_vals = []
+    def create_target(self, values):
         # for i, var_ in enumerate(self.vars):
         #     arg_list = []
         #     for j, var in enumerate(var_):
@@ -47,9 +46,9 @@ class PointsIC(BC):
         #     inp = flatten_and_stack(multimesh(arg_list))
         #     fun_vals.append(self.fun[i](*inp.T))
         if self.n_values is not None:
-            self.val = convertTensor(np.reshape(fun_vals, (-1, 1))[self.nums])
+            self.val = convertTensor(np.reshape(values, (-1, 3))[self.nums])
         else:
-            self.val = convertTensor(np.reshape(fun_vals, (-1, 1)))
+            self.val = convertTensor(np.reshape(values, (-1, 3)))
 
     def loss(self):
         return MSE(self.preds, self.val)

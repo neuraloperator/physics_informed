@@ -3,6 +3,7 @@ import yaml
 
 from baselines.pinns_ns_05s import train
 from baselines.pinns_ns_50s import train_longtime
+from baselines.tqd_sapinns import train_sa
 import csv
 
 
@@ -26,6 +27,8 @@ if __name__ == '__main__':
         print(f'Start to solve instance {i}')
         if 'time_scale' in config['data']:
             train_longtime(i, config, args)
+        elif config['log']['group'] == 'SA-PINNs':
+            train_sa(i, config, args)
         else:
             train(i, config, args)
 

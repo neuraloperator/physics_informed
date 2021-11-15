@@ -148,6 +148,12 @@ class NSdata(object):
         if vel:
             self.vel_u, self.vel_v = vor2vel(self.vor)  # Compute velocity from vorticity
 
+    def get_init_cond(self):
+        values = np.stack([self.vel_u[0, :, :, 0],
+                           self.vel_v[0, :, :, 0],
+                           self.vor[0, :, :, 0]], axis=2)
+        return values
+
     def get_boundary_value(self, component=0):
         '''
         Get the boundary value for component-th output
