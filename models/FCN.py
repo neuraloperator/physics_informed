@@ -32,9 +32,14 @@ class DenseNet(nn.Module):
         super(DenseNet, self).__init__()
 
         self.n_layers = len(layers) - 1
-
         assert self.n_layers >= 1
-
+        if isinstance(nonlinearity, str):
+            if nonlinearity == 'tanh':
+                nonlinearity = nn.Tanh
+            elif nonlinearity == 'relu':
+                nonlinearity == nn.ReLU
+            else:
+                raise ValueError(f'{nonlinearity} is not supported')
         self.layers = nn.ModuleList()
 
         for j in range(self.n_layers):

@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 from models.FCN import DenseNet
+from typing import List
+from .utils import weighted_mse
 
 
 class DeepONet(nn.Module):
@@ -29,3 +31,23 @@ class DeepONetCP(nn.Module):
         b = self.trunk(grid)
         # N x width
         return torch.einsum('bi,ni->bn', a, b)
+
+
+class SAWeight(nn.Module):
+    def __init__(self, out_dim, num_init: List, num_collo: List):
+        super(SAWeight, self).__init__()
+        self.init_param = nn.ParameterList(
+            [nn.Parameter(torch.rand(num, out_dim)) for num in num_init]
+        )
+
+        self.collo_param = nn.ParameterList(
+            [nn.Parameter(torch.rand(num, out_dim)) for num in num_collo]
+        )
+
+    def forward(self, init_cond: List, residual: List):
+        total_loss = 0.0
+        for param, init_loss in zip(self.init_param, init_cond):
+            total_loss += weighted_mse(init_loss, 0, param)
+        for param, res in zip(self.collo_param, residual):
+            total_loss += weighted_mse(res, 0, param)
+        return total_loss

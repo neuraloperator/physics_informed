@@ -144,7 +144,7 @@ class NSdata(object):
             self.data = torch.cat((part1, part2), dim=0)
         else:
             self.data = part1
-        self.vor = self.data[offset: offset + num, :, :, :]
+        self.vor = self.data[offset: offset + num, :, :, :].cpu()
         if vel:
             self.vel_u, self.vel_v = vor2vel(self.vor)  # Compute velocity from vorticity
 

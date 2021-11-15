@@ -1,6 +1,7 @@
 import csv
 import random
 from timeit import default_timer
+from tqdm import tqdm
 import deepxde as dde
 import numpy as np
 from baselines.data import NSdata
@@ -8,6 +9,9 @@ import torch
 
 from tensordiffeq.boundaries import DomainND, periodicBC
 from .tqd_utils import PointsIC
+from .model import SAWeight
+
+from models.FCN import DenseNet
 
 Re = 500
 
@@ -103,11 +107,30 @@ def train_sapinn(offset, config, args):
     domain.add('x', [0.0, 2 * np.pi], dataset.S)
     domain.add('y', [0.0, 2 * np.pi], dataset.S)
     domain.add('t', [0.0, data_config['time_interval']], dataset.T)
-    domain.generate_collocation_points(config['train']['num_domain'])
+    num_collo = config['train']['num_domain']
+    domain.generate_collocation_points(num_collo)
     init_vals = dataset.get_init_cond()
     num_inits = config['train']['num_init']
     if num_inits > dataset.S ** 2:
         num_inits = dataset.S ** 2
     init_cond = PointsIC(domain, init_vals, var=['x', 'y'], n_values=num_inits)
     bd_cond = periodicBC(domain, ['x', 'y'], n_values=config['train']['num_boundary'])
+
+    # prepare initial condition inputs
+    init_input = torch.tensor(init_cond.input, requires_grad=True)
+    init_val = torch.tensor(init_cond.val, requires_grad=True)
+
+    # prepare boundary condition inputs
+
+
+    weight_net = SAWeight(out_dim=3, num_init=[num_inits], num_collo=[num_collo] * 4)
+    net = DenseNet(config['model']['layers'], config['model']['activation'])
+
+    loader = tqdm(range(config['train']['epochs']), dynamic_ncols=True)
+
+    for e in loader:
+        pass
+
+
+
     

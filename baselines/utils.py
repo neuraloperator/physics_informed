@@ -4,6 +4,13 @@ import torch
 import torch.autograd as autograd
 
 
+def weighted_mse(pred, target, weight=None):
+    if weight is None:
+        return torch.mean((pred - target) ** 2)
+    else:
+        return torch.mean(weight * (pred - target) ** 2)
+
+
 def get_3dboundary_points(num_x,                # number of points on x axis
                           num_y,                # number of points on y axis
                           num_t,                # number of points on t axis

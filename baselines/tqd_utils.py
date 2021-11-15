@@ -46,9 +46,9 @@ class PointsIC(BC):
         #     inp = flatten_and_stack(multimesh(arg_list))
         #     fun_vals.append(self.fun[i](*inp.T))
         if self.n_values is not None:
-            self.val = convertTensor(np.reshape(values, (-1, 3))[self.nums])
+            self.val = np.reshape(values, (-1, 3))[self.nums]
         else:
-            self.val = convertTensor(np.reshape(values, (-1, 3)))
+            self.val = np.reshape(values, (-1, 3))
 
     def loss(self):
         return MSE(self.preds, self.val)
