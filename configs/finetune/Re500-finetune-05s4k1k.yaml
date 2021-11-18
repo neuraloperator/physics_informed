@@ -7,7 +7,7 @@ data:
   time_interval: 0.5
   nx: 256
   nt: 128
-  sub: 4
+  sub: 2
   sub_t: 1
   shuffle: True
 
@@ -35,7 +35,7 @@ train:
   profile: True
 
 others:
-  project: 'PINO-Re500-ICLR'
-  group: 'Re500-finetune-128-4k1-profile'
+  project: 'PINO-Re500-ICLR-rebuttal'
+  group: 'Re500-finetune-128-4k1'
 
 

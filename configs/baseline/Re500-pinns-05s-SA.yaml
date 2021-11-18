@@ -19,7 +19,7 @@ train:
   batchsize: 1
   epochs: 5000
   milestones: [1000, 1500, 2000]
-  base_lr: 0.001
+  base_lr: 0.01
   num_domain: 5000
   num_boundary: 10000
   num_init: 5000

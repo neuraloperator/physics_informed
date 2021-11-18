@@ -133,7 +133,6 @@ def train_sapinn(offset, config, args):
 
     # prepare collocation points
     collo_input = torch.tensor(domain.X_f, dtype=torch.float32, requires_grad=True)
-
     weight_net = SAWeight(out_dim=3,
                           num_init=[num_inits],
                           num_bd=[upper_input0.shape[0]] * 2,
@@ -168,7 +167,6 @@ def train_sapinn(offset, config, args):
                 f'Epoch: {e}, loss: {loss.item()}'
             )
         )
-
         if e % config['train']['log_step'] == 0:
             end_time = default_timer()
             eval(net, dataset, e, time_cost=end_time - start_time, offset=offset, config=config)
