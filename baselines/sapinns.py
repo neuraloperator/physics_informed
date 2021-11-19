@@ -163,6 +163,7 @@ def train_sapinn(offset, config, args):
         loss.backward()
         weight_optim.step()
         net_optim.step()
+        dde.gradients.clear()
         pbar.set_description(
             (
                 f'Epoch: {e}, loss: {loss.item()}'
