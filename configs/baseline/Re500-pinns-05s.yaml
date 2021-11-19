@@ -7,19 +7,19 @@ data:
   time_interval: 0.5
   nx: 256
   nt: 128
-  sub: 4
+  sub: 2
   sub_t: 1
   shuffle: True
 
 model:
-  layers: [3, 50, 50, 50, 50, 3]
+  layers: [3, 50, 50, 50, 50, 50, 50, 3]
   activation: tanh
 
 train:
   batchsize: 1
-  epochs: 5000
+  epochs: 3000
   milestones: [1000, 1500, 2000]
-  base_lr: 0.001
+  base_lr: 0.01
   num_domain: 5000
   num_boundary: 10000
   num_test: 100
@@ -28,7 +28,7 @@ train:
 log:
   project: 'PINO-Re500-ICLR'
   group: 'Re500-PINNs'
-  logfile: 'log/pinns-plot.csv'
+  logfile: 'log/pinns128-plot.csv'
 
 
 

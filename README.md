@@ -136,7 +136,7 @@ To train and test PINNs, use, e.g.,
 python3 pinns.py --config_path configs/baseline/Re500-pinns-05s.yaml --start [starting index] --stop [stopping index]
 ```
 
-To train and test PINNs-LAAF, use, e.g., 
+To train and test LAAF-PINN, use, e.g., 
 ```bash
 python3 pinns.py configs/baseline/Re500-pinns-05s-LAAF.yaml --start [starting index] --stop [stopping index]
 ```
@@ -144,13 +144,18 @@ python3 pinns.py configs/baseline/Re500-pinns-05s-LAAF.yaml --start [starting in
 To train and test SA-PINNs, first copy the latest code of tensordiffeq under the working directory.
 Then run: 
 ```bash 
-python3 pinns.py configs/baseline/Re500-pinns-05s-SA.yaml --start [starting index] --stop [stopping index]
+DDEBACKEND=pytorch python3 pinns.py configs/baseline/Re500-pinns-05s-SA.yaml --start [starting index] --stop [stopping index]
 ```
 
 ### Baseline for long roll out
 To train and test PINNs, use
 ```bash
-python3 pinns.py --config_path configs/scratch/NS-50s.yaml --long --start [starting index] --stop [stopping index]
+python3 pinns.py --config_path configs/baseline/NS-50s.yaml --start [starting index] --stop [stopping index]
+```
+
+To train and test LAAF-PINN, use, e.g., 
+```bash
+python3 pinns.py --config_path configs/baseline/NS-50s-LAAF.yaml --start [starting index] --stop [stopping index]
 ```
 
 ### Pseudospectral solver for Navier Stokes equation

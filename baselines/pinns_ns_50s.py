@@ -5,6 +5,7 @@ temporal domain: [0, 49]
 '''
 import csv
 import random
+from timeit import default_timer
 import deepxde as dde
 from deepxde.optimizers.config import set_LBFGS_options
 import numpy as np
@@ -51,6 +52,53 @@ def pde(x, u):
     return [eqn1, eqn2, eqn3, eqn4]
 
 
+def eval(model, dataset,
+         step, time_cost,
+         offset, config):
+    '''
+    evaluate test error for the model over dataset
+    '''
+    test_points, test_vals = dataset.get_test_xyt()
+
+    pred = model.predict(test_points)
+    vel_u_truth = test_vals[:, 0]
+    vel_v_truth = test_vals[:, 1]
+    vor_truth = test_vals[:, 2]
+
+    vel_u_pred = pred[:, 0]
+    vel_v_pred = pred[:, 1]
+    vor_pred = pred[:, 2]
+
+    u_err = dde.metrics.l2_relative_error(vel_u_truth, vel_u_pred)
+    v_err = dde.metrics.l2_relative_error(vel_v_truth, vel_v_pred)
+    vor_err = dde.metrics.l2_relative_error(vor_truth, vor_pred)
+
+    total_num = test_vals.shape[0]
+    u50 = test_vals[dataset.T - 1: total_num: dataset.T, 0]
+    v50 = test_vals[dataset.T - 1: total_num: dataset.T, 1]
+    vor50 = test_vals[dataset.T - 1: total_num: dataset.T, 2]
+
+    u50_pred = pred[dataset.T - 1: total_num: dataset.T, 0]
+    v50_pred = pred[dataset.T - 1: total_num: dataset.T, 1]
+    vor50_pred = pred[dataset.T - 1: total_num: dataset.T, 2]
+
+    u50_err = dde.metrics.l2_relative_error(u50, u50_pred)
+    v50_err = dde.metrics.l2_relative_error(v50, v50_pred)
+    vor50_err = dde.metrics.l2_relative_error(vor50, vor50_pred)
+
+    print(f'Instance index : {offset}')
+    print(f'L2 relative error in u: {u_err}')
+    print(f'L2 relative error in v: {v_err}')
+    print(f'L2 relative error in vorticity: {vor_err}')
+
+    print(f'Time {dataset.T - 1} L2 relative error of u : {u50_err}')
+    print(f'Time {dataset.T - 1} L2 relative error of v : {v50_err}')
+    print(f'Time {dataset.T - 1} L2 relative error of vor : {vor50_err}')
+    with open(config['log']['logfile'], 'a') as f:
+        writer = csv.writer(f)
+        writer.writerow([offset, u_err, v_err, vor_err, step, time_cost, u50_err, v50_err, vor50_err])
+
+
 def train_longtime(offset, config, args):
     seed = random.randint(1, 10000)
     print(f'Random seed :{seed}')
@@ -84,57 +132,30 @@ def train_longtime(offset, config, args):
             boundary_v,
             boundary_w
         ],
-        num_domain=6000,
-        num_boundary=18000,
-        num_test=1000,
+        num_domain=config['train']['num_domain'],
+        num_boundary=config['train']['num_boundary'],
+        num_test=config['train']['num_test'],
     )
 
-    net = dde.maps.FNN(config['model']['layers'],'tanh', 'Glorot normal')
+    net = dde.maps.FNN(config['model']['layers'],
+                       config['model']['activation'],
+                       'Glorot normal')
     # net = dde.maps.STMsFFN([3] + 4 * [50] + [3], 'tanh', 'Glorot normal', [50], [50])
     model = dde.Model(data, net)
 
-    model.compile('adam', lr=1e-3, loss_weights=[1, 1, 1, 1, 100, 100, 100])
-    model.train(epochs=config['train']['epochs'])
-    set_LBFGS_options(maxiter=10000)
-    model.compile('L-BFGS', loss_weights=[1, 1, 1, 1, 100, 100, 100])
-    model.train()
+    model.compile('adam', lr=config['train']['base_lr'], loss_weights=[1, 1, 1, 1, 100, 100, 100])
+    if 'log_step' in config['train']:
+        step_size = config['train']['log_step']
+    else:
+        step_size = 100
+    epochs = config['train']['epochs'] // step_size
+    for i in range(epochs):
+        time_start = default_timer()
+        model.train(epochs=step_size, display_every=step_size)
+        time_end = default_timer()
+        eval(model, dataset, i * step_size,
+             time_cost=time_end - time_start,
+             offset=offset,
+             config=config)
+    print('Done!')
 
-    test_points, test_vals = dataset.get_test_xyt()
-
-    pred = model.predict(test_points)
-    vel_u_truth = test_vals[:, 0]
-    vel_v_truth = test_vals[:, 1]
-    vor_truth = test_vals[:, 2]
-
-    vel_u_pred = pred[:, 0]
-    vel_v_pred = pred[:, 1]
-    vor_pred = pred[:, 2]
-
-    u_err = dde.metrics.l2_relative_error(vel_u_truth, vel_u_pred)
-    v_err = dde.metrics.l2_relative_error(vel_v_truth, vel_v_pred)
-    vor_err = dde.metrics.l2_relative_error(vor_truth, vor_pred)
-
-    total_num = test_vals.shape[0]
-    u50 = test_vals[dataset.T-1: total_num: dataset.T, 0]
-    v50 = test_vals[dataset.T-1: total_num: dataset.T, 1]
-    vor50 = test_vals[dataset.T-1: total_num: dataset.T, 2]
-
-    u50_pred = pred[dataset.T - 1: total_num: dataset.T, 0]
-    v50_pred = pred[dataset.T - 1: total_num: dataset.T, 1]
-    vor50_pred = pred[dataset.T - 1: total_num: dataset.T, 2]
-
-    u50_err = dde.metrics.l2_relative_error(u50, u50_pred)
-    v50_err = dde.metrics.l2_relative_error(v50, v50_pred)
-    vor50_err = dde.metrics.l2_relative_error(vor50, vor50_pred)
-
-    print(f'Instance index : {offset}')
-    print(f'L2 relative error in u: {u_err}')
-    print(f'L2 relative error in v: {v_err}')
-    print(f'L2 relative error in vorticity: {vor_err}')
-
-    print(f'Time {dataset.T - 1} L2 relative error of u : {u50_err}')
-    print(f'Time {dataset.T - 1} L2 relative error of v : {v50_err}')
-    print(f'Time {dataset.T - 1} L2 relative error of vor : {vor50_err}')
-    with open(config['log']['logfile'], 'a') as f:
-        writer = csv.writer(f)
-        writer.writerow([offset, u_err, v_err, vor_err, u50_err, v50_err, vor50_err])
