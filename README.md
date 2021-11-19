@@ -4,7 +4,7 @@
 
 [comment]: <> (![Results on Navier Stokes equation]&#40;docs/solver-pino.png&#41;)
 
-<img src="docs/solver-pino.png" alt="Results on Navier Stokes equation" width="720" height="501"/>
+<img src="docs/solver-pino-pinn.png" alt="Results on Navier Stokes equation" width="720" height="501"/>
 
 **Physics-informed Neural Operator for Learning Partial Differential Equation**
 
