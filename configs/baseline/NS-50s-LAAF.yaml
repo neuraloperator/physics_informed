@@ -17,11 +17,11 @@ model:
 
 train:
   batchsize: 1
-  epochs: 3000
+  epochs: 5000
   milestones: [1000, 1500, 2000]
-  base_lr: 0.005
+  base_lr: 0.001
   num_domain: 10000
-  num_boundary: 15000
+  num_boundary: 18000
   num_test: 100
   log_step: 100
 

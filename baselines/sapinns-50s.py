@@ -16,11 +16,10 @@ from models.FCN import DenseNet
 from train_utils.negadam import NAdam
 
 
-Re = 500
-
 
 def forcing(x):
-    return - 4 * torch.cos(4 * x[:, 1:2])
+    theta = x[:, 0:1] + x[:, 1:2]
+    return 0.1 * (torch.sin(2 * np.pi * theta) + torch.cos(2 * np.pi * theta))
 
 
 def pde(x, u):
@@ -49,11 +48,12 @@ def pde(x, u):
     w_vor_yy = dde.grad.hessian(u, x, component=2, i=1, j=1)
 
     eqn1 = w_vor_t + u_vel * w_vor_x + v_vel * w_vor_y - \
-           1 / Re * (w_vor_xx + w_vor_yy) - forcing(x)
+           0.001 * (w_vor_xx + w_vor_yy) - forcing(x)
     eqn2 = u_vel_x + v_vel_y
     eqn3 = u_vel_xx + u_vel_yy + w_vor_y
     eqn4 = v_vel_xx + v_vel_yy - w_vor_x
     return [eqn1, eqn2, eqn3, eqn4]
+
 
 
 def eval(model, dataset,
