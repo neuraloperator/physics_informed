@@ -29,9 +29,9 @@ train:
   scheduler_gamma: 0.5
   ic_loss: 1.0
   f_loss: 1.0
-  xy_loss: 5.0
+  xy_loss: 0.0
   save_dir: 'Re500-FDM'
-  save_name: 'PINO-pretrain-Re500-05s-0C1.pt'
+  save_name: 'PINO-pretrain-Re500-05s-eqn.pt'
   data_iter: 0
   eqn_iter: 1
 
