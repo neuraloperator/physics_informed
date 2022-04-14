@@ -21,6 +21,7 @@ Abstract: *Machine learning methods have recently shown promise in solving parti
 - tensorflow 2.4.0
 
 ## Data description
+[dataset link](https://drive.google.com/drive/folders/1do_kCc5rNcPtSjeuQ_GF3BlEG-Zvtp86?usp=sharing)
 ### Burgers equation
 `burgers_pino.mat`
 
