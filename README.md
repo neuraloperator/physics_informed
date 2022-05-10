@@ -21,13 +21,14 @@ Abstract: *Machine learning methods have recently shown promise in solving parti
 - tensorflow 2.4.0
 
 ## Data description
-[dataset link](https://drive.google.com/drive/folders/1do_kCc5rNcPtSjeuQ_GF3BlEG-Zvtp86?usp=sharing)
 ### Burgers equation
-`burgers_pino.mat`
+[burgers_pino.mat](https://hkzdata.s3.us-west-2.amazonaws.com/PINO/burgers_pino.mat)
 
 ### Darcy flow 
 - spatial domain: $x\in (0,1)^2$
-- Data file: `piececonst_r421_N1024_smooth1.mat`, `piececonst_r421_N1024_smooth2.mat`
+- Data file: 
+  - [piececonst_r421_N1024_smooth1.mat](https://hkzdata.s3.us-west-2.amazonaws.com/PINO/piececonst_r421_N1024_smooth1.mat)
+  - [piececonst_r421_N1024_smooth2.mat](https://hkzdata.s3.us-west-2.amazonaws.com/PINO/piececonst_r421_N1024_smooth2.mat)
 - Raw data shape: 1024x421x421
 
 
@@ -48,13 +49,13 @@ Data file: `nv_V1e-3_N5000_T50.mat`, with shape 50 x 64 x 64 x 5000
 - Reynolds number: 500
 
 Train set: data of shape (N, T, X, Y) where N is the number of instances, T is temporal resolution, X, Y are spatial resolutions. 
-1. `NS_fft_Re500_T4000.npy` : 4000x64x64x65
-2. `NS_fine_Re500_T128_part0.npy`: 100x129x128x128
-3. `NS_fine_Re500_T128_part1.npy`: 100x129x128x128
+1. [NS_fft_Re500_T4000.npy](https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS_fft_Re500_T4000.npy) : 4000x64x64x65
+2. [NS_fine_Re500_T128_part0.npy](https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS_fine_Re500_T128_part0.npy): 100x129x128x128
+3. [NS_fine_Re500_T128_part1.npy](https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS_fine_Re500_T128_part1.npy): 100x129x128x128
 
 Test set: data of shape (N, T, X, Y) where N is the number of instances, T is temporal resolution, X, Y are spatial resolutions. 
-1. `NS_Re500_s256_T100_test.npy`: 100x129x256x256
-2. `NS_fine_Re500_T128_part2.npy`: 100x129x128x128
+1. [NS_Re500_s256_T100_test.npy](https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS_Re500_s256_T100_test.npy): 100x129x256x256
+2. [NS_fine_Re500_T128_part2.npy](https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS_fine_Re500_T128_part2.npy): 100x129x128x128
 
 Configuration file format: see `.yaml` files under folder `configs` for detail. 
 
