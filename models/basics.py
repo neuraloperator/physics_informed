@@ -2,8 +2,23 @@ import numpy as np
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
-from functools import partial
+
+def _get_act(activation):
+    if activation == 'tanh':
+        func = F.tanh
+    elif activation == 'gelu':
+        func = F.gelu
+    elif activation == 'relu':
+        func = F.relu_
+    elif activation == 'elu':
+        func = F.elu_
+    elif activation == 'leaky_relu':
+        func = F.leaky_relu_
+    else:
+        raise ValueError(f'{activation} is not supported')
+    return func
 
 
 def compl_mul1d(a, b):
