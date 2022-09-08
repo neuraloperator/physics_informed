@@ -91,8 +91,8 @@ def subprocess_fn(rank, args):
           forcing, config,
           rank,
           log=args.log,
-          project=config['others']['project'],
-          group=config['others']['group'])
+          project=config['log']['project'],
+          group=config['log']['group'])
 
     if args.distributed:
         cleanup()

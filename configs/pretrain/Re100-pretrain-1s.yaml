@@ -31,7 +31,7 @@ train:
   save_dir: 'Re100-FDM'
   save_name: 'PINO-pretrain-Re100-1s.pt'
 
-others:
+log:
   project: 'PINO-pretrain'
   group: 'Re100-1s-tanh'
 

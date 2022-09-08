@@ -34,7 +34,7 @@ train:
   data_iter: 4      # number of update steps on data for each epoch
   eqn_iter: 1       # number of update steps on virtual PDE for each epoch
 
-others:
+log:
   project: 'PINO-pretrain-ICLR'
   group: 'Re500-05s-4C1'
 

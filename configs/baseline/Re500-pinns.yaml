@@ -23,7 +23,7 @@ train:
   xy_loss: 0
   log_step: 100
 
-others:
+log:
   project: 'PINO-Re500-ICLR'
   group: 'Re500-PINNs-long'
 

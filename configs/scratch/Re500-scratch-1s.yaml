@@ -1,5 +1,5 @@
 data:
-  datapath: 'data/NS_fine_Re500_T128_part2.npy'
+  datapath: '../data/NS-Re500Part1.npy'
   Re: 500
   total_num: 100
   offset: 0
@@ -30,8 +30,9 @@ train:
   save_dir: 'Re500-FDM'
   save_name: 'PINO-scratch128-1s.pt'
 
-others:
-  project: 'PINO-default'
+log:
+  entity: 'hzzheng-pino'
+  project: 'PINO-NavierStokes'
   group: 'Re500-scratch-1s'
 
 

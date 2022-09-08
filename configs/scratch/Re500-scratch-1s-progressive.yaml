@@ -30,7 +30,7 @@ train:
   save_dir: 'Re500-FDM'
   save_name: 'PINO-scratch128-1s.pt'
 
-others:
+log:
   project: 'PINO-default'
   group: 'Re500-scratch-1s'
 

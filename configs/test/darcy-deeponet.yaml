@@ -17,7 +17,7 @@ test:
   batchsize: 1
   ckpt: 'checkpoints/darcy-deeponet/darcy-pretrain-deeponet.pt'
 
-others:
+log:
   project: 'PINO-Darcy'
   group: 'default'
 

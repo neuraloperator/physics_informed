@@ -34,7 +34,7 @@ train:
   ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-Re500-05s-4C1.pt'
   profile: True
 
-others:
+log:
   project: 'PINO-Re500-ICLR'
   group: 'Re500-finetune-128-4C1-profile-long'
 

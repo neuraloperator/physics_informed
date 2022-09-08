@@ -35,7 +35,7 @@ train:
   data_iter: 4
   eqn_iter: 4
 
-others:
+log:
   project: 'PINO-pretrain-ICLR'
   group: 'Re500-05s-4C4'
 

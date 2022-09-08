@@ -24,7 +24,7 @@ train:
   save_dir: 'Re500-deepOnet'
   save_name: 'DeepONet-pretrain-Re500.pt'
 
-others:
+log:
   project: 'PINO-pretrain-ICLR'
   group: 'Re500-05s-deepONet'
 

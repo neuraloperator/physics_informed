@@ -31,7 +31,7 @@ train:
   save_dir: 'Re500-FDM'
   save_name: 'PINO-Re500-fintune-1s.pt'
 
-others:
+log:
   project: 'PINO-sweep'
   group: 'Re500-finetune'
 

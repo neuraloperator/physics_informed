@@ -30,7 +30,7 @@ train:
   save_dir: 'Re250-FDM'
   save_name: 'PINO-scratch-Re250-1s.pt'
 
-others:
+log:
   project: 'PINO-scratch-tanh'
   group: 'Re250-scratch-1s'
 

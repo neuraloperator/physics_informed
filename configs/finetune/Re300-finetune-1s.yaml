@@ -31,7 +31,7 @@ train:
   save_name: 'PINO-finetine-Re300-1s.pt'
   ckpt: 'checkpoints/Re300-FDM/PINO-pretrain-Re300-1s.pt'
 
-others:
+log:
   project: 'PINO-finetune'
   group: 'Re300-finetune-1s'
 

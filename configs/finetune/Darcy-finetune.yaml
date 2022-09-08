@@ -26,7 +26,7 @@ train:
   save_name: 'darcy-finetune-pino.pt'
   ckpt: 'checkpoints/darcy-FDM/darcy-pretrain-pino.pt'
 
-others:
+log:
   project: 'ICLR-Darcy-finetune'
   group: 'gelu-pino-pino'
 

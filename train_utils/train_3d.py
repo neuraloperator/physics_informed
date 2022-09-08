@@ -11,7 +11,7 @@ try:
     import wandb
 except ImportError:
     wandb = None
-
+    
 
 def train(model,
           loader, train_loader,
@@ -26,7 +26,7 @@ def train(model,
           profile=False):
     if rank == 0 and wandb and log:
         run = wandb.init(project=project,
-                         entity='hzzheng-pino',
+                         entity=config['log']['entity'],
                          group=group,
                          config=config,
                          tags=tags, reinit=True,
@@ -55,7 +55,7 @@ def train(model,
                      'train_ic': 0.0,
                      'train_f': 0.0,
                      'test_l2': 0.0}
-
+        log_dict = {}
         if rank == 0 and profile:
                 torch.cuda.synchronize()
                 t1 = default_timer()
@@ -89,12 +89,20 @@ def train(model,
         if rank == 0 and profile:
             torch.cuda.synchronize()
             t2 = default_timer()
+            log_dict['Time cost'] = t2 - t1
         scheduler.step()
         loss_reduced = reduce_loss_dict(loss_dict)
         train_ic = loss_reduced['train_ic'].item() / len(train_loader)
         train_f = loss_reduced['train_f'].item() / len(train_loader)
         train_loss = loss_reduced['train_loss'].item() / len(train_loader)
         test_l2 = loss_reduced['test_l2'].item() / len(train_loader)
+        log_dict = {
+            'Train f error': train_f,
+            'Train L2 error': train_ic,
+            'Train loss': train_loss,
+            'Test L2 error': test_l2
+            }
+
         if rank == 0:
             if use_tqdm:
                 pbar.set_description(
@@ -104,15 +112,7 @@ def train(model,
                     )
                 )
             if wandb and log:
-                wandb.log(
-                    {
-                        'Train f error': train_f,
-                        'Train L2 error': train_ic,
-                        'Train loss': train_loss,
-                        'Test L2 error': test_l2,
-                        'Time cost': t2 - t1
-                    }
-                )
+                wandb.log(log_dict)
 
     if rank == 0:
         save_checkpoint(config['train']['save_dir'],
@@ -138,7 +138,7 @@ def mixed_train(model,              # model of neural operator
                 use_tqdm=True):     # turn on tqdm
     if wandb and log:
         run = wandb.init(project=project,
-                         entity='hzzheng-pino',
+                         entity=config['log']['entity'],
                          group=group,
                          config=config,
                          tags=tags, reinit=True,
@@ -267,7 +267,7 @@ def progressive_train(model,
                       use_tqdm=True):
     if wandb and log:
         run = wandb.init(project=project,
-                         entity='hzzheng-pino',
+                         entity=config['log']['entity'],
                          group=group,
                          config=config,
                          tags=tags, reinit=True,

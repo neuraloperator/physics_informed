@@ -31,7 +31,7 @@ train:
   save_name: 'PINO-Re200-1s.pt'
   ckpt: 'checkpoints/Re400-FDM/PINO-pretrain-Re400-1s.pt'
 
-others:
+log:
   project: 'PINO-transfer-tanh'
   group: 'Re400to200-1s'
 

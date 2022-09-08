@@ -21,7 +21,7 @@ train:
   save_dir: 'darcy-deeponet'
   save_name: 'darcy-pretrain-deeponet.pt'
 
-others:
+log:
   project: 'PINO-Darcy-pretrain'
   group: 'deeponet'
 

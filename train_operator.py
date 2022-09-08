@@ -70,8 +70,8 @@ def train_3d(args, config):
                 config,
                 device,
                 log=args.log,
-                project=config['others']['project'],
-                group=config['others']['group'])
+                project=config['log']['project'],
+                group=config['log']['group'])
 
 
 def train_2d(args, config):
@@ -103,8 +103,8 @@ def train_2d(args, config):
                       train_loader,
                       optimizer, scheduler,
                       config, rank=0, log=args.log,
-                      project=config['others']['project'],
-                      group=config['others']['group'])
+                      project=config['log']['project'],
+                      group=config['log']['group'])
 
 
 if __name__ == '__main__':

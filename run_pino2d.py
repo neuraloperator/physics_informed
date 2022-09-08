@@ -41,8 +41,8 @@ def train(args, config):
                       dataloader,
                       optimizer, scheduler,
                       config, rank=0, log=args.log,
-                      project=config['others']['project'],
-                      group=config['others']['group'])
+                      project=config['log']['project'],
+                      group=config['log']['group'])
 
 
 if __name__ == '__main__':

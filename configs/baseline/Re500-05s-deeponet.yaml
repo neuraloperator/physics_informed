@@ -28,7 +28,7 @@ train:
 
   ckpt: 'checkpoints/Re500-FDM/pretrain-Re500-05s-4000.pt'
 
-others:
+log:
   project: 'PINO-None'
   group: 'eval'
 

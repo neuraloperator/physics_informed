@@ -34,7 +34,7 @@ train:
   ckpt: 'checkpoints/Re500-FDM/pretrain-Re500-05s-4000.pt'
   twolayer: True
 
-others:
+log:
   project: 'PINO-Re500-ICLR'
   group: 'Re500-finetune-128-4k-2layer'
 

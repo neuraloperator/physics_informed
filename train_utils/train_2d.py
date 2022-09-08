@@ -41,7 +41,7 @@ def train_2d_operator(model,
     '''
     if rank == 0 and wandb and log:
         run = wandb.init(project=project,
-                         entity='hzzheng-pino',
+                         entity=config['log']['entity'],
                          group=group,
                          config=config,
                          tags=tags, reinit=True,
@@ -123,7 +123,7 @@ def train_2d_burger(model,
                     use_tqdm=True):
     if rank == 0 and wandb and log:
         run = wandb.init(project=project,
-                         entity='hzzheng-pino',
+                         entity=config['log']['entity'],
                          group=group,
                          config=config,
                          tags=tags, reinit=True,

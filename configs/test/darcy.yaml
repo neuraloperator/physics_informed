@@ -19,7 +19,7 @@ test:
   batchsize: 1
   ckpt: 'checkpoints/darcy-FDM/darcy-pretrain-eqn.pt'
 
-others:
+log:
   project: 'PINO-Darcy'
   group: 'default'
 

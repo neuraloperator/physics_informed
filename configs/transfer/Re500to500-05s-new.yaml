@@ -31,7 +31,7 @@ train:
   save_name: 'PINO-Re500-05.pt'
   ckpt: 'checkpoints/Re500-FDM/pretrain-Re500-05s-4000.pt'
 
-others:
+log:
   project: 'PINO-Re500-exp'
   group: 'Re500to500-128-4k-all'
 

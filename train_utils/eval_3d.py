@@ -28,7 +28,7 @@ def eval_ns(model,  # model
     '''
     if wandb and log:
         run = wandb.init(project=project,
-                         entity='hzzheng-pino',
+                         entity=config['log']['entity'],
                          group=group,
                          config=config,
                          tags=tags, reinit=True,

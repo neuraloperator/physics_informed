@@ -22,7 +22,7 @@ test:
   batchsize: 1
   ckpt: 'checkpoints/Re500-FDM/PINO-pretrain-Re500-05s-4C1.pt'
 
-others:
+log:
   project: 'PINO-None'
   group: 'eval'
 

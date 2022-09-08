@@ -49,16 +49,17 @@ def run_instance(loader, config, data_config):
                                                      milestones=config['train']['milestones'],
                                                      gamma=config['train']['scheduler_gamma'])
     forcing = get_forcing(loader.S).to(device)
+    profile = config['train']['profile'] if 'profile' in config['train'] else False
     train(model,
           loader, train_loader,
           optimizer, scheduler,
           forcing, config,
           rank=0,
           log=options.log,
-          project=config['others']['project'],
-          group=config['others']['group'],
+          project=config['log']['project'],
+          group=config['log']['group'],
           use_tqdm=True,
-          profile=config['train']['profile'])
+          profile=profile)
 
 
 if __name__ == '__main__':

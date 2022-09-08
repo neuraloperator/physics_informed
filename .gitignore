@@ -1,6 +1,7 @@
 data
 log
 .vscode
+wandb
 __pycache__
 .idea
 figs

@@ -34,7 +34,7 @@ train:
   save_dir: 'Re500-FDM'
   save_name: 'PINO-pretrain-Re500-1s-eqn256.pt'
 
-others:
+log:
   project: 'PINO-pretrain'
   group: 'Re500-1s-eqn'
 

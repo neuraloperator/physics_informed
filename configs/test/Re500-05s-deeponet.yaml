@@ -19,7 +19,7 @@ test:
   batchsize: 20
   ckpt: 'checkpoints/Re500-deepOnet/DeepONet-pretrain-Re500_10000.pt'
 
-others:
+log:
   project: 'PINO-None'
   group: 'eval'
 
