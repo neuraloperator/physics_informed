@@ -47,7 +47,8 @@ def train_3d(args, config):
                   modes2=config['model']['modes2'],
                   modes3=config['model']['modes3'],
                   fc_dim=config['model']['fc_dim'],
-                  layers=config['model']['layers']).to(device)
+                  layers=config['model']['layers'], 
+                  activation=config['model']['act']).to(device)
     # Load from checkpoint
     if 'ckpt' in config['train']:
         ckpt_path = config['train']['ckpt']

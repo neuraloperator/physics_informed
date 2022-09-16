@@ -31,8 +31,8 @@ train:
   save_name: 'PINO-scratch128-1s.pt'
 
 log:
-  entity: 'hzzheng-pino'
-  project: 'PINO-NavierStokes'
+  entity: hzzheng-pino
+  project: PINO-NavierStokes
   group: 'Re500-scratch-1s'
 
 

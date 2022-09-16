@@ -3,14 +3,14 @@ data:
   Re: 500
   total_num: 4000
   offset: 0
-  n_sample: 400
-  time_interval: 0.5
+  n_sample: 100
+  time_interval: 1
   nx: 64
   nt: 64
   sub: 1
   sub_t: 1
   shuffle: True
-  S2: 128
+  S2: 64
   T2: 65
 
 model:
@@ -19,24 +19,25 @@ model:
   modes2: [8, 8, 8, 8]
   modes3: [8, 8, 8, 8]
   fc_dim: 128
+  act: gelu 
 
 train:
-  batchsize: 1
-  epochs: 40000
-  milestones: [10000, 20000, 30000]
+  batchsize: 2
+  epochs: 40_000
+  milestones: [10_000, 20_000, 30_000]
   base_lr: 0.001
   scheduler_gamma: 0.5
-  ic_loss: 5.0
+  ic_loss: 1.0
   f_loss: 1.0
-  xy_loss: 1.0
-  save_dir: 'Re500-Pretrain500'
-  save_name: 'PINO-pretrain-Re500-1s-400.pt'
-  data_iter: 1
-  eqn_iter: 1
+  xy_loss: 5.0
+  save_dir: Re500-PINO-1s-100
+  save_name: PINO-pretrain-Re500-1s-100.pt
+  data_iter: 4
+  eqn_iter: 4
 
 log:
   entity: hzzheng-pino
-  project: 'PINO-pretrain-ICLR'
-  group: 'Re500-05s-4C0'
+  project: PINO-Operator-Learning
+  group: PINO-Re500-1s-100-4v4
 
 
