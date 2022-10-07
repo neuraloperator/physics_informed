@@ -21,18 +21,24 @@ def _get_act(activation):
     return func
 
 
-def compl_mul1d(a, b):
+@torch.jit.script
+def compl_mul1d(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     # (batch, in_channel, x ), (in_channel, out_channel, x) -> (batch, out_channel, x)
-    return torch.einsum("bix,iox->box", a, b)
+    res = torch.einsum("bix,iox->box", a, b)
+    return res
 
 
-def compl_mul2d(a, b):
+@torch.jit.script
+def compl_mul2d(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     # (batch, in_channel, x,y,t ), (in_channel, out_channel, x,y,t) -> (batch, out_channel, x,y,t)
-    return torch.einsum("bixy,ioxy->boxy", a, b)
+    res =  torch.einsum("bixy,ioxy->boxy", a, b)
+    return res
 
 
-def compl_mul3d(a, b):
-    return torch.einsum("bixyz,ioxyz->boxyz", a, b)
+@torch.jit.script
+def compl_mul3d(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    res = torch.einsum("bixyz,ioxyz->boxyz", a, b)
+    return res
 
 ################################################################
 # 1d fourier layer
@@ -212,3 +218,5 @@ class FourierBlock(nn.Module):
         if self.activation is not None:
             out = self.activation(out)
         return out
+
+

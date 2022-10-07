@@ -2,7 +2,7 @@ data
 log
 .vscode
 wandb
-__pycache__
+**/__pycache__/**
 .idea
 figs
 checkpoints
