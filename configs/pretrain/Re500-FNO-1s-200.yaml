@@ -1,16 +1,16 @@
 data:
-  datapath: '../data/NS-Re500Part0.npy'
+  datapath: '../data/NS-T4000.npy'
   Re: 500
   total_num: 4000
   offset: 0
-  n_sample: 400
-  time_interval: 0.5
+  n_sample: 200
+  time_interval: 1
   nx: 64
   nt: 64
   sub: 1
   sub_t: 1
   shuffle: True
-  S2: 128
+  S2: 64
   T2: 65
 
 model:
@@ -19,24 +19,25 @@ model:
   modes2: [8, 8, 8, 8]
   modes3: [8, 8, 8, 8]
   fc_dim: 128
+  act: gelu
 
 train:
-  batchsize: 1
-  epochs: 40000
-  milestones: [10000, 20000, 30000]
+  batchsize: 2
+  epochs: 100_001
+  milestones: [20_000, 40_000, 60_000, 80_000]
   base_lr: 0.001
   scheduler_gamma: 0.5
-  ic_loss: 5.0
-  f_loss: 1.0
+  ic_loss: 0.0
+  f_loss: 0.0
   xy_loss: 1.0
-  save_dir: 'Re500-Pretrain500'
-  save_name: 'PINO-pretrain-Re500-1s-400.pt'
+  save_dir: Re500-FNO-200
+  save_name: FNO-Re500-1s-200.pt
   data_iter: 1
-  eqn_iter: 1
+  eqn_iter: 0
 
 log:
   entity: hzzheng-pino
-  project: 'PINO-pretrain-ICLR'
-  group: 'Re500-05s-4C0'
+  project: PINO-Operator-Learning
+  group: FNO-Re500-1s-200
 
 

@@ -5,19 +5,19 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def _get_act(activation):
-    if activation == 'tanh':
+def _get_act(act):
+    if act == 'tanh':
         func = F.tanh
-    elif activation == 'gelu':
+    elif act == 'gelu':
         func = F.gelu
-    elif activation == 'relu':
+    elif act == 'relu':
         func = F.relu_
-    elif activation == 'elu':
+    elif act == 'elu':
         func = F.elu_
-    elif activation == 'leaky_relu':
+    elif act == 'leaky_relu':
         func = F.leaky_relu_
     else:
-        raise ValueError(f'{activation} is not supported')
+        raise ValueError(f'{act} is not supported')
     return func
 
 
@@ -193,20 +193,20 @@ class SpectralConv3d(nn.Module):
 
 
 class FourierBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, modes1, modes2, modes3, activation='tanh'):
+    def __init__(self, in_channels, out_channels, modes1, modes2, modes3, act='tanh'):
         super(FourierBlock, self).__init__()
         self.in_channel = in_channels
         self.out_channel = out_channels
         self.speconv = SpectralConv3d(in_channels, out_channels, modes1, modes2, modes3)
         self.linear = nn.Conv1d(in_channels, out_channels, 1)
-        if activation == 'tanh':
-            self.activation = torch.tanh_
-        elif activation == 'gelu':
-            self.activation = nn.GELU
-        elif activation == 'none':
-            self.activation = None
+        if act == 'tanh':
+            self.act = torch.tanh_
+        elif act == 'gelu':
+            self.act = nn.GELU
+        elif act == 'none':
+            self.act = None
         else:
-            raise ValueError(f'{activation} is not supported')
+            raise ValueError(f'{act} is not supported')
 
     def forward(self, x):
         '''
@@ -215,8 +215,8 @@ class FourierBlock(nn.Module):
         x1 = self.speconv(x)
         x2 = self.linear(x.view(x.shape[0], self.in_channel, -1))
         out = x1 + x2.view(x.shape[0], self.out_channel, x.shape[2], x.shape[3], x.shape[4])
-        if self.activation is not None:
-            out = self.activation(out)
+        if self.act is not None:
+            out = self.act(out)
         return out
 
 

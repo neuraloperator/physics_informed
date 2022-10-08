@@ -7,7 +7,7 @@ class FNN2d(nn.Module):
                  width=64, fc_dim=128,
                  layers=None,
                  in_dim=3, out_dim=1,
-                 activation='tanh'):
+                 act='tanh'):
         super(FNN2d, self).__init__()
 
         """
@@ -43,7 +43,7 @@ class FNN2d(nn.Module):
 
         self.fc1 = nn.Linear(layers[-1], fc_dim)
         self.fc2 = nn.Linear(fc_dim, out_dim)
-        self.activation = _get_act(activation)
+        self.act = _get_act(act)
 
     def forward(self, x):
         '''
@@ -64,9 +64,9 @@ class FNN2d(nn.Module):
             x2 = w(x.view(batchsize, self.layers[i], -1)).view(batchsize, self.layers[i+1], size_x, size_y)
             x = x1 + x2
             if i != length - 1:
-                x = self.activation(x)
+                x = self.act(x)
         x = x.permute(0, 2, 3, 1)
         x = self.fc1(x)
-        x = self.activation(x)
+        x = self.act(x)
         x = self.fc2(x)
         return x

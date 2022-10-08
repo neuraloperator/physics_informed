@@ -25,7 +25,7 @@ def train(args, config):
                   modes2=config['model']['modes2'],
                   fc_dim=config['model']['fc_dim'],
                   layers=config['model']['layers'],
-                  activation=config['model']['activation']).to(device)
+                  act=config['model']['act']).to(device)
     # Load from checkpoint
     if 'ckpt' in config['train']:
         ckpt_path = config['train']['ckpt']

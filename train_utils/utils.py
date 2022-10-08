@@ -174,3 +174,15 @@ def save_checkpoint(path, name, model, optimizer=None):
     print('Checkpoint is saved at %s' % ckpt_dir + name)
 
 
+
+def save_ckpt(path, model, optimizer=None):
+    model_state = model.state_dict()
+    if optimizer:
+        optim_state = optimizer.state_dict()
+    else:
+        optim_state = None
+    torch.save({
+        'model': model_state, 
+        'optim': optim_state
+    }, path)
+    print(f'Checkpoint is saved to {path}')

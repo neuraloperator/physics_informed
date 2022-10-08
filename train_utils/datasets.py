@@ -209,6 +209,86 @@ class NSLoader(object):
         return new_data
 
 
+class NS3DDataset(Dataset):
+    def __init__(self, paths, 
+                 data_res, pde_res,
+                 n_samples=None, 
+                 offset=0,
+                 t_duration=1.0, 
+                 train=True):
+        super().__init__()
+        self.data_res = data_res
+        self.pde_res = pde_res
+        self.t_duration = t_duration
+        self.paths = paths
+        self.offset = offset
+        self.n_samples = n_samples
+        self.load(train=train)
+    
+    def load(self, train=True, sub_x=1, sub_t=1):
+        data_list = []
+        for datapath in self.paths:
+            batch = np.load(datapath)
+            batch = torch.from_numpy(batch, dtype=torch.float32)[:, ::sub_t, ::sub_x, ::sub_x]
+            if self.t_duration == 0.5:
+                batch = self.extract(batch)
+            data_list.append(batch.permute(0, 2, 3, 1))
+        data = torch.cat(data_list, dim=0)
+        if self.n_samples:
+            if train:
+                data = data[self.offset: self.offset + self.n_samples]
+            else:
+                data = data[self.offset + self.n_samples:]
+        
+        N = data.shape[0]
+        S = data.shape[1]
+        T = data.shape[-1]
+        a_data = data[:, :, :, 0:1, None].repeat([1, 1, 1, T, 1])
+        gridx, gridy, gridt = get_grid3d(S, T)
+        a_data = torch.cat((
+            gridx.repeat([N, 1, 1, 1, 1]),
+            gridy.repeat([N, 1, 1, 1, 1]),
+            gridt.repeat([N, 1, 1, 1, 1]),
+            a_data), dim=-1)
+        self.data = data        # N, S, S, T, 1
+        self.a_data = a_data    # N, S, S, T, 4
+        
+        self.data_s_step = data.shape[1] // self.data_res[0]
+        self.data_t_step = data.shape[3] // (self.data_res[2] - 1)
+
+    def __getitem__(self, idx):
+        return self.data[idx, ::self.data_s_step, ::self.data_s_step, ::self.data_t_step], self.a_data[idx]
+
+    def __len__(self, ):
+        return self.data.shape[0]
+
+
+    @staticmethod
+    def extract(data):
+        '''
+        Extract data with time range 0-0.5, 0.25-0.75, 0.5-1.0, 0.75-1.25,...
+        Args:
+            data: tensor with size N x 129 x 128 x 128
+
+        Returns:
+            output: (4*N-1) x 65 x 128 x 128
+        '''
+        T = data.shape[1] // 2
+        interval = data.shape[1] // 4
+        N = data.shape[0]
+        new_data = torch.zeros(4 * N - 1, T + 1, data.shape[2], data.shape[3])
+        for i in range(N):
+            for j in range(4):
+                if i == N - 1 and j == 3:
+                    # reach boundary
+                    break
+                if j != 3:
+                    new_data[i * 4 + j] = data[i, interval * j:interval * j + T + 1]
+                else:
+                    new_data[i * 4 + j, 0: interval] = data[i, interval * j:interval * j + interval]
+                    new_data[i * 4 + j, interval: T + 1] = data[i + 1, 0:interval + 1]
+        return new_data
+
 class BurgerData(Dataset):
     '''
     members: 

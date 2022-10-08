@@ -13,7 +13,7 @@ model:
   modes1: [20, 20, 20, 20]
   modes2: [20, 20, 20, 20]
   fc_dim: 128
-  activation: gelu
+  act: gelu
 
 test:
   batchsize: 1

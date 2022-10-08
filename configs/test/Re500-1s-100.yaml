@@ -1,14 +1,14 @@
 data:
-  datapath: '../data/NS-Re500Part0.npy'
+  datapath: '../data/NS-T4000.npy'
   Re: 500
   total_num: 100
   offset: 0
   n_sample: 100
   time_interval: 1
-  nx: 128
-  nt: 128
-  sub: 2
-  sub_t: 2
+  nx: 64
+  nt: 64
+  sub: 1
+  sub_t: 1
   shuffle: False
 
 model:
@@ -17,11 +17,11 @@ model:
   modes2: [8, 8, 8, 8]
   modes3: [8, 8, 8, 8]
   fc_dim: 128
-  act: tanh
+  act: gelu
 
 test:
   batchsize: 1
-  ckpt: checkpoints/Re500-Pretrain500/PINO-pretrain-Re500-1s-400.pt
+  ckpt: checkpoints/Re500-FNO-100/FNO-Re500-1s-100.pt
 
 log:
   entity: hzzheng-pino
