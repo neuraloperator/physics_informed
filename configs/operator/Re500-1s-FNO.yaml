@@ -1,12 +1,12 @@
 data:
-  paths: ['../data/NS-Re500Part0.npy', '../data/NS-Re500Part1.npy']
+  paths: ['../data/NS-Re500Part0.npy', '../data/NS-Re500Part1.npy', '../data/NS-Re500Part2.npy']
   Re: 500
-  total_num: 200
+  total_num: 300
   offset: 0
-  n_samples: 700
-  t_duration: 0.5
-  data_res: [64, 64, 33]
-  pde_res: [128, 128, 65]
+  n_samples: 200
+  t_duration: 1.0
+  data_res: [64, 64, 65]
+  pde_res: [128, 128, 129]
   shuffle: True
 
 model:
@@ -21,18 +21,16 @@ model:
 train:
   batchsize: 2
   epochs: 501
-  milestones: [300]
+  milestones: [200, 400]
   base_lr: 0.001
   scheduler_gamma: 0.5
-  ic_loss: 1.0
-  f_loss: 5.0
-  xy_loss: 5.0
+  ic_loss: 0.0
+  f_loss: 0.0
+  xy_loss: 1.0
   save_step: 100
 
 log:
-  logdir: Re500-05s-PINO-pde5
+  logdir: Re500-1s-200-FNO
   entity: hzzheng-pino
   project: 'PINO-NS'
-  group: 'Re500-05s-PINO'
-
-
+  group: 'Re500-1s-200-FNO'

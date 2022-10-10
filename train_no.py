@@ -1,5 +1,4 @@
 import os
-from unittest import loader
 import yaml
 import random
 from argparse import ArgumentParser
@@ -16,7 +15,7 @@ from train_utils.adam import Adam
 
 from train_utils.losses import LpLoss, PINO_loss3d, get_forcing
 from train_utils.datasets import NS3DDataset
-from train_utils.utils import save_ckpt
+from train_utils.utils import save_ckpt, count_params
 
 try:
     import wandb
@@ -40,9 +39,9 @@ def train_ns(model,
              device, config, args):
     # parse configuration
     v = 1/ config['data']['Re']
-    t_duration = config['data']['time_duration']
+    t_duration = config['data']['t_duration']
     num_pad = config['model']['num_pad']
-    save_step = config['log']['save_step']
+    save_step = config['train']['save_step']
     ic_weight = config['train']['ic_loss']
     f_weight = config['train']['f_loss']
     xy_weight = config['train']['xy_loss']
@@ -56,7 +55,7 @@ def train_ns(model,
     S = config['data']['pde_res'][0]
     data_s_step = train_loader.dataset.data_s_step
     data_t_step = train_loader.dataset.data_t_step
-    forcing = get_forcing(S)
+    forcing = get_forcing(S).to(device)
     # set up wandb
     if wandb and args.log:
         run = wandb.init(project=config['log']['project'], 
@@ -66,7 +65,7 @@ def train_ns(model,
                          settings=wandb.Settings(start_method='fork'))
     pbar = range(config['train']['epochs'])
     pbar = tqdm(pbar, dynamic_ncols=True, smoothing=0.2)
-
+    zero = torch.zeros(1).to(device)
     for e in pbar:
         loss_dict = {
             'train_loss': 0.0, 
@@ -86,14 +85,15 @@ def train_ns(model,
                 a_in = pad_input(a, num_pad=num_pad)
                 out = model(a_in)[:, :, :, :-num_pad, 0]
 
-                loss_ic, loss_f = 0, 0
+                loss_ic, loss_f = zero, zero
                 loss = lploss(out, u)
             else:
                 # PINO
                 a_in = pad_input(a, num_pad=num_pad)
                 out = model(a_in)[:, :, :, :-num_pad, 0]
                 # PDE loss
-                loss_ic, loss_f = PINO_loss3d(out, a, forcing, v, t_duration)
+                u0 = a[:, :, :, 0, -1]
+                loss_ic, loss_f = PINO_loss3d(out, u0, forcing, v, t_duration)
                 # data loss
                 data_loss = lploss(out[:, ::data_s_step, ::data_s_step, ::data_t_step], u)
                 loss = data_loss * xy_weight + loss_f * f_weight + loss_ic * ic_weight
@@ -147,7 +147,7 @@ def train_ns(model,
 
         if wandb and args.log:
             wandb.log(log_dict)
-        if e % save_step:
+        if e % save_step == 0:
             ckpt_path = os.path.join(ckpt_dir, f'model-{e}.pt')
             save_ckpt(ckpt_path, model, optimizer)
     # clean up wandb
@@ -195,6 +195,8 @@ def subprocess(args):
                   fc_dim=config['model']['fc_dim'],
                   layers=config['model']['layers'], 
                   act=config['model']['act']).to(device)
+    num_params = count_params(model)
+    config['num_params'] = num_params
     # Load from checkpoint
     if 'ckpt' in config['train']:
         ckpt_path = config['train']['ckpt']

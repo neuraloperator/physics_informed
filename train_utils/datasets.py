@@ -229,7 +229,7 @@ class NS3DDataset(Dataset):
         data_list = []
         for datapath in self.paths:
             batch = np.load(datapath)
-            batch = torch.from_numpy(batch, dtype=torch.float32)[:, ::sub_t, ::sub_x, ::sub_x]
+            batch = torch.from_numpy(batch)[:, ::sub_t, ::sub_x, ::sub_x].to(torch.float32)
             if self.t_duration == 0.5:
                 batch = self.extract(batch)
             data_list.append(batch.permute(0, 2, 3, 1))

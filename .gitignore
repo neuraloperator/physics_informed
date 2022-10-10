@@ -11,3 +11,4 @@ checkpoints
 *.pt
 *.pth
 tensordiffeq
+exp
