@@ -16,7 +16,9 @@ def test_config():
 
 
 def test_data():
-    data_path = '../data/NS-T4000.npy'
+    # data_path = '../data/NS-T4000.npy'
+    # data_path = '../data/NS-Re500_T256.npy'
+    data_path = '../data/NS-'
     plot_dir = 'exp/debug/plots'
     os.makedirs(plot_dir, exist_ok=True)
     data = np.load(data_path)[0]
@@ -26,7 +28,7 @@ def test_data():
         im = ax.imshow(data[i])
         ax.set_title(f'T:{i}')
         fig.colorbar(im, ax=ax)
-        plot_path = os.path.join(plot_dir, f'T{i}.png')
+        plot_path = os.path.join(plot_dir, f'N2000T{i}.png')
         plt.savefig(plot_path)
 
 

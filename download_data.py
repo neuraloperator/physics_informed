@@ -9,7 +9,8 @@ url_dict = {
     'NS-Re500Part0': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS_fine_Re500_T128_part0.npy', 
     'NS-Re500Part1': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS_fine_Re500_T128_part1.npy', 
     'NS-Re500Part2': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS_fine_Re500_T128_part2.npy', 
-    'NS-Re100Part0': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS_fine_Re100_T128_part0.npy'
+    'NS-Re100Part0': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS_fine_Re100_T128_part0.npy', 
+    'burgers': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/burgers_pino.mat'
 }
 
 
@@ -31,8 +32,10 @@ if __name__ == '__main__':
     
     os.makedirs(args.outdir, exist_ok=True)
 
-    file_path = os.path.join(args.outdir, f'{args.name}.npy')
-
+    if 'NS' in args.name:
+        file_path = os.path.join(args.outdir, f'{args.name}.npy')
+    else:
+        file_path = os.path.join(args.outdir, f'{args.name}.mat')
     download_url = url_dict[args.name]
     
     download_file(download_url, file_path)

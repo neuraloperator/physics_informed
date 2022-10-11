@@ -1,6 +1,6 @@
 data:
   name: 'Darcy'
-  datapath: 'data/burgers_pino.mat'
+  datapath: '../data/burgers.mat'
   total_num: 1000
   offset: 800
   n_sample: 200
@@ -18,7 +18,7 @@ model:
 
 test:
   batchsize: 1
-  ckpt: 'checkpoints/burgers-FDM/burgers-pretrain-pino.pt'
+  ckpt: 'checkpoints/burgers-FDM/burgers-pretrain-eqn.pt'
 
 log:
   project: 'PINO-burgers-test'

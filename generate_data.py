@@ -10,15 +10,8 @@ from timeit import default_timer
 import argparse
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--seed', type=int, default=0)
-    parser.add_argument('--re', type=float, default=40.0)
-    parser.add_argument('--sub_x', type=int, default=4)
-    parser.add_argument('--T', type=int, default=2000)
-    parser.add_argument('--outdir', type=str, default='data')
-    parser.add_argument('--t_res', type=int, default=256)
-    args = parser.parse_args()
+
+def legacy_solver(args):
     save_dir = args.outdir
     os.makedirs(save_dir, exist_ok=True)
     device = torch.device('cuda:0')
@@ -59,3 +52,22 @@ if __name__ == '__main__':
     save_path = os.path.join(save_dir, f'NS-Re{Re}_T{t}.npy')
     # np.save('NS_fine_Re500_S512_s64_T500_t128.npy', sol)
     np.save(save_path, sol)
+
+
+def gen_data(args):
+    save_dir = args.outdir
+    os.makedirs(save_dir, exist_ok=True)
+    device = torch.device('cuda:0')
+    
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--re', type=float, default=40.0)
+    parser.add_argument('--sub_x', type=int, default=4)
+    parser.add_argument('--T', type=int, default=2000)
+    parser.add_argument('--outdir', type=str, default='data')
+    parser.add_argument('--t_res', type=int, default=256)
+    args = parser.parse_args()
+    gen_data(args)

@@ -1,6 +1,6 @@
 data:
   name: 'Darcy'
-  datapath: 'data/burgers_pino.mat'
+  datapath: '../data/burgers.mat'
   total_num: 1000
   offset: 0
   n_sample: 800
@@ -29,7 +29,7 @@ train:
   save_name: 'burgers-pretrain-eqn.pt'
 
 log:
-  project: 'PINO-burgers-pretrain'
-  group: 'gelu-eqn'
-
+  project: PINO-burgers-pretrain
+  group: gelu-eqn
+  entity: hzzheng-pino
 
