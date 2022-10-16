@@ -14,7 +14,7 @@ from models import FNN3d
 from train_utils.adam import Adam
 
 from train_utils.losses import LpLoss, PINO_loss3d, get_forcing
-from train_utils.datasets import NS3DDataset
+from train_utils.datasets import NS3DDataset, KFDataset
 from train_utils.utils import save_ckpt, count_params
 
 try:
@@ -95,6 +95,8 @@ def train_ns(model,
                 u0 = a[:, :, :, 0, -1]
                 loss_ic, loss_f = PINO_loss3d(out, u0, forcing, v, t_duration)
                 # data loss
+                # print(out.shape)
+                # print(u.shape)
                 data_loss = lploss(out[:, ::data_s_step, ::data_s_step, ::data_t_step], u)
                 loss = data_loss * xy_weight + loss_f * f_weight + loss_ic * ic_weight
             
@@ -155,6 +157,35 @@ def train_ns(model,
         run.finish()
 
 
+def eval_ns(model, val_loader, device, config, args):
+    # parse configuration
+    v = 1/ config['data']['Re']
+    t_duration = config['data']['t_duration']
+    num_pad = config['model']['num_pad']
+
+    model.eval()
+    # loss fn
+    lploss = LpLoss(size_average=True)
+    S = config['data']['pde_res'][0]
+    data_s_step = val_loader.dataset.data_s_step
+    data_t_step = val_loader.dataset.data_t_step
+    forcing = get_forcing(S).to(device)
+
+    with torch.no_grad():
+        val_error = 0.0
+        for u, a in tqdm(val_loader):
+            u, a = u.to(device), a.to(device)
+            # a = a[:, ::data_s_step, ::data_s_step, ::data_t_step]
+            a_in = pad_input(a, num_pad=num_pad)
+            out = model(a_in)[:, :, :, :-num_pad, 0]
+            out = out[:, ::data_s_step, ::data_s_step, ::data_t_step]
+            data_loss = lploss(out, u)
+            val_error += data_loss.item()
+        avg_val_err = val_error / len(val_loader)
+
+    print(f'Average relative L2 error {avg_val_err}')
+
+
 def subprocess(args):
     with open(args.config, 'r') as f:
         config = yaml.load(f, yaml.FullLoader)
@@ -168,50 +199,72 @@ def subprocess(args):
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
-    # prepare dataset
-    batchsize = config['train']['batchsize']
-
-    trainset = NS3DDataset(paths=config['data']['paths'], 
-                           data_res=config['data']['data_res'], 
-                           pde_res=config['data']['pde_res'], 
-                           n_samples=config['data']['n_samples'], 
-                           offset=config['data']['offset'], 
-                           t_duration=config['data']['t_duration'], 
-                           train=True)
-    train_loader = DataLoader(trainset, batch_size=batchsize, num_workers=4, shuffle=True)
-
-    valset = NS3DDataset(paths=config['data']['paths'], 
-                         data_res=config['data']['data_res'], 
-                         pde_res=config['data']['pde_res'], 
-                         n_samples=config['data']['n_samples'], 
-                         offset=config['data']['offset'], 
-                         t_duration=config['data']['t_duration'], 
-                         train=False)
-    val_loader = DataLoader(valset, batch_size=batchsize)
     # create model 
     model = FNN3d(modes1=config['model']['modes1'],
-                  modes2=config['model']['modes2'],
-                  modes3=config['model']['modes3'],
-                  fc_dim=config['model']['fc_dim'],
-                  layers=config['model']['layers'], 
-                  act=config['model']['act']).to(device)
+                modes2=config['model']['modes2'],
+                modes3=config['model']['modes3'],
+                fc_dim=config['model']['fc_dim'],
+                layers=config['model']['layers'], 
+                act=config['model']['act']).to(device)
     num_params = count_params(model)
     config['num_params'] = num_params
+    print(f'Number of parameters: {num_params}')
     # Load from checkpoint
-    if 'ckpt' in config['train']:
-        ckpt_path = config['train']['ckpt']
+    if args.ckpt:
+        ckpt_path = args.ckpt
         ckpt = torch.load(ckpt_path)
         model.load_state_dict(ckpt['model'])
         print('Weights loaded from %s' % ckpt_path)
 
-    optimizer = Adam(model.parameters(), lr=config['train']['base_lr'])
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
-                                                     milestones=config['train']['milestones'], 
-                                                     gamma=config['train']['scheduler_gamma'])
+    datasets = {
+        'KF': KFDataset, 
+        'NS': NS3DDataset
+    }
+    if 'name' in config['data']:
+        dataname = config['data']['name']
+    else:
+        dataname = 'NS'
 
+    if args.test:
+        batchsize = config['test']['batchsize']
+        testset = datasets[dataname](paths=config['data']['paths'], 
+                                     raw_res=config['data']['raw_res'],
+                                     data_res=config['test']['data_res'], 
+                                     pde_res=config['data']['pde_res'], 
+                                     n_samples=config['data']['n_test_samples'], 
+                                     offset=config['data']['testoffset'], 
+                                     t_duration=config['data']['t_duration'])
+        test_loader = DataLoader(testset, batch_size=batchsize, num_workers=4, shuffle=True)
+        eval_ns(model, test_loader, device, config, args)
 
-    train_ns(model, train_loader, val_loader, 
-             optimizer, scheduler, device, config, args)
+    else:
+        # prepare datast
+        batchsize = config['train']['batchsize']
+
+        trainset = datasets[dataname](paths=config['data']['paths'], 
+                                      raw_res=config['data']['raw_res'],
+                                      data_res=config['data']['data_res'], 
+                                      pde_res=config['data']['pde_res'], 
+                                      n_samples=config['data']['n_samples'], 
+                                      offset=config['data']['offset'], 
+                                      t_duration=config['data']['t_duration'])
+        train_loader = DataLoader(trainset, batch_size=batchsize, num_workers=8, shuffle=True)
+
+        valset = datasets[dataname](paths=config['data']['paths'], 
+                                    raw_res=config['data']['raw_res'],
+                                    data_res=config['data']['data_res'], 
+                                    pde_res=config['data']['pde_res'], 
+                                    n_samples=config['data']['n_test_samples'], 
+                                    offset=config['data']['testoffset'], 
+                                    t_duration=config['data']['t_duration'])
+        val_loader = DataLoader(valset, batch_size=batchsize, num_workers=8)
+        optimizer = Adam(model.parameters(), lr=config['train']['base_lr'])
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
+                                                         milestones=config['train']['milestones'], 
+                                                         gamma=config['train']['scheduler_gamma'])
+        print(trainset.data.shape)
+        train_ns(model, train_loader, val_loader, 
+                optimizer, scheduler, device, config, args)
     print('Done!')
 
 
@@ -223,6 +276,8 @@ if __name__ == '__main__':
     parser.add_argument('--config', type=str, help='Path to the configuration file')
     parser.add_argument('--log', action='store_true', help='Turn on the wandb')
     parser.add_argument('--seed', type=int, default=None)
+    parser.add_argument('--ckpt', type=str, default=None)
+    parser.add_argument('--test', action='store_true', help='Test')
     args = parser.parse_args()
     if args.seed is None:
         args.seed = random.randint(0, 100000)

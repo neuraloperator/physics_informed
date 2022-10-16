@@ -29,6 +29,11 @@ train:
   xy_loss: 5.0
   save_step: 100
 
+test:
+  batchsize: 1
+  data_res: [128, 128, 65]
+  ckpt: model-500.pt
+
 log:
   logdir: Re500-05s-1000-PINO
   entity: hzzheng-pino

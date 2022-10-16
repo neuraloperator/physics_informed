@@ -25,12 +25,17 @@ train:
   base_lr: 0.001
   scheduler_gamma: 0.5
   ic_loss: 1.0
-  f_loss: 5.0
+  f_loss: 1.0
   xy_loss: 5.0
   save_step: 100
 
+test:
+  batchsize: 1
+  data_res: [64, 64, 33]
+  ckpt: model-500.pt
+
 log:
-  logdir: Re500-05s-PINO-pde5
+  logdir: Re500-05s-PINO
   entity: hzzheng-pino
   project: 'PINO-NS'
   group: 'Re500-05s-PINO'

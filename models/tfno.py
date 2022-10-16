@@ -1,6 +1,98 @@
 import torch.nn as nn
-from .core import FactorizedSpectralConv2d, JointFactorizedSpectralConv1d
+import torch.nn.functional as F
+from .core import FactorizedSpectralConv2d, JointFactorizedSpectralConv1d, FactorizedSpectralConv3d
 
+
+class FactorizedFNO3d(nn.Module):
+    def __init__(self, modes_height, modes_width,  modes_depth, width, fc_channels=256, n_layers=4,
+                joint_factorization=True, non_linearity=F.gelu,
+                rank=1.0, factorization='cp', fixed_rank_modes=False,
+                domain_padding=9, in_channels=3, Block=None,
+                verbose=True, fft_contraction='complex',
+                fft_norm='backward',
+                mlp=False,
+                decomposition_kwargs=dict()):
+        super().__init__()
+        self.modes_height = modes_height
+        self.modes_width = modes_width
+        self.modes_depth = modes_depth
+        self.width = width
+        self.fc_channels = fc_channels
+        self.n_layers = n_layers
+        self.joint_factorization = joint_factorization
+        self.non_linearity = non_linearity
+        self.rank = rank
+        self.factorization = factorization
+        self.fixed_rank_modes = fixed_rank_modes
+        self.domain_padding = domain_padding # pad the domain if input is non-periodic
+        self.in_channels = in_channels
+        self.decomposition_kwargs = decomposition_kwargs
+        self.fft_norm = fft_norm
+        self.verbose = verbose
+    
+        if Block is None:
+            Block = FactorizedSpectralConv3d
+        if verbose:
+            print(f'FNO Block using {Block}, fft_contraction={fft_contraction}')
+
+        self.Block = Block
+
+        if joint_factorization:
+            self.convs = Block(self.width, self.width, self.modes_height, self.modes_width, self.modes_depth,
+                               rank=rank,
+                               fft_contraction=fft_contraction,
+                               fft_norm=fft_norm,
+                               factorization=factorization, 
+                               fixed_rank_modes=fixed_rank_modes, 
+                               decomposition_kwargs=decomposition_kwargs,
+                               mlp=mlp,
+                               n_layers=n_layers)
+        else:
+            self.convs = nn.ModuleList([Block(self.width, self.modes_height, self.modes_width, self.modes_depth,
+                                              fft_contraction=fft_contraction,
+                                              rank=rank,
+                                              factorization=factorization, 
+                                              fixed_rank_modes=fixed_rank_modes, 
+                                              decomposition_kwargs=decomposition_kwargs,
+                                              mlp=mlp,
+                                              n_layers=1) for _ in range(n_layers)])
+        self.linears = nn.ModuleList([nn.Conv3d(self.width, self.width, 1) for _ in range(n_layers)])
+        
+        self.fc0 = nn.Linear(in_channels, self.width) # input channel is 3: (a(x, y), x, y)
+        self.fc1 = nn.Linear(self.width, fc_channels)
+        self.fc2 = nn.Linear(fc_channels, 1)
+
+    def forward(self, x, super_res=1):
+        #grid = self.get_grid(x.shape, x.device)
+        #x = torch.cat((x, grid), dim=-1)
+        #x = self.fc0(x)
+        #x = x.permute(0, 3, 1, 2)
+
+        x = x.permute(0,2,3,4,1)
+        x = self.fc0(x)
+        x = x.permute(0,4,1,2,3)
+
+        x = F.pad(x, [0, self.domain_padding])
+
+        for i in range(self.n_layers):
+            if super_res > 1 and i == (self.n_layers - 1):
+                super_res = super_res
+            else:
+                super_res = 1
+
+            x1 = self.convs[i](x) #, super_res=super_res)
+            x2 = self.linears[i](x)
+            x = x1 + x2
+            if i < (self.n_layers - 1):
+                x = self.non_linearity(x)
+
+        x = x[..., :-self.domain_padding]
+        x = x.permute(0, 2, 3, 4, 1)
+        x = self.fc1(x)
+        x = self.non_linearity(x)
+        x = self.fc2(x)
+        x = x.permute(0,4,1,2,3)
+        return x
 
 
 class FactorizedFNO2d(nn.Module):
@@ -151,3 +243,5 @@ class FactorizedFNO1d(nn.Module):
         x = x.permute(0,2,1)
         
         return x
+
+

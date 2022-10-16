@@ -1,5 +1,5 @@
 data:
-  name: 'Darcy'
+  name: Burgers
   datapath: '../data/burgers.mat'
   total_num: 1000
   offset: 0
@@ -15,6 +15,7 @@ model:
   modes2: [15, 12, 9, 9]
   fc_dim: 128
   act: gelu
+  num_pad: 4
 
 train:
   batchsize: 20

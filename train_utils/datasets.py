@@ -215,6 +215,8 @@ class NS3DDataset(Dataset):
                  n_samples=None, 
                  offset=0,
                  t_duration=1.0, 
+                 sub_x=1, 
+                 sub_t=1,
                  train=True):
         super().__init__()
         self.data_res = data_res
@@ -223,13 +225,14 @@ class NS3DDataset(Dataset):
         self.paths = paths
         self.offset = offset
         self.n_samples = n_samples
-        self.load(train=train)
+        self.load(train=train, sub_x=sub_x, sub_t=sub_t)
     
     def load(self, train=True, sub_x=1, sub_t=1):
         data_list = []
         for datapath in self.paths:
-            batch = np.load(datapath)
-            batch = torch.from_numpy(batch)[:, ::sub_t, ::sub_x, ::sub_x].to(torch.float32)
+            batch = np.load(datapath, mmap_mode='r+')
+
+            batch = torch.from_numpy(batch[:, ::sub_t, ::sub_x, ::sub_x]).to(torch.float32)
             if self.t_duration == 0.5:
                 batch = self.extract(batch)
             data_list.append(batch.permute(0, 2, 3, 1))
@@ -262,7 +265,6 @@ class NS3DDataset(Dataset):
     def __len__(self, ):
         return self.data.shape[0]
 
-
     @staticmethod
     def extract(data):
         '''
@@ -288,6 +290,94 @@ class NS3DDataset(Dataset):
                     new_data[i * 4 + j, 0: interval] = data[i, interval * j:interval * j + interval]
                     new_data[i * 4 + j, interval: T + 1] = data[i + 1, 0:interval + 1]
         return new_data
+
+
+class KFDataset(Dataset):
+    def __init__(self, paths, 
+                 data_res, pde_res, 
+                 raw_res, 
+                 n_samples=None, 
+                 offset=0,
+                 t_duration=1.0):
+        super().__init__()
+        self.data_res = data_res    # data resolution
+        self.pde_res = pde_res      # pde loss resolution
+        self.raw_res = raw_res      # raw data resolution
+        self.t_duration = t_duration
+        self.paths = paths
+        self.offset = offset
+        self.n_samples = n_samples
+        if t_duration == 0.5:
+            self.T = self.pde_res[2] // 2 + 1
+        else:
+            self.T = self.pde_res[2]    # number of points in time dimension
+
+        self.load()
+
+        self.data_s_step = pde_res[0] // data_res[0]
+        self.data_t_step = (pde_res[2] - 1) // (data_res[2] - 1)
+
+    def load(self):
+        datapath = self.paths[0]
+        raw_data = np.load(datapath, mmap_mode='r+')
+        # subsample ratio
+        sub_x = self.raw_res[0] // self.data_res[0]
+        sub_t = (self.raw_res[2] - 1) // (self.data_res[2] - 1)
+        
+        a_sub_x = self.raw_res[0] // self.pde_res[0]
+        # load data
+        data = raw_data[self.offset: self.offset + self.n_samples, ::sub_t, ::sub_x, ::sub_x]
+        # divide data
+        if self.t_duration == 0.5:
+            end_t = self.raw_res[2] - 1
+
+            step = end_t // 2
+            data = self.partition(data)
+            a_data = raw_data[self.offset: self.offset + self.n_samples, 0:end_t:step, ::a_sub_x, ::a_sub_x]
+            a_data = a_data.reshape(self.n_samples * 2, 1, self.pde_res[0], self.pde_res[1])    # 2N x 1 x S x S
+        else:
+            a_data = raw_data[self.offset: self.offset + self.n_samples, 0:1, ::a_sub_x, ::a_sub_x]
+
+        # convert into torch tensor
+        data = torch.from_numpy(data).to(torch.float32)
+        a_data = torch.from_numpy(a_data).to(torch.float32).permute(0, 2, 3, 1)
+        self.data = data.permute(0, 2, 3, 1)
+
+        S = self.pde_res[1]
+        
+        a_data = a_data[:, :, :, :, None]   # N x S x S x 1 x 1
+        gridx, gridy, gridt = get_grid3d(S, self.T)
+        self.grid = torch.cat((gridx[0], gridy[0], gridt[0]), dim=-1)   # S x S x T x 3
+        self.a_data = a_data
+
+    def partition(self, data):
+        '''
+        Divide 1s into two 0.5s
+        Args:
+            data: tensor with size N x T x S x S
+
+        Returns:
+            output: 2*N x (T//2 + 1) x 128 x 128
+        '''
+        N, T, S = data.shape[:3]
+        new_data = np.zeros((2 * N, T //2 + 1, S, S))
+        step = T // 2
+        for i in range(N):
+            new_data[i * 2] = data[i, 0:step+1]
+            new_data[i * 2 + 1] = data[i, step:]
+        return new_data
+
+
+    def __getitem__(self, idx):
+        a_data = torch.cat((
+            self.grid, 
+            self.a_data[idx].repeat(1, 1, self.T, 1)
+        ), dim=-1)
+        return self.data[idx], a_data
+
+    def __len__(self, ):
+        return self.data.shape[0]
+
 
 class BurgerData(Dataset):
     '''

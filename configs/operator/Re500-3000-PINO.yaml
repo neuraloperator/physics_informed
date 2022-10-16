@@ -1,0 +1,41 @@
+data:
+  name: KF
+  paths: ['../data/NS-Re500_T3000_id0.npy']
+  Re: 500
+  total_num: 3000
+  offset: 0
+  n_samples: 2400
+  sub_x: 4
+  sub_t: 4
+  pde_subx: 1
+  pde_subt: 2
+  t_duration: 1.0
+  data_res: [64, 64, 65]
+  pde_res: [256, 256, 129]
+  shuffle: True
+
+model:
+  layers: [64, 64, 64, 64, 64]
+  modes1: [8, 8, 8, 8]
+  modes2: [8, 8, 8, 8]
+  modes3: [8, 8, 8, 8]
+  fc_dim: 128
+  act: gelu
+  num_pad: 4
+
+train:
+  batchsize: 1
+  epochs: 401
+  milestones: [200]
+  base_lr: 0.001
+  scheduler_gamma: 0.5
+  ic_loss: 1.0
+  f_loss: 1.0
+  xy_loss: 5.0
+  save_step: 50
+
+log:
+  logdir: Re500-1s-3000-PINO
+  entity: hzzheng-pino
+  project: PINO-NS
+  group: Re500-1s-3000-PINO
