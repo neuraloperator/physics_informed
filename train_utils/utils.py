@@ -186,3 +186,10 @@ def save_ckpt(path, model, optimizer=None):
         'optim': optim_state
     }, path)
     print(f'Checkpoint is saved to {path}')
+
+
+def dict2str(log_dict):
+    res = ''
+    for key, value in log_dict.items():
+        res += f'{key}: {value}|'
+    return res

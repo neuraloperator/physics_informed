@@ -2,23 +2,6 @@ import numpy as np
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
-
-def _get_act(act):
-    if act == 'tanh':
-        func = F.tanh
-    elif act == 'gelu':
-        func = F.gelu
-    elif act == 'relu':
-        func = F.relu_
-    elif act == 'elu':
-        func = F.elu_
-    elif act == 'leaky_relu':
-        func = F.leaky_relu_
-    else:
-        raise ValueError(f'{act} is not supported')
-    return func
 
 
 @torch.jit.script

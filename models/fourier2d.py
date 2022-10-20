@@ -1,5 +1,6 @@
 import torch.nn as nn
-from .basics import SpectralConv2d, _get_act
+from .basics import SpectralConv2d
+from .utils import _get_act
 
 
 class FNN2d(nn.Module):

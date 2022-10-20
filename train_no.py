@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 import torch
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 
 
 from models import FNN3d
@@ -53,8 +53,8 @@ def train_ns(model,
     # loss fn
     lploss = LpLoss(size_average=True)
     S = config['data']['pde_res'][0]
-    data_s_step = train_loader.dataset.data_s_step
-    data_t_step = train_loader.dataset.data_t_step
+    data_s_step = train_loader.dataset.dataset.data_s_step
+    data_t_step = train_loader.dataset.dataset.data_t_step
     forcing = get_forcing(S).to(device)
     # set up wandb
     if wandb and args.log:
@@ -81,16 +81,14 @@ def train_ns(model,
 
             if ic_weight == 0.0 and f_weight == 0.0:
                 # FNO
-                a = a[:, ::data_s_step, ::data_s_step, ::data_t_step]
-                a_in = pad_input(a, num_pad=num_pad)
-                out = model(a_in)[:, :, :, :-num_pad, 0]
-
+                a_in = a[:, ::data_s_step, ::data_s_step, ::data_t_step]
+                out = model(a_in)
                 loss_ic, loss_f = zero, zero
                 loss = lploss(out, u)
             else:
                 # PINO
-                a_in = pad_input(a, num_pad=num_pad)
-                out = model(a_in)[:, :, :, :-num_pad, 0]
+                a_in = a
+                out = model(a_in)
                 # PDE loss
                 u0 = a[:, :, :, 0, -1]
                 loss_ic, loss_f = PINO_loss3d(out, u0, forcing, v, t_duration)
@@ -123,13 +121,13 @@ def train_ns(model,
                 if ic_weight == 0.0 and f_weight == 0.0:
                     # FNO
                     a = a[:, ::data_s_step, ::data_s_step, ::data_t_step]
-                    a_in = pad_input(a, num_pad=num_pad)
-                    out = model(a_in)[:, :, :, :-num_pad, 0]
+                    a_in = a
+                    out = model(a_in)
                     data_loss = lploss(out, u)
                 else:
                     # PINO
-                    a_in = pad_input(a, num_pad=num_pad)
-                    out = model(a_in)[:, :, :, :-num_pad, 0]
+                    a_in = a
+                    out = model(a_in)
                     # data loss
                     data_loss = lploss(out[:, ::data_s_step, ::data_s_step, ::data_t_step], u)
                 val_error += data_loss.item()
@@ -176,8 +174,8 @@ def eval_ns(model, val_loader, device, config, args):
         for u, a in tqdm(val_loader):
             u, a = u.to(device), a.to(device)
             # a = a[:, ::data_s_step, ::data_s_step, ::data_t_step]
-            a_in = pad_input(a, num_pad=num_pad)
-            out = model(a_in)[:, :, :, :-num_pad, 0]
+            a_in = a
+            out = model(a_in)
             out = out[:, ::data_s_step, ::data_s_step, ::data_t_step]
             data_loss = lploss(out, u)
             val_error += data_loss.item()
@@ -201,11 +199,12 @@ def subprocess(args):
 
     # create model 
     model = FNN3d(modes1=config['model']['modes1'],
-                modes2=config['model']['modes2'],
-                modes3=config['model']['modes3'],
-                fc_dim=config['model']['fc_dim'],
-                layers=config['model']['layers'], 
-                act=config['model']['act']).to(device)
+                  modes2=config['model']['modes2'],
+                  modes3=config['model']['modes3'],
+                  fc_dim=config['model']['fc_dim'],
+                  layers=config['model']['layers'], 
+                  act=config['model']['act'], 
+                  pad_ratio=config['model']['pad_ratio']).to(device)
     num_params = count_params(model)
     config['num_params'] = num_params
     print(f'Number of parameters: {num_params}')
@@ -241,28 +240,32 @@ def subprocess(args):
         # prepare datast
         batchsize = config['train']['batchsize']
 
-        trainset = datasets[dataname](paths=config['data']['paths'], 
-                                      raw_res=config['data']['raw_res'],
-                                      data_res=config['data']['data_res'], 
-                                      pde_res=config['data']['pde_res'], 
-                                      n_samples=config['data']['n_samples'], 
-                                      offset=config['data']['offset'], 
-                                      t_duration=config['data']['t_duration'])
-        train_loader = DataLoader(trainset, batch_size=batchsize, num_workers=8, shuffle=True)
+        dataset = datasets[dataname](paths=config['data']['paths'], 
+                                     raw_res=config['data']['raw_res'],
+                                     data_res=config['data']['data_res'], 
+                                     pde_res=config['data']['pde_res'], 
+                                     n_samples=config['data']['n_samples'], 
+                                     offset=config['data']['offset'], 
+                                     t_duration=config['data']['t_duration'])
+        idxs = torch.randperm(len(dataset))
+        # setup train and test
+        num_test = config['data']['n_test_samples']
+        num_train = len(idxs) - num_test
+        print(f'Number of training samples: {num_train};\nNumber of test samples: {num_test}.')
+        train_idx = idxs[:num_train]
+        test_idx = idxs[num_train:]
 
-        valset = datasets[dataname](paths=config['data']['paths'], 
-                                    raw_res=config['data']['raw_res'],
-                                    data_res=config['data']['data_res'], 
-                                    pde_res=config['data']['pde_res'], 
-                                    n_samples=config['data']['n_test_samples'], 
-                                    offset=config['data']['testoffset'], 
-                                    t_duration=config['data']['t_duration'])
-        val_loader = DataLoader(valset, batch_size=batchsize, num_workers=8)
+        trainset = Subset(dataset, indices=train_idx)
+        valset = Subset(dataset, indices=test_idx)
+
+        train_loader = DataLoader(trainset, batch_size=batchsize, num_workers=4, shuffle=True)
+
+        val_loader = DataLoader(valset, batch_size=batchsize, num_workers=4)
         optimizer = Adam(model.parameters(), lr=config['train']['base_lr'])
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
                                                          milestones=config['train']['milestones'], 
                                                          gamma=config['train']['scheduler_gamma'])
-        print(trainset.data.shape)
+        print(dataset.data.shape)
         train_ns(model, train_loader, val_loader, 
                 optimizer, scheduler, device, config, args)
     print('Done!')
