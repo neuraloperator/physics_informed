@@ -28,14 +28,14 @@ model:
 train:
   batchsize: 2
   epochs: 201
-  num_iter: 300_001
-  milestones: [100_000, 200_000]
+  num_iter: 100_001
+  milestones: [10_000, 30_000, 50_000, 70_000]
   base_lr: 0.001
   scheduler_gamma: 0.5
   ic_loss: 1.0
   f_loss: 1.0
   xy_loss: 5.0
-  save_step: 20_000
+  save_step: 5000
   eval_step: 5000
 
 test:
@@ -44,7 +44,7 @@ test:
   ckpt: model-400.pt
 
 log:
-  logdir: Re500-1_8s-2000-PINO
+  logdir: Re500-1_8s-2k-PINO
   entity: hzzheng-pino
   project: PINO-NS
-  group: Re500-1_8s-2000-PINO
+  group: Re500-1_8s-2k-PINO

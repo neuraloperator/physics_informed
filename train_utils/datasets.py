@@ -1,4 +1,3 @@
-from re import M
 import scipy.io
 import numpy as np
 

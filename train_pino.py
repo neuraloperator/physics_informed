@@ -216,7 +216,6 @@ def subprocess(args):
         
 
 if __name__ == '__main__':
-
     torch.backends.cudnn.benchmark = True
     # parse options
     parser = ArgumentParser(description='Basic paser')

@@ -1,0 +1,10 @@
+.vscode
+*.py
+wandb
+config
+docs
+models
+*/*.py
+exp
+checkpoints
+*/__pycache__
