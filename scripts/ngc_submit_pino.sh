@@ -6,7 +6,8 @@ ngc batch run --name 'ml-model.PINO.ns-dat400' --preempt RUNONCE \
 --instance dgxa100.40g.1.norm \
 --workspace QsixjfOES8uYIp5kwIDblQ:/Code \
 --datasetid 111345:/mount/data \
---team nvr-aialgo
+--team nvr-aialgo \
+--results /results
 
 ngc batch run --name 'ml-model.PINO.ns-dat200' --preempt RUNONCE \
 --commandline 'cd /Code/PINO; git pull; bash scripts/train_dat200.sh' \
@@ -16,7 +17,8 @@ ngc batch run --name 'ml-model.PINO.ns-dat200' --preempt RUNONCE \
 --instance dgxa100.40g.1.norm \
 --workspace QsixjfOES8uYIp5kwIDblQ:/Code \
 --datasetid 111345:/mount/data \
---team nvr-aialgo
+--team nvr-aialgo \
+--results /results
 
 ngc batch run --name 'ml-model.PINO.ns-dat80' --preempt RUNONCE \
 --commandline 'cd /Code/PINO; git pull; bash scripts/train_dat80.sh' \
@@ -36,7 +38,8 @@ ngc batch run --name 'ml-model.PINO.ns-dat40' --preempt RUNONCE \
 --instance dgxa100.40g.1.norm \
 --workspace QsixjfOES8uYIp5kwIDblQ:/Code \
 --datasetid 111345:/mount/data \
---team nvr-aialgo
+--team nvr-aialgo \
+--results /results
 
 ngc batch run --name 'ml-model.PINO.ns-dat0' --preempt RUNONCE \
 --commandline 'cd /Code/PINO; git pull; bash scripts/train_dat0.sh' \
@@ -46,7 +49,8 @@ ngc batch run --name 'ml-model.PINO.ns-dat0' --preempt RUNONCE \
 --instance dgxa100.40g.1.norm \
 --workspace QsixjfOES8uYIp5kwIDblQ:/Code \
 --datasetid 111345:/mount/data \
---team nvr-aialgo
+--team nvr-aialgo \
+--results /results
 
 ngc batch run --name 'ml-model.PINO.ns-res32' --preempt RUNONCE \
 --commandline 'cd /Code/PINO; git pull; bash scripts/train_res32.sh' \
@@ -56,7 +60,8 @@ ngc batch run --name 'ml-model.PINO.ns-res32' --preempt RUNONCE \
 --instance dgxa100.40g.1.norm \
 --workspace QsixjfOES8uYIp5kwIDblQ:/Code \
 --datasetid 111345:/mount/data \
---team nvr-aialgo
+--team nvr-aialgo \
+--results /results
 
 ngc batch run --name 'ml-model.PINO.ns-res16' --preempt RUNONCE \
 --commandline 'cd /Code/PINO; git pull; bash scripts/train_res16.sh' \
@@ -66,4 +71,5 @@ ngc batch run --name 'ml-model.PINO.ns-res16' --preempt RUNONCE \
 --instance dgxa100.40g.1.norm \
 --workspace QsixjfOES8uYIp5kwIDblQ:/Code \
 --datasetid 111345:/mount/data \
---team nvr-aialgo
+--team nvr-aialgo \
+--results /results
