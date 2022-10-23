@@ -7,4 +7,4 @@ ngc batch run --name 'ml-model.PINO.ns-dat800' --preempt RUNONCE \
 --workspace QsixjfOES8uYIp5kwIDblQ:/Code \
 --datasetid 111345:/mount/data \
 --team nvr-aialgo \
---results /results
+--result /results
