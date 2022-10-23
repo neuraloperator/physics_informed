@@ -1,6 +1,6 @@
 data:
   name: KF
-  paths: ['../data/NS-Re500_T300_id0.npy']
+  paths: ['/mount/data/NS-Re500_T300_id0.npy']
   Re: 500
   offset: 0
   total_num: 300

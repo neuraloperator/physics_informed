@@ -1,6 +1,6 @@
 data:
   name: KF
-  paths: ['../data/NS-Re500_T300_id0.npy']
+  paths: ['/mount/data/NS-Re500_T300_id0.npy']
   Re: 500
   offset: 0
   total_num: 300
@@ -29,7 +29,7 @@ train:
   batchsize: 1
   epochs: 201
   num_iter: 150_001
-  milestones: [20_000, 50_000, 80_000, 110_000]
+  milestones: [30_000, 60_000, 90_000, 120_000]
   base_lr: 0.001
   scheduler_gamma: 0.5
   ic_loss: 1.0
