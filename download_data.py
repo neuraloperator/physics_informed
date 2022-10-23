@@ -10,7 +10,8 @@ url_dict = {
     'NS-Re500Part1': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS_fine_Re500_T128_part1.npy', 
     'NS-Re500Part2': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS_fine_Re500_T128_part2.npy', 
     'NS-Re100Part0': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS_fine_Re100_T128_part0.npy', 
-    'burgers': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/burgers_pino.mat'
+    'burgers': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/burgers_pino.mat', 
+    'NS-Re500_T300_id0': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS-Re500_T300_id0.npy'
 }
 
 
