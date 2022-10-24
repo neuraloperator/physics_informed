@@ -1,11 +1,11 @@
 data:
   name: KF
-  paths: ['../data/NS-Re500_T300_id0.npy']
+  paths: ['../data/NS-Re500_T300_id0-shuffle.npy']
   Re: 500
   offset: 0
   total_num: 300
   raw_res: [256, 256, 513]
-  n_data_samples: 150
+  n_data_samples: 100
   data_res: [64, 64, 129]  # resolution in 1 second
   pde_res: [64, 64, 129]   # resolution in 1 second
   a_offset: 0
@@ -40,7 +40,7 @@ train:
 
 test:
   batchsize: 1
-  data_res: [64, 64, 129]
+  data_res: [128, 128, 257]
   ckpt: model-400.pt
 
 log:

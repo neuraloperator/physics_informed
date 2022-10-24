@@ -1,3 +1,4 @@
+import math
 import torch.nn as nn
 from .basics import SpectralConv3d
 from .utils import add_padding, remove_padding, _get_act
@@ -57,7 +58,11 @@ class FNN3d(nn.Module):
             u: (batchsize, x_grid, y_grid, t_grid, 1)
 
         '''
-        x = add_padding(x, pad_ratio=self.pad_ratio)
+        if self.pad_ratio > 0:
+            num_pad = math.floor(self.pad_ratio * x.shape[-2])
+        else:
+            num_pad = 0
+        x = add_padding(x, num_pad=num_pad)
         length = len(self.ws)
         batchsize = x.shape[0]
         size_x, size_y, size_z = x.shape[1], x.shape[2], x.shape[3]
@@ -75,5 +80,5 @@ class FNN3d(nn.Module):
         x = self.fc1(x)
         x = self.act(x)
         x = self.fc2(x)
-        x = remove_padding(x, pad_ratio=self.pad_ratio)
+        x = remove_padding(x, num_pad=num_pad)
         return x

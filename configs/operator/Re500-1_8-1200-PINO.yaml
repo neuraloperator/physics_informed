@@ -1,16 +1,18 @@
 data:
   name: KF
-  paths: ['../data/NS-Re500_T300_id0.npy']
+  paths: ['/raid/hongkai/NS-Re500_T300_id0-shuffle.npy']
   Re: 500
-  total_num: 300
   offset: 0
-  n_samples: 200
-  testoffset: 200
-  n_test_samples: 400
-  t_duration: 0.125
+  total_num: 300
   raw_res: [256, 256, 513]
-  data_res: [64, 64, 257]  # resolution in 1 second
+  n_data_samples: 150
+  data_res: [64, 64, 129]  # resolution in 1 second
   pde_res: [256, 256, 513]   # resolution in 1 second
+  a_offset: 0
+  n_a_samples: 250
+  testoffset: 250
+  n_test_samples: 50
+  t_duration: 0.125
   shuffle: True
 
 model:
@@ -21,22 +23,24 @@ model:
   fc_dim: 128
   act: gelu
   num_pad: 4
-  pad_ratio: 0.0625
+  pad_ratio: 0.125
 
 train:
   batchsize: 2
   epochs: 201
-  milestones: [50, 100, 150]
+  num_iter: 150_001
+  milestones: [30_000, 60_000, 90_000]
   base_lr: 0.001
   scheduler_gamma: 0.5
   ic_loss: 1.0
   f_loss: 1.0
   xy_loss: 5.0
-  save_step: 25
+  save_step: 5000
+  eval_step: 5000
 
 test:
   batchsize: 1
-  data_res: [256, 256, 257]
+  data_res: [256, 256, 513]
   ckpt: model-400.pt
 
 log:

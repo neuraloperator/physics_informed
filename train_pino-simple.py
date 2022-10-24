@@ -2,7 +2,6 @@ import os
 import yaml
 import random
 from argparse import ArgumentParser
-import math
 from tqdm import tqdm
 
 import torch
@@ -13,14 +12,16 @@ from torch.utils.data import DataLoader
 from models import FNN3d
 
 from train_utils.losses import LpLoss, PINO_loss3d, get_forcing
-from train_utils.datasets import KFDataset, KFaDataset, sample_data
+from train_utils.datasets import KFDataset, sample_data
 from train_utils.utils import save_ckpt, count_params, dict2str
 
 try:
     import wandb
 except ImportError:
     wandb = None
-
+'''
+This training doesn't have extra ICs. 
+'''
 
 
 @torch.no_grad()
@@ -41,7 +42,6 @@ def eval_ns(model, val_loader, criterion, device):
 
 def train_ns(model, 
              train_u_loader,        # training data
-             train_a_loader,        # initial conditions
              val_loader,            # validation data
              optimizer, 
              scheduler,
@@ -56,6 +56,13 @@ def train_ns(model,
     ic_weight = config['train']['ic_loss']
     f_weight = config['train']['f_loss']
     xy_weight = config['train']['xy_loss']
+
+    raw_res = config['data']['raw_res']
+    pde_res = config['data']['pde_res']
+    data_res = config['data']['data_res']
+
+    s_step = pde_res[0] // data_res[0]
+    t_step = (pde_res[2] - 1) // (data_res[2] - 1)
     # set up directory
     base_dir = os.path.join('exp', config['log']['logdir'])
     ckpt_dir = os.path.join(base_dir, 'ckpts')
@@ -77,25 +84,25 @@ def train_ns(model,
     pbar = tqdm(pbar, dynamic_ncols=True, smoothing=0.2)
 
     u_loader = sample_data(train_u_loader)
-    a_loader = sample_data(train_a_loader)
 
     for e in pbar:
         log_dict = {}
 
         optimizer.zero_grad()
         # data loss
-        u, a_in = next(u_loader)
+        u, a = next(u_loader)
         u = u.to(device)
-        a_in = a_in.to(device)
-        out = model(a_in)
-        data_loss = lploss(out, u)
+        a = a.to(device)
+        # print(u.shape)
+        # print(a.shape)
+        out = model(a)
+        # print(out.shape)
+        u_pred = out[:, ::s_step, ::s_step, ::t_step]
+        # print(u_pred.shape)
+        data_loss = lploss(u_pred, u)
         
         if f_weight != 0.0:
             # pde loss
-            a = next(a_loader)
-            a = a.to(device)
-            out = model(a)
-            
             u0  = a[:, :, :, 0, -1]
             loss_ic, loss_f = PINO_loss3d(out, u0, forcing, v, t_duration)
             log_dict['IC'] = loss_ic.item()
@@ -122,7 +129,7 @@ def train_ns(model,
         )
         if wandb and args.log:
             wandb.log(log_dict)
-        if e % save_step == 0 and e > 0:
+        if e % save_step == 0:
             ckpt_path = os.path.join(ckpt_dir, f'model-{e}.pt')
             save_ckpt(ckpt_path, model, optimizer)
 
@@ -181,19 +188,12 @@ def subprocess(args):
         u_set = KFDataset(paths=config['data']['paths'], 
                           raw_res=config['data']['raw_res'],
                           data_res=config['data']['data_res'], 
-                          pde_res=config['data']['data_res'], 
+                          pde_res=config['data']['pde_res'], 
                           n_samples=config['data']['n_data_samples'], 
                           offset=config['data']['offset'], 
                           t_duration=config['data']['t_duration'])
         u_loader = DataLoader(u_set, batch_size=batchsize, num_workers=4, shuffle=True)
 
-        a_set = KFaDataset(paths=config['data']['paths'], 
-                           raw_res=config['data']['raw_res'], 
-                           pde_res=config['data']['pde_res'], 
-                           n_samples=config['data']['n_a_samples'],
-                           offset=config['data']['a_offset'], 
-                           t_duration=config['data']['t_duration'])
-        a_loader = DataLoader(a_set, batch_size=batchsize, num_workers=4, shuffle=True)
         # val set
         valset = KFDataset(paths=config['data']['paths'], 
                            raw_res=config['data']['raw_res'],
@@ -203,13 +203,13 @@ def subprocess(args):
                            offset=config['data']['testoffset'], 
                            t_duration=config['data']['t_duration'])
         val_loader = DataLoader(valset, batch_size=batchsize, num_workers=4)
-        print(f'Train set: {len(u_set)}; Test set: {len(valset)}; IC set: {len(a_set)}')
+        print(f'Train set: {len(u_set)}; Test set: {len(valset)};')
         optimizer = Adam(model.parameters(), lr=config['train']['base_lr'])
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
                                                          milestones=config['train']['milestones'], 
                                                          gamma=config['train']['scheduler_gamma'])
         train_ns(model, 
-                 u_loader, a_loader, 
+                 u_loader, 
                  val_loader, 
                  optimizer, scheduler, 
                  device, 
