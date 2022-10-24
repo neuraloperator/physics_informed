@@ -73,8 +73,10 @@ def train_ns(model,
                          group=config['log']['group'], 
                          config=config, reinit=True, 
                          settings=wandb.Settings(start_method='fork'))
+    
     pbar = range(config['train']['num_iter'])
-    pbar = tqdm(pbar, dynamic_ncols=True, smoothing=0.2)
+    if args.tqdm:
+        pbar = tqdm(pbar, dynamic_ncols=True, smoothing=0.2)
 
     u_loader = sample_data(train_u_loader)
     a_loader = sample_data(train_a_loader)
@@ -114,12 +116,13 @@ def train_ns(model,
             eval_err = eval_ns(model, val_loader, lploss, device)
             log_dict['val error'] = eval_err
         
-        logstr = dict2str(log_dict)
-        pbar.set_description(
-            (
-                logstr
+        if args.tqdm:
+            logstr = dict2str(log_dict)
+            pbar.set_description(
+                (
+                    logstr
+                )
             )
-        )
         if wandb and args.log:
             wandb.log(log_dict)
         if e % save_step == 0 and e > 0:
@@ -227,6 +230,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=None)
     parser.add_argument('--ckpt', type=str, default=None)
     parser.add_argument('--test', action='store_true', help='Test')
+    parser.add_argument('--tqdm', action='store_true', help='Turn on the tqdm')
     args = parser.parse_args()
     if args.seed is None:
         args.seed = random.randint(0, 100000)
