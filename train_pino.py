@@ -200,8 +200,8 @@ def subprocess(args):
         # val set
         valset = KFDataset(paths=config['data']['paths'], 
                            raw_res=config['data']['raw_res'],
-                           data_res=config['test']['data_res'], 
-                           pde_res=config['test']['data_res'], 
+                           data_res=config['data']['data_res'], 
+                           pde_res=config['data']['data_res'], 
                            n_samples=config['data']['n_test_samples'], 
                            offset=config['data']['testoffset'], 
                            t_duration=config['data']['t_duration'])
