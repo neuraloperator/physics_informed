@@ -43,7 +43,7 @@ class SpectralConv1d(nn.Module):
 
         self.scale = (1 / (in_channels*out_channels))
         self.weights1 = nn.Parameter(
-            self.scale * torch.rand(in_channels, out_channels, self.modes1, 2))
+            self.scale * torch.rand(in_channels, out_channels, self.modes1, dtype=torch.cfloat))
 
     def forward(self, x):
         batchsize = x.shape[0]
@@ -55,7 +55,7 @@ class SpectralConv1d(nn.Module):
         out_ft[:, :, :self.modes1] = compl_mul1d(x_ft[:, :, :self.modes1], self.weights1)
 
         # Return to physical space
-        x = torch.fft.irfft(out_ft, s=[x.size(-1)], dim=[2])
+        x = torch.fft.irfftn(out_ft, s=[x.size(-1)], dim=[2])
         return x
 
 ################################################################
