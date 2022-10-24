@@ -17,7 +17,6 @@ model:
   fc_dim: 128
   act: gelu
   num_pad: 4
-  pad_ratio: 0.03125
 
 train:
   batchsize: 2

@@ -167,7 +167,6 @@ def eval_ns(model, val_loader, device, config, args):
     S = config['data']['pde_res'][0]
     data_s_step = val_loader.dataset.data_s_step
     data_t_step = val_loader.dataset.data_t_step
-    forcing = get_forcing(S).to(device)
 
     with torch.no_grad():
         val_error = 0.0

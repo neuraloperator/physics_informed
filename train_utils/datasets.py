@@ -230,7 +230,7 @@ class NS3DDataset(Dataset):
     def load(self, train=True, sub_x=1, sub_t=1):
         data_list = []
         for datapath in self.paths:
-            batch = np.load(datapath, mmap_mode='r+')
+            batch = np.load(datapath, mmap_mode='r')
 
             batch = torch.from_numpy(batch[:, ::sub_t, ::sub_x, ::sub_x]).to(torch.float32)
             if self.t_duration == 0.5:
@@ -319,7 +319,7 @@ class KFDataset(Dataset):
 
     def load(self):
         datapath = self.paths[0]
-        raw_data = np.load(datapath, mmap_mode='r+')
+        raw_data = np.load(datapath, mmap_mode='r')
         # subsample ratio
         sub_x = self.raw_res[0] // self.data_res[0]
         sub_t = (self.raw_res[2] - 1) // (self.data_res[2] - 1)
@@ -499,7 +499,7 @@ class KFaDataset(Dataset):
 
     def load(self):
         datapath = self.paths[0]
-        raw_data = np.load(datapath, mmap_mode='r+')
+        raw_data = np.load(datapath, mmap_mode='r')
         # subsample ratio
         a_sub_x = self.raw_res[0] // self.pde_res[0]
         # load data

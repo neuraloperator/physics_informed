@@ -6,11 +6,11 @@ data:
   total_num: 300
   raw_res: [256, 256, 513]
   n_data_samples: 50
-  data_res: [64, 64, 257]  # resolution in 1 second
-  pde_res: [64, 64, 257]   # resolution in 1 second
+  data_res: [64, 64, 129]  # resolution in 1 second
+  pde_res: [64, 64, 129]   # resolution in 1 second
   a_offset: 0
   n_a_samples: 50
-  testoffset: 200
+  testoffset: 250
   n_test_samples: 50
   t_duration: 0.125
   shuffle: True
@@ -40,7 +40,7 @@ train:
 
 test:
   batchsize: 1
-  data_res: [128, 128, 513]
+  data_res: [256, 256, 513]
   ckpt: model-400.pt
 
 log:
