@@ -1,5 +1,5 @@
 ngc batch run --name 'ml-model.PINO.ns-dat800' --preempt RUNONCE \
---commandline 'cd /Code/PINO; git clone https://github.com/devzhk/PINO.git; bash scripts/train_dat800.sh' \
+--commandline 'git clone https://github.com/devzhk/PINO.git; cd PINO; bash scripts/train_dat800.sh' \
 --image 'nvidia/pytorch:22.08-py3' \
 --priority HIGH \
 --ace nv-us-west-2 \
