@@ -5,12 +5,12 @@ data:
   offset: 0
   total_num: 300
   raw_res: [256, 256, 513]
-  n_data_samples: 10
-  data_res: [64, 64, 129]  # resolution in 1 second
-  pde_res: [256, 256, 513]   # resolution in 1 second
+  n_data_samples: 25
+  data_res: [128, 128, 257]  # resolution in 1 second
+  pde_res: [128, 128, 257]   # resolution in 1 second
   a_offset: 0
   n_a_samples: 250
-  testoffset: 275
+  testoffset: 250
   n_test_samples: 25
   t_duration: 0.125
   shuffle: True
@@ -26,15 +26,15 @@ model:
   pad_ratio: 0.125
 
 train:
-  batchsize: 2
+  batchsize: 1
   epochs: 201
-  num_iter: 100_001
-  milestones: [20_000, 40_000, 60_000]
+  num_iter: 50_001
+  milestones: [20_000, 40_000]
   base_lr: 0.001
   scheduler_gamma: 0.5
-  ic_loss: 10.0
-  f_loss: 1.0
-  xy_loss: 0.0
+  ic_loss: 0.0
+  f_loss: 0.0
+  xy_loss: 1.0
   save_step: 5000
   eval_step: 5000
 
@@ -44,7 +44,7 @@ test:
   ckpt: model-400.pt
 
 log:
-  logdir: Re500-1_8s-800-PINO-s
+  logdir: Re500-1_8s-dat200-FNO
   entity: hzzheng-pino
-  project: PINO-NS
-  group: Re500-1_8s-800-PINO-s
+  project: PINO-KF-Re500
+  group: Re500-1_8s-dat200-FNO

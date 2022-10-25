@@ -5,13 +5,13 @@ data:
   offset: 0
   total_num: 300
   raw_res: [256, 256, 513]
-  n_data_samples: 10
-  data_res: [64, 64, 129]  # resolution in 1 second
+  n_data_samples: 100
+  data_res: [256, 256, 513]  # resolution in 1 second
   pde_res: [256, 256, 513]   # resolution in 1 second
   a_offset: 0
   n_a_samples: 250
-  testoffset: 275
-  n_test_samples: 25
+  testoffset: 250
+  n_test_samples: 1
   t_duration: 0.125
   shuffle: True
 
@@ -22,21 +22,18 @@ model:
   modes3: [8, 8, 8, 8]
   fc_dim: 128
   act: gelu
-  num_pad: 4
   pad_ratio: 0.125
 
 train:
-  batchsize: 2
+  batchsize: 1
   epochs: 201
-  num_iter: 100_001
-  milestones: [20_000, 40_000, 60_000]
+  num_iter: 1_001
+  milestones: [400, 800]
   base_lr: 0.001
   scheduler_gamma: 0.5
   ic_loss: 10.0
   f_loss: 1.0
-  xy_loss: 0.0
-  save_step: 5000
-  eval_step: 5000
+  save_step: 500
 
 test:
   batchsize: 1
@@ -44,7 +41,7 @@ test:
   ckpt: model-400.pt
 
 log:
-  logdir: Re500-1_8s-800-PINO-s
+  logdir: Re500-1_8s-800-PINO-tto
   entity: hzzheng-pino
-  project: PINO-NS
+  project: PINO-NS-test-time-opt
   group: Re500-1_8s-800-PINO-s

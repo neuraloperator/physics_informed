@@ -62,13 +62,15 @@ class FNN3d(nn.Module):
             num_pad = math.floor(self.pad_ratio * x.shape[-2])
         else:
             num_pad = 0
-        x = add_padding(x, num_pad=num_pad)
+        
         length = len(self.ws)
         batchsize = x.shape[0]
-        size_x, size_y, size_z = x.shape[1], x.shape[2], x.shape[3]
+        
 
         x = self.fc0(x)
         x = x.permute(0, 4, 1, 2, 3)
+        x = add_padding(x, num_pad=num_pad)
+        size_x, size_y, size_z = x.shape[-3], x.shape[-2], x.shape[-1]
 
         for i, (speconv, w) in enumerate(zip(self.sp_convs, self.ws)):
             x1 = speconv(x)
@@ -76,9 +78,9 @@ class FNN3d(nn.Module):
             x = x1 + x2
             if i != length - 1:
                 x = self.act(x)
+        x = remove_padding(x, num_pad=num_pad)
         x = x.permute(0, 2, 3, 4, 1)
         x = self.fc1(x)
         x = self.act(x)
         x = self.fc2(x)
-        x = remove_padding(x, num_pad=num_pad)
         return x

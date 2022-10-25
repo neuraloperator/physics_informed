@@ -3,7 +3,7 @@ import torch.nn.functional as F
 
 def add_padding(x, num_pad):
     if num_pad > 0:
-        res = F.pad(x, (0, 0, 0, num_pad), 'constant', 0)
+        res = F.pad(x, (0, num_pad), 'constant', 0)
     else:
         res = x
     return res
@@ -11,7 +11,7 @@ def add_padding(x, num_pad):
 
 def remove_padding(x, num_pad):
     if num_pad > 0:
-        res = x[:, :, :, :-num_pad, 0]
+        res = x[:, :, :, :, :-num_pad]
     else:
         res = x
     return res

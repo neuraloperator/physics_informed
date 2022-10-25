@@ -49,7 +49,6 @@ def train_ns(model,
 
     v = 1/ config['data']['Re']
     t_duration = config['data']['t_duration']
-    num_pad = config['model']['num_pad']
     save_step = config['train']['save_step']
     eval_step = config['train']['eval_step']
 
@@ -86,12 +85,15 @@ def train_ns(model,
 
         optimizer.zero_grad()
         # data loss
-        u, a_in = next(u_loader)
-        u = u.to(device)
-        a_in = a_in.to(device)
-        out = model(a_in)
-        data_loss = lploss(out, u)
-        
+        if xy_weight > 0:
+            u, a_in = next(u_loader)
+            u = u.to(device)
+            a_in = a_in.to(device)
+            out = model(a_in)
+            data_loss = lploss(out, u)
+        else:
+            data_loss = torch.zeros(1, device=device)
+
         if f_weight != 0.0:
             # pde loss
             a = next(a_loader)
