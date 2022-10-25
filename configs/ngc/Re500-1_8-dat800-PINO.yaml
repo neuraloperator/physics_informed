@@ -46,5 +46,5 @@ test:
 log:
   logdir: Re500-1_8s-dat800-PINO
   entity: hzzheng-pino
-  project: PINO-NS
+  project: PINO-NS-ngc
   group: Re500-1_8s-dat800-PINO

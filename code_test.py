@@ -7,6 +7,10 @@ import torch
 import numpy as np
 
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from PIL import Image
+
+
 from models import FNN3d
 
 
@@ -33,6 +37,43 @@ def test_data():
         fig.colorbar(im, ax=ax)
         plot_path = os.path.join(plot_dir, f'N10T{i}-id3.png')
         plt.savefig(plot_path)
+
+
+def plot_data(datapath, id=1):
+    plot_dir = 'exp/debug/plots/Re500'
+    os.makedirs(plot_dir, exist_ok=True)
+    raw = np.load(datapath, mmap_mode='r')
+    data = raw[id]
+    t_duration = 1
+    T = int(data.shape[0] * t_duration)
+    for i in range(0, T):
+        fig, ax = plt.subplots()
+        im = ax.imshow(data[i])
+        ax.set_title(f'T={i} / {T-1}s')
+        fig.colorbar(im, ax=ax)
+        plot_path = os.path.join(plot_dir, f'test_t{i}.jpeg')
+        plt.savefig(plot_path)
+        plt.close()
+
+
+def make_gif(id=1):
+    plot_dir = 'exp/debug/plots/Re500'
+    os.makedirs(plot_dir, exist_ok=True)
+    # Create new figure for GIF
+
+    # Adjust figure so GIF does not have extra whitespace
+    ims = []
+    T = 513
+    for i in range(T):
+        img_path = os.path.join(plot_dir, f'test_t{i}.jpeg')
+        im = Image.open(img_path)
+        ims.append(im)
+    
+    gif = ims[0]
+    gif_dir = 'exp/debug/plots/gifs'
+    os.makedirs(gif_dir, exist_ok=True)
+    gif_path = os.path.join(gif_dir, f'ns-Re500-1s_id{id}.gif')
+    gif.save(gif_path, format='GIF', append_images=ims, save_all=True, duration=50, loop=0)
 
 
 def convert_data():
@@ -73,4 +114,10 @@ if __name__ == '__main__':
     # test_config()
     # test_data()
     # convert_data()
-    test_fno3d()
+    # test_fno3d()
+    datapath = '/raid/hongkai/NS-Re500_T300_id0-shuffle.npy'
+    # id = 10
+    ids = [0, 50, 100, 200, 250, 299]
+    for id in ids:
+        plot_data(datapath, id=id)
+        make_gif(id=id)
