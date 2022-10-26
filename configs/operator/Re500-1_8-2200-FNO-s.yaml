@@ -26,7 +26,7 @@ model:
 
 train:
   batchsize: 1
-  epochs: 201
+  start_iter: 30_001
   num_iter: 60_001
   milestones: [20_000, 40_000]
   base_lr: 0.001

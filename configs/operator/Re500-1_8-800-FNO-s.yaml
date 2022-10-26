@@ -6,28 +6,27 @@ data:
   total_num: 300
   raw_res: [256, 256, 513]
   n_data_samples: 100
-  data_res: [64, 64, 129]  # resolution in 1 second
+  data_res: [64, 64, 257]  # resolution in 1 second
   pde_res: [64, 64, 129]   # resolution in 1 second
   a_offset: 0
   n_a_samples: 250
-  testoffset: 250
-  n_test_samples: 50
+  testoffset: 275
+  n_test_samples: 25
   t_duration: 0.125
   shuffle: True
 
 model:
   layers: [64, 64, 64, 64, 64]
-  modes1: [8, 8, 8, 8]
-  modes2: [8, 8, 8, 8]
-  modes3: [8, 8, 8, 8]
+  modes1: [12, 12, 12, 12]
+  modes2: [12, 12, 12, 12]
+  modes3: [12, 12, 12, 12]
   fc_dim: 128
   act: gelu
-  num_pad: 4
   pad_ratio: 0.125
 
 train:
   batchsize: 2
-  epochs: 201
+  start_iter: 0
   num_iter: 50_001
   milestones: [20_000, 40_000]
   base_lr: 0.001
@@ -40,11 +39,11 @@ train:
 
 test:
   batchsize: 1
-  data_res: [64, 64, 129]
+  data_res: [256, 256, 513]
   ckpt: model-400.pt
 
 log:
-  logdir: Re500-1_8s-dat800-FNO
+  logdir: Re500-1_8s-800-FNO-s
   entity: hzzheng-pino
   project: PINO-KF-Re500
-  group: Re500-1_8s-dat800-FNO
+  group: Re500-1_8s-800-FNO-s

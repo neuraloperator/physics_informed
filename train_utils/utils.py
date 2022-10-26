@@ -175,15 +175,21 @@ def save_checkpoint(path, name, model, optimizer=None):
 
 
 
-def save_ckpt(path, model, optimizer=None):
+def save_ckpt(path, model, optimizer=None, scheduler=None):
     model_state = model.state_dict()
     if optimizer:
         optim_state = optimizer.state_dict()
     else:
         optim_state = None
+    
+    if scheduler:
+        scheduler_state = scheduler.state_dict()
+    else:
+        scheduler_state = None
     torch.save({
         'model': model_state, 
-        'optim': optim_state
+        'optim': optim_state, 
+        'scheduler': scheduler_state
     }, path)
     print(f'Checkpoint is saved to {path}')
 

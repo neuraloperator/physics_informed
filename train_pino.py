@@ -46,7 +46,7 @@ def train_ns(model,
              optimizer, 
              scheduler,
              device, config, args):
-
+    start_iter = config['train']['start_iter']
     v = 1/ config['data']['Re']
     t_duration = config['data']['t_duration']
     save_step = config['train']['save_step']
@@ -73,7 +73,7 @@ def train_ns(model,
                          config=config, reinit=True, 
                          settings=wandb.Settings(start_method='fork'))
     
-    pbar = range(config['train']['num_iter'])
+    pbar = range(start_iter, config['train']['num_iter'])
     if args.tqdm:
         pbar = tqdm(pbar, dynamic_ncols=True, smoothing=0.2)
 
@@ -129,7 +129,7 @@ def train_ns(model,
             wandb.log(log_dict)
         if e % save_step == 0 and e > 0:
             ckpt_path = os.path.join(ckpt_dir, f'model-{e}.pt')
-            save_ckpt(ckpt_path, model, optimizer)
+            save_ckpt(ckpt_path, model, optimizer, scheduler)
 
     # clean up wandb
     if wandb and args.log:
@@ -213,6 +213,10 @@ def subprocess(args):
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
                                                          milestones=config['train']['milestones'], 
                                                          gamma=config['train']['scheduler_gamma'])
+        if args.ckpt:
+            ckpt = torch.load(ckpt_path)
+            optimizer.load_state_dict(ckpt['optim'])
+            scheduler.load_state_dict(ckpt['scheduler'])
         train_ns(model, 
                  u_loader, a_loader, 
                  val_loader, 

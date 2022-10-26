@@ -110,6 +110,13 @@ def test_fno3d():
     print(output.shape)
 
 
+def test_opt():
+    ckpt_path = 'exp/Re500-1_8s-2200-PINO-s/ckpts/model-30000.pt'
+    ckpt = torch.load(ckpt_path)
+    adam = ckpt['optim']
+    print('optim')
+
+
 if __name__ == '__main__':
     # test_config()
     # test_data()
@@ -118,6 +125,8 @@ if __name__ == '__main__':
     datapath = '/raid/hongkai/NS-Re500_T300_id0-shuffle.npy'
     # id = 10
     ids = [0, 50, 100, 200, 250, 299]
-    for id in ids:
-        plot_data(datapath, id=id)
-        make_gif(id=id)
+    # for id in ids:
+        # plot_data(datapath, id=id)
+        # make_gif(id=id)
+    
+    test_opt()
