@@ -101,6 +101,15 @@ python3 deeponet.py --config_path configs/test/darcy.yaml --mode test
 
 
 ## Code for Navier Stokes equation
+### Run exp on new dataset
+Train PINO with 800 low-res data and 2200 PDE. 
+```bash
+python3 train_pino.py --config configs/operator/Re500-1_8-800-PINO-s.yaml
+```
+Train FNO with 800 low-res data and 2200 PDE.
+```bash
+python3 train_pino.py --config configs/operator/Re500-1_8-800-FNO-s.yaml
+```
 ### Train PINO for short time period
 To run operator learning, use, e.g., 
 ```bash
