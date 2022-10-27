@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import yaml
 import random
@@ -5,8 +6,9 @@ from argparse import ArgumentParser
 import math
 from tqdm import tqdm
 
-import torch
+import numpy as np
 
+import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
@@ -22,21 +24,21 @@ except ImportError:
     wandb = None
 
 
-
 @torch.no_grad()
 def eval_ns(model, val_loader, criterion, device):
     model.eval()
-    val_err = 0.0
+    val_err = []
     for u, a in val_loader:
         u, a = u.to(device), a.to(device)
-        # print(u.shape)
-        # print(a.shape)
         out = model(a)
-        # print(out.shape)
         val_loss = criterion(out, u)
-        val_err += val_loss.item()
-    avg_err = val_err / len(val_loader)
-    return avg_err
+        val_err.append(val_loss.item())
+
+    N = len(val_loader)
+
+    avg_err = np.mean(val_err)
+    std_err = np.std(val_err, ddof=1) / np.sqrt(N)
+    return avg_err, std_err
 
 
 def train_ns(model, 
@@ -115,7 +117,7 @@ def train_ns(model,
         log_dict['train loss'] = loss.item()
         log_dict['data'] = data_loss.item()
         if e % eval_step == 0:
-            eval_err = eval_ns(model, val_loader, lploss, device)
+            eval_err, std_err = eval_ns(model, val_loader, lploss, device)
             log_dict['val error'] = eval_err
         
         if args.tqdm:
@@ -178,8 +180,8 @@ def subprocess(args):
                             t_duration=config['data']['t_duration'])
         testloader = DataLoader(testset, batch_size=batchsize, num_workers=4)
         criterion = LpLoss()
-        test_err = eval_ns(model, testloader, criterion, device)
-        print(f'Averaged test relative L2 error: {test_err}')
+        test_err, std_err = eval_ns(model, testloader, criterion, device)
+        print(f'Averaged test relative L2 error: {test_err}; Standard error: {std_err}')
     else:
         # training set
         batchsize = config['train']['batchsize']
