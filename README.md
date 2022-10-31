@@ -110,6 +110,11 @@ Train FNO with 800 low-res data and 2200 PDE.
 ```bash
 python3 train_pino.py --config configs/operator/Re500-1_8-800-FNO-s.yaml
 ```
+Run instance-wise finetuning
+```bash
+python3 instance_opt.py --config configs/instance/Re500-1_8-PINO-s.yaml
+```
+
 ### Train PINO for short time period
 To run operator learning, use, e.g., 
 ```bash

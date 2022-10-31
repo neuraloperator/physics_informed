@@ -39,11 +39,11 @@ train:
 
 test:
   batchsize: 1
-  data_res: [64, 64, 257]
+  data_res: [256, 256, 513]
   ckpt: model-400.pt
 
 log:
-  logdir: Re500-1_8s-dat2400-FNO-m8
+  logdir: Re500-1_8s-dat2200-FNO
   entity: hzzheng-pino
   project: PINO-KF-Re500
-  group: Re500-1_8s-dat2400-FNO
+  group: Re500-1_8s-dat2200-FNO
