@@ -5,14 +5,14 @@ data:
   offset: 0
   total_num: 300
   raw_res: [256, 256, 513]
-  n_data_samples: 100
+  n_data_samples: 50
   data_res: [64, 64, 257]  # resolution in 1 second
   pde_res: [256, 256, 513]   # resolution in 1 second
   a_offset: 0
-  n_a_samples: 275
+  n_a_samples: 200
   testoffset: 275
   n_test_samples: 25
-  t_duration: 0.125
+  t_duration: 0.0625
   shuffle: True
 
 model:
@@ -32,19 +32,19 @@ train:
   milestones: [20_000, 60_000, 120_000]
   base_lr: 0.001
   scheduler_gamma: 0.5
-  ic_loss: 10.0
+  ic_loss: 5.0
   f_loss: 1.0
-  xy_loss: 50.0
+  xy_loss: 10.0
   save_step: 5000
   eval_step: 5000
 
 test:
   batchsize: 1
-  data_res: [64, 64, 257]
+  data_res: [256, 256, 513]
   ckpt: model-400.pt
 
 log:
-  logdir: Re500-1_8s-800-PINO-s
+  logdir: Re500-1_16s-800-PINO-s
   entity: hzzheng-pino
   project: PINO-KF-Re500
-  group: Re500-1_8s-800-PINO-s
+  group: Re500-1_16s-800-PINO-s

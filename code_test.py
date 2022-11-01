@@ -11,7 +11,7 @@ import matplotlib.animation as animation
 from PIL import Image
 
 
-from models import FNN3d
+from models import FNO3d
 
 
 def test_config():
@@ -98,7 +98,7 @@ def test_fno3d():
         config = yaml.load(f, yaml.FullLoader)
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-    model = FNN3d(modes1=config['model']['modes1'],
+    model = FNO3d(modes1=config['model']['modes1'],
                 modes2=config['model']['modes2'],
                 modes3=config['model']['modes3'],
                 fc_dim=config['model']['fc_dim'],

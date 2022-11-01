@@ -3,14 +3,14 @@ from .basics import SpectralConv1d
 from .utils import _get_act
 
 
-class FNN1d(nn.Module):
+class FNO1d(nn.Module):
     def __init__(self,
                  modes, width=32,
                  layers=None,
                  fc_dim=128,
                  in_dim=2, out_dim=1,
                  act='relu'):
-        super(FNN1d, self).__init__()
+        super(FNO1d, self).__init__()
 
         """
         The overall network. It contains several layers of the Fourier layer.

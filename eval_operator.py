@@ -2,7 +2,7 @@ import yaml
 
 import torch
 from torch.utils.data import DataLoader
-from models import FNN3d, FNN2d
+from models import FNO3d, FNO2d
 from train_utils import NSLoader, get_forcing, DarcyFlow
 
 from train_utils.eval_3d import eval_ns
@@ -24,7 +24,7 @@ def test_3d(config):
                                      batch_size=config['test']['batchsize'],
                                      start=data_config['offset'],
                                      train=data_config['shuffle'])
-    model = FNN3d(modes1=config['model']['modes1'],
+    model = FNO3d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
                   modes3=config['model']['modes3'],
                   fc_dim=config['model']['fc_dim'],
@@ -53,7 +53,7 @@ def test_2d(config):
                         offset=data_config['offset'], num=data_config['n_sample'])
     dataloader = DataLoader(dataset, batch_size=config['test']['batchsize'], shuffle=False)
     print(device)
-    model = FNN2d(modes1=config['model']['modes1'],
+    model = FNO2d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
                   fc_dim=config['model']['fc_dim'],
                   layers=config['model']['layers'],

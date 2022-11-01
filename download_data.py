@@ -11,18 +11,21 @@ url_dict = {
     'NS-Re500Part2': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS_fine_Re500_T128_part2.npy', 
     'NS-Re100Part0': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS_fine_Re100_T128_part0.npy', 
     'burgers': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/burgers_pino.mat', 
-    'NS-Re500_T300_id0': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS-Re500_T300_id0.npy'
+    'NS-Re500_T300_id0': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS-Re500_T300_id0.npy',
+    'darcy-train': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/piececonst_r421_N1024_smooth1.mat', 
+    'darcy-test': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/piececonst_r421_N1024_smooth2.mat', 
+    'cavity': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/cavity.mat'
 }
 
 
 def download_file(url, file_path):
-    print('Start downloading..')
+    print('Start downloading...')
     with requests.get(url, stream=True) as r:
         r.raise_for_status()
         with open(file_path, 'wb') as f:
             for chunk in tqdm(r.iter_content(chunk_size=1024 * 1024 * 1024)):
                 f.write(chunk)
-    print('Download completed')
+    print('Complete')
 
 
 if __name__ == '__main__':

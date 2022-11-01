@@ -1,4 +1,4 @@
 from .FCN import FCNet
-from .fourier1d import FNN1d
-from .fourier2d import FNN2d
-from .fourier3d import FNN3d
+from .fourier1d import FNO1d
+from .fourier2d import FNO2d
+from .fourier3d import FNO3d

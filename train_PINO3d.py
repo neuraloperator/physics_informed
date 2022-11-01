@@ -14,7 +14,7 @@ from train_utils.train_3d import train
 from train_utils.distributed import setup, cleanup
 from train_utils.utils import requires_grad
 
-from models import FNN3d, FNN2d
+from models import FNO3d, FNO2d
 
 
 def subprocess_fn(rank, args):
@@ -51,7 +51,7 @@ def subprocess_fn(rank, args):
                               drop_last=True)
 
     # construct model
-    model = FNN3d(modes1=config['model']['modes1'],
+    model = FNO3d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
                   modes3=config['model']['modes3'],
                   fc_dim=config['model']['fc_dim'],

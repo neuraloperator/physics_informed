@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Subset
 
 
-from models import FNN3d
+from models import FNO3d
 from train_utils.adam import Adam
 
 from train_utils.losses import LpLoss, PINO_loss3d, get_forcing
@@ -197,7 +197,7 @@ def subprocess(args):
         torch.cuda.manual_seed_all(seed)
 
     # create model 
-    model = FNN3d(modes1=config['model']['modes1'],
+    model = FNO3d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
                   modes3=config['model']['modes3'],
                   fc_dim=config['model']['fc_dim'],

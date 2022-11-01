@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 import yaml
 
 import torch
-from models import FNN2d
+from models import FNO2d
 from train_utils import Adam
 from train_utils.datasets import BurgersLoader
 from train_utils.train_2d import train_2d_burger
@@ -19,7 +19,7 @@ def run(args, config):
                                        batch_size=config['train']['batchsize'],
                                        start=data_config['offset'])
 
-    model = FNN2d(modes1=config['model']['modes1'],
+    model = FNO2d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
                   fc_dim=config['model']['fc_dim'],
                   layers=config['model']['layers'],
@@ -56,7 +56,7 @@ def test(config):
                                      batch_size=config['test']['batchsize'],
                                      start=data_config['offset'])
 
-    model = FNN2d(modes1=config['model']['modes1'],
+    model = FNO2d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
                   fc_dim=config['model']['fc_dim'],
                   layers=config['model']['layers'],

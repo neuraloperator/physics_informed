@@ -4,14 +4,14 @@ from .basics import SpectralConv3d
 from .utils import add_padding, remove_padding, _get_act
 
 
-class FNN3d(nn.Module):
+class FNO3d(nn.Module):
     def __init__(self, 
                  modes1, modes2, modes3,
                  width=16, 
                  fc_dim=128,
                  layers=None,
                  in_dim=4, out_dim=1,
-                 act='tanh', 
+                 act='gelu', 
                  pad_ratio=0):
         '''
         Args:
@@ -25,7 +25,7 @@ class FNN3d(nn.Module):
             act: {tanh, gelu, relu, leaky_relu}, activation function
             pad_ratio: the ratio of the extended domain
         '''
-        super(FNN3d, self).__init__()
+        super(FNO3d, self).__init__()
         self.modes1 = modes1
         self.modes2 = modes2
         self.modes3 = modes3
@@ -66,7 +66,6 @@ class FNN3d(nn.Module):
         length = len(self.ws)
         batchsize = x.shape[0]
         
-
         x = self.fc0(x)
         x = x.permute(0, 4, 1, 2, 3)
         x = add_padding(x, num_pad=num_pad)
