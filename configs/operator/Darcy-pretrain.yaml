@@ -1,0 +1,46 @@
+data:
+  name: 'Darcy'
+  path: '/raid/hongkai/darcy-train.mat'
+  total_num: 1024
+  offset: 0
+  n_sample: 1000
+  nx: 421
+  sub: 7
+  pde_sub: 2
+
+model:
+  layers: [64, 64, 64, 64, 64]
+  modes1: [20, 20, 20, 20]
+  modes2: [20, 20, 20, 20]
+  fc_dim: 128
+  act: gelu
+  pad_ratio: 0.
+
+train:
+  batchsize: 20
+  num_iter: 15001
+  milestones: [5_000, 10_000, 15_000]
+  base_lr: 0.001
+  scheduler_gamma: 0.5
+  f_loss: 1.0
+  xy_loss: 5.0
+  save_step: 5_000
+  eval_step: 5_000
+
+test:
+  path: '/raid/hongkai/darcy-test.mat'
+  total_num: 1024
+  offset: 0
+  n_sample: 500
+  nx: 421
+  sub: 2
+  batchsize: 1
+  
+  
+log:
+  logdir: Darcy-PINO
+  entity: hzzheng-pino
+  project: DarcyFlow
+  group: PINO-1000
+
+

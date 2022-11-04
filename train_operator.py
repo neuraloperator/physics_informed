@@ -96,7 +96,7 @@ def train_2d(args, config):
         print('Weights loaded from %s' % ckpt_path)
 
     optimizer = Adam(model.parameters(), betas=(0.9, 0.999),
-                         lr=config['train']['base_lr'])
+                     lr=config['train']['base_lr'])
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
                                                      milestones=config['train']['milestones'],
                                                      gamma=config['train']['scheduler_gamma'])

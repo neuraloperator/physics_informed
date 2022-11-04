@@ -63,7 +63,7 @@ class FNO2d(nn.Module):
             num_pad1 = [math.floor(i * size_1) for i in self.pad_ratio]
             num_pad2 = [math.floor(i * size_2) for i in self.pad_ratio]
         else:
-            num_pad1 = num_pad2 = None
+            num_pad1 = num_pad2 = 0.
 
         length = len(self.ws)
         batchsize = x.shape[0]

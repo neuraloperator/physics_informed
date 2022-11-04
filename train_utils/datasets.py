@@ -473,6 +473,26 @@ class DarcyFlow(Dataset):
         return torch.cat([fa.unsqueeze(2), self.mesh], dim=2), self.u[item]
 
 
+class DarcyIC(Dataset):
+    def __init__(self,
+                 datapath,
+                 nx, sub,
+                 offset=0,
+                 num=1):
+        self.S = int(nx // sub) + 1
+        data = scipy.io.loadmat(datapath)
+        a = data['coeff']
+        self.a = torch.tensor(a[offset: offset + num, ::sub, ::sub], dtype=torch.float)
+        self.mesh = torch2dgrid(self.S, self.S)
+
+    def __len__(self):
+        return self.a.shape[0]
+
+    def __getitem__(self, item):
+        fa = self.a[item]
+        return torch.cat([fa.unsqueeze(2), self.mesh], dim=2) 
+
+
 '''
 dataset class for loading initial conditions
 '''

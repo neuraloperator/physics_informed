@@ -99,7 +99,7 @@ def torch2dgrid(num_x, num_y, bot=(0,0), top=(1,1)):
     x_top, y_top = top
     x_arr = torch.linspace(x_bot, x_top, steps=num_x)
     y_arr = torch.linspace(y_bot, y_top, steps=num_y)
-    xx, yy = torch.meshgrid(x_arr, y_arr)
+    xx, yy = torch.meshgrid(x_arr, y_arr, indexing='ij')
     mesh = torch.stack([xx, yy], dim=2)
     return mesh
 

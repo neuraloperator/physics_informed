@@ -4,65 +4,62 @@ import random
 from argparse import ArgumentParser
 from tqdm import tqdm
 
+import numpy as np
 import torch
 
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from models import FNO3d
+from models import FNO2d
 
-from train_utils.losses import LpLoss, PINO_loss3d, get_forcing
-from train_utils.datasets import KFDataset, sample_data
+from train_utils.losses import LpLoss, darcy_loss 
+from train_utils.datasets import DarcyFlow, DarcyIC, sample_data
 from train_utils.utils import save_ckpt, count_params, dict2str
 
 try:
     import wandb
 except ImportError:
     wandb = None
-'''
-This training doesn't have extra ICs. 
-'''
+
+
+
+def get_molifier(mesh, device):
+    mollifier = 0.001 * torch.sin(np.pi * mesh[..., 0]) * torch.sin(np.pi * mesh[..., 1])
+    return mollifier.to(device)
 
 
 @torch.no_grad()
-def eval_ns(model, val_loader, criterion, device):
+def eval_darcy(model, val_loader, criterion, 
+               device='cpu'):
+    mollifier = get_molifier(val_loader.dataset.mesh, device)
     model.eval()
-    val_err = 0.0
-    for u, a in val_loader:
-        u, a = u.to(device), a.to(device)
-        # print(u.shape)
-        # print(a.shape)
-        out = model(a)
-        # print(out.shape)
+    val_err = []
+    for a, u in val_loader:
+        a, u = a.to(device), u.to(device)
+        out = model(a).squeeze(dim=-1)
+        out = out * mollifier
         val_loss = criterion(out, u)
-        val_err += val_loss.item()
-    avg_err = val_err / len(val_loader)
-    return avg_err
+        val_err.append(val_loss.item())
+    N = len(val_loader)
+
+    avg_err = np.mean(val_err)
+    std_err = np.std(val_err, ddof=1) / np.sqrt(N)
+    return avg_err, std_err
 
 
-def train_ns(model, 
-             train_u_loader,        # training data
-             val_loader,            # validation data
-             optimizer, 
-             scheduler,
-             device, config, args):
-
-    v = 1/ config['data']['Re']
-    t_duration = config['data']['t_duration']
-    num_pad = config['model']['num_pad']
+def train(model, 
+          train_u_loader,        # training data
+          ic_loader,             # loader for initial conditions
+          val_loader,            # validation data
+          optimizer, 
+          scheduler,
+          device, config, args):
     save_step = config['train']['save_step']
     eval_step = config['train']['eval_step']
 
-    ic_weight = config['train']['ic_loss']
     f_weight = config['train']['f_loss']
     xy_weight = config['train']['xy_loss']
 
-    raw_res = config['data']['raw_res']
-    pde_res = config['data']['pde_res']
-    data_res = config['data']['data_res']
-
-    s_step = pde_res[0] // data_res[0]
-    t_step = (pde_res[2] - 1) // (data_res[2] - 1)
     # set up directory
     base_dir = os.path.join('exp', config['log']['logdir'])
     ckpt_dir = os.path.join(base_dir, 'ckpts')
@@ -70,9 +67,9 @@ def train_ns(model,
 
     # loss fn
     lploss = LpLoss(size_average=True)
-    
-    S = config['data']['pde_res'][0]
-    forcing = get_forcing(S).to(device)
+    # mollifier
+    u_mol = get_molifier(train_u_loader.dataset.mesh, device)
+    ic_mol = get_molifier(ic_loader.dataset.mesh, device)
     # set up wandb
     if wandb and args.log:
         run = wandb.init(project=config['log']['project'], 
@@ -84,32 +81,34 @@ def train_ns(model,
     pbar = tqdm(pbar, dynamic_ncols=True, smoothing=0.2)
 
     u_loader = sample_data(train_u_loader)
-
+    ic_loader = sample_data(ic_loader)
     for e in pbar:
         log_dict = {}
 
         optimizer.zero_grad()
         # data loss
-        u, a = next(u_loader)
-        u = u.to(device)
-        a = a.to(device)
-        # print(u.shape)
-        # print(a.shape)
-        out = model(a)
-        # print(out.shape)
-        u_pred = out[:, ::s_step, ::s_step, ::t_step]
-        # print(u_pred.shape)
-        data_loss = lploss(u_pred, u)
-        
-        if f_weight != 0.0:
-            # pde loss
-            u0  = a[:, :, :, 0, -1]
-            loss_ic, loss_f = PINO_loss3d(out, u0, forcing, v, t_duration)
-            log_dict['IC'] = loss_ic.item()
-            log_dict['PDE'] = loss_f.item()
+        if xy_weight > 0:
+            ic, u = next(u_loader)
+            u = u.to(device)
+            ic = ic.to(device)
+            out = model(ic).squeeze(dim=-1)
+            out = out * u_mol
+            data_loss = lploss(out, u)
         else:
-            loss_ic = loss_f = 0.0
-        loss = data_loss * xy_weight + loss_f * f_weight + loss_ic * ic_weight
+            data_loss = torch.zeros(1, device=device)
+        
+        if f_weight > 0:
+            # pde loss
+            ic = next(ic_loader)
+            ic = ic.to(device)
+            out = model(ic).squeeze(dim=-1)
+            out = out * ic_mol
+            u0 = ic[..., 0]
+            f_loss = darcy_loss(out, u0)
+            log_dict['PDE'] = f_loss.item()
+        else:
+            f_loss = 0.0
+        loss = data_loss * xy_weight + f_loss * f_weight
 
         loss.backward()
         optimizer.step()
@@ -118,9 +117,8 @@ def train_ns(model,
         log_dict['train loss'] = loss.item()
         log_dict['data'] = data_loss.item()
         if e % eval_step == 0:
-            eval_err = eval_ns(model, val_loader, lploss, device)
+            eval_err, std_err = eval_darcy(model, val_loader, lploss, device)
             log_dict['val error'] = eval_err
-        
         logstr = dict2str(log_dict)
         pbar.set_description(
             (
@@ -129,9 +127,9 @@ def train_ns(model,
         )
         if wandb and args.log:
             wandb.log(log_dict)
-        if e % save_step == 0:
+        if e % save_step == 0 and e > 0:
             ckpt_path = os.path.join(ckpt_dir, f'model-{e}.pt')
-            save_ckpt(ckpt_path, model, optimizer)
+            save_ckpt(ckpt_path, model, optimizer, scheduler)
 
     # clean up wandb
     if wandb and args.log:
@@ -152,9 +150,8 @@ def subprocess(args):
         torch.cuda.manual_seed_all(seed)
 
     # create model 
-    model = FNO3d(modes1=config['model']['modes1'],
+    model = FNO2d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
-                  modes3=config['model']['modes3'],
                   fc_dim=config['model']['fc_dim'],
                   layers=config['model']['layers'], 
                   act=config['model']['act'], 
@@ -171,49 +168,53 @@ def subprocess(args):
     
     if args.test:
         batchsize = config['test']['batchsize']
-        testset = KFDataset(paths=config['data']['paths'], 
-                            raw_res=config['data']['raw_res'],
-                            data_res=config['test']['data_res'], 
-                            pde_res=config['test']['data_res'], 
-                            n_samples=config['data']['n_test_samples'], 
-                            offset=config['data']['testoffset'], 
-                            t_duration=config['data']['t_duration'])
+        testset = DarcyFlow(datapath=config['test']['path'], 
+                            nx=config['test']['nx'], 
+                            sub=config['test']['sub'], 
+                            offset=config['test']['offset'], 
+                            num=config['test']['n_sample'])
         testloader = DataLoader(testset, batch_size=batchsize, num_workers=4)
         criterion = LpLoss()
-        test_err = eval_ns(model, testloader, criterion, device)
-        print(f'Averaged test relative L2 error: {test_err}')
+        test_err, std_err = eval_darcy(model, testloader, criterion, device)
+        print(f'Averaged test relative L2 error: {test_err}; Standard error: {std_err}')
     else:
         # training set
         batchsize = config['train']['batchsize']
-        u_set = KFDataset(paths=config['data']['paths'], 
-                          raw_res=config['data']['raw_res'],
-                          data_res=config['data']['data_res'], 
-                          pde_res=config['data']['pde_res'], 
-                          n_samples=config['data']['n_data_samples'], 
+        u_set = DarcyFlow(datapath=config['data']['path'], 
+                          nx=config['data']['nx'], 
+                          sub=config['data']['sub'], 
                           offset=config['data']['offset'], 
-                          t_duration=config['data']['t_duration'])
+                          num=config['data']['n_sample'])
         u_loader = DataLoader(u_set, batch_size=batchsize, num_workers=4, shuffle=True)
-
+        ic_set = DarcyIC(datapath=config['data']['path'], 
+                         nx=config['data']['nx'], 
+                         sub=config['data']['pde_sub'], 
+                         offset=config['data']['offset'], 
+                         num=config['data']['n_sample'])
+        ic_loader = DataLoader(ic_set, batch_size=batchsize, num_workers=4, shuffle=True)
         # val set
-        valset = KFDataset(paths=config['data']['paths'], 
-                           raw_res=config['data']['raw_res'],
-                           data_res=config['test']['data_res'], 
-                           pde_res=config['test']['data_res'], 
-                           n_samples=config['data']['n_test_samples'], 
-                           offset=config['data']['testoffset'], 
-                           t_duration=config['data']['t_duration'])
+        valset = DarcyFlow(datapath=config['test']['path'], 
+                           nx=config['test']['nx'], 
+                           sub=config['test']['sub'], 
+                           offset=config['test']['offset'], 
+                           num=config['test']['n_sample'])
         val_loader = DataLoader(valset, batch_size=batchsize, num_workers=4)
         print(f'Train set: {len(u_set)}; Test set: {len(valset)};')
         optimizer = Adam(model.parameters(), lr=config['train']['base_lr'])
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
                                                          milestones=config['train']['milestones'], 
                                                          gamma=config['train']['scheduler_gamma'])
-        train_ns(model, 
-                 u_loader, 
-                 val_loader, 
-                 optimizer, scheduler, 
-                 device, 
-                 config, args)
+        if args.ckpt:
+            ckpt = torch.load(ckpt_path)
+            optimizer.load_state_dict(ckpt['optim'])
+            scheduler.load_state_dict(ckpt['scheduler'])
+        train(model, 
+              u_loader,
+              ic_loader, 
+              val_loader, 
+              optimizer, scheduler, 
+              device, 
+              config, args)
     print('Done!')
         
         
