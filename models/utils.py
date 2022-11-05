@@ -10,8 +10,8 @@ def add_padding(x, num_pad):
 
 
 def add_padding2(x, num_pad1, num_pad2):
-    if num_pad1 > 0 or num_pad2 > 0:
-        res = F.pad(x, (num_pad2, num_pad2, num_pad1, num_pad1), 'constant', 0.)
+    if max(num_pad1) > 0 or max(num_pad2) > 0:
+        res = F.pad(x, (num_pad2[0], num_pad2[1], num_pad1[0], num_pad1[1]), 'constant', 0.)
     else:
         res = x
     return res
@@ -26,8 +26,8 @@ def remove_padding(x, num_pad):
 
 
 def remove_padding2(x, num_pad1, num_pad2):
-    if num_pad1 > 0 or num_pad2 > 0:
-        res = x[..., num_pad1:-num_pad1, num_pad2:-num_pad2]
+    if max(num_pad1) > 0 or max(num_pad2) > 0:
+        res = x[..., num_pad1[0]:-num_pad1[1], num_pad2[0]:-num_pad2[1]]
     else:
         res = x
     return res

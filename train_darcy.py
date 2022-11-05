@@ -199,7 +199,7 @@ def subprocess(args):
                            offset=config['test']['offset'], 
                            num=config['test']['n_sample'])
         val_loader = DataLoader(valset, batch_size=batchsize, num_workers=4)
-        print(f'Train set: {len(u_set)}; Test set: {len(valset)};')
+        print(f'Train set: {len(u_set)}; test set: {len(valset)}.')
         optimizer = Adam(model.parameters(), lr=config['train']['base_lr'])
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
                                                          milestones=config['train']['milestones'], 
@@ -215,6 +215,7 @@ def subprocess(args):
               optimizer, scheduler, 
               device, 
               config, args)
+              
     print('Done!')
         
         
