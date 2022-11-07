@@ -457,7 +457,10 @@ class DarcyFlow(Dataset):
                  nx, sub,
                  offset=0,
                  num=1):
-        self.S = int(nx // sub) + 1
+        if sub == 1:
+            self.S = nx
+        else:
+            self.S = int(nx // sub) + 1
         data = scipy.io.loadmat(datapath)
         a = data['coeff']
         u = data['sol']
@@ -479,7 +482,10 @@ class DarcyIC(Dataset):
                  nx, sub,
                  offset=0,
                  num=1):
-        self.S = int(nx // sub) + 1
+        if sub == 1:
+            self.S = nx
+        else:
+            self.S = int(nx // sub) + 1
         data = scipy.io.loadmat(datapath)
         a = data['coeff']
         self.a = torch.tensor(a[offset: offset + num, ::sub, ::sub], dtype=torch.float)

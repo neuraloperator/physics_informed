@@ -1,4 +1,3 @@
-import math
 import torch.nn as nn
 from .basics import SpectralConv3d
 from .utils import add_padding, remove_padding, _get_act
@@ -12,7 +11,7 @@ class FNO3d(nn.Module):
                  layers=None,
                  in_dim=4, out_dim=1,
                  act='gelu', 
-                 pad_ratio=0):
+                 pad_ratio=[0., 0.]):
         '''
         Args:
             modes1: list of int, first dimension maximal modes for each layer
@@ -26,6 +25,13 @@ class FNO3d(nn.Module):
             pad_ratio: the ratio of the extended domain
         '''
         super(FNO3d, self).__init__()
+
+        if isinstance(pad_ratio, float):
+            pad_ratio = [pad_ratio, pad_ratio]
+        else:
+            assert len(pad_ratio) == 2, 'Cannot add padding in more than 2 directions.'
+
+        self.pad_ratio = pad_ratio
         self.modes1 = modes1
         self.modes2 = modes2
         self.modes3 = modes3
@@ -58,10 +64,11 @@ class FNO3d(nn.Module):
             u: (batchsize, x_grid, y_grid, t_grid, 1)
 
         '''
-        if self.pad_ratio > 0:
-            num_pad = math.floor(self.pad_ratio * x.shape[-2])
+        size_z = x.shape[-1]
+        if max(self.pad_ratio) > 0:
+            num_pad = [round(size_z * i) for i in self.pad_ratio]
         else:
-            num_pad = 0
+            num_pad = [0., 0.]
         
         length = len(self.ws)
         batchsize = x.shape[0]

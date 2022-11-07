@@ -6,7 +6,7 @@ data:
   n_sample: 1000
   nx: 421
   sub: 7
-  pde_sub: 3
+  pde_sub: 2
 
 model:
   layers: [64, 64, 64, 64, 64]
@@ -14,18 +14,18 @@ model:
   modes2: [20, 20, 20, 20]
   fc_dim: 128
   act: gelu
-  pad_ratio: [0.05, 0.05]
+  pad_ratio: [0.0666, 0.0666]
 
 train:
   batchsize: 20
-  num_iter: 100_001
-  milestones: [10_000, 30_000, 50_000, 70_000]
+  num_iter: 15_001
+  milestones: [5_000, 7_500, 10_000]
   base_lr: 0.001
   scheduler_gamma: 0.5
   f_loss: 1.0
   xy_loss: 5.0
-  save_step: 10_000
-  eval_step: 5_000
+  save_step: 2_500
+  eval_step: 2_500
 
 test:
   path: '/raid/hongkai/darcy-test.mat'
@@ -33,7 +33,7 @@ test:
   offset: 0
   n_sample: 500
   nx: 421
-  sub: 3
+  sub: 1
   batchsize: 1
   
   

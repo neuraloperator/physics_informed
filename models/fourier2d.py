@@ -1,5 +1,3 @@
-import math
-from matplotlib.pyplot import isinteractive
 import torch.nn as nn
 from .basics import SpectralConv2d
 from .utils import _get_act, add_padding2, remove_padding2
@@ -25,7 +23,7 @@ class FNO2d(nn.Module):
             If list, paddings are added to both sides. pad_ratio[0] pads left, pad_ratio[1] pads right. 
         """
         if isinstance(pad_ratio, float):
-            pad_ratio = [0., pad_ratio]
+            pad_ratio = [pad_ratio, pad_ratio]
         else:
             assert len(pad_ratio) == 2, 'Cannot add padding in more than 2 directions'
         self.modes1 = modes1
@@ -60,8 +58,8 @@ class FNO2d(nn.Module):
         '''
         size_1, size_2 = x.shape[1], x.shape[2]
         if max(self.pad_ratio) > 0:
-            num_pad1 = [math.floor(i * size_1) for i in self.pad_ratio]
-            num_pad2 = [math.floor(i * size_2) for i in self.pad_ratio]
+            num_pad1 = [round(i * size_1) for i in self.pad_ratio]
+            num_pad2 = [round(i * size_2) for i in self.pad_ratio]
         else:
             num_pad1 = num_pad2 = [0.]
 
