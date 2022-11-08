@@ -161,6 +161,7 @@ class SpectralConv3d(nn.Module):
         x_ft = torch.fft.rfftn(x, dim=[2,3,4])
         # Multiply relevant Fourier modes
         out_ft = torch.zeros(batchsize, self.out_channels, x.size(2), x.size(3), x.size(4)//2 + 1, device=x.device, dtype=torch.cfloat)
+        # coeff = torch.zeros(batchsize, self.out_channels, self.modes1)
         out_ft[:, :, :self.modes1, :self.modes2, :self.modes3] = \
             compl_mul3d(x_ft[:, :, :self.modes1, :self.modes2, :self.modes3], self.weights1)
         out_ft[:, :, -self.modes1:, :self.modes2, :self.modes3] = \

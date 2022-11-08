@@ -33,14 +33,14 @@ test:
   offset: 0
   n_sample: 500
   nx: 421
-  sub: 1
+  sub: 2
   batchsize: 1
   
   
 log:
-  logdir: Darcy-PINO
+  logdir: Darcy-PINO-new
   entity: hzzheng-pino
   project: DarcyFlow
-  group: PINO-1000
+  group: PINO-1000-new
 
 

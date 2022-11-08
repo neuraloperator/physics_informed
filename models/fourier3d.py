@@ -64,12 +64,11 @@ class FNO3d(nn.Module):
             u: (batchsize, x_grid, y_grid, t_grid, 1)
 
         '''
-        size_z = x.shape[-1]
+        size_z = x.shape[-2]
         if max(self.pad_ratio) > 0:
             num_pad = [round(size_z * i) for i in self.pad_ratio]
         else:
             num_pad = [0., 0.]
-        
         length = len(self.ws)
         batchsize = x.shape[0]
         
