@@ -78,66 +78,24 @@ class SpectralConv2d(nn.Module):
         self.weights2 = nn.Parameter(
             self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
 
-    def forward(self, x, gridy=None):
+    def forward(self, x):
         batchsize = x.shape[0]
         size1 = x.shape[-2]
         size2 = x.shape[-1]
         # Compute Fourier coeffcients up to factor of e^(- something constant)
         x_ft = torch.fft.rfftn(x, dim=[2, 3])
 
-        if gridy is None:
-            # Multiply relevant Fourier modes
-            out_ft = torch.zeros(batchsize, self.out_channels, x.size(-2), x.size(-1) // 2 + 1, device=x.device,
-                                 dtype=torch.cfloat)
-            out_ft[:, :, :self.modes1, :self.modes2] = \
-                compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
-            out_ft[:, :, -self.modes1:, :self.modes2] = \
-                compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
+        # Multiply relevant Fourier modes
+        out_ft = torch.zeros(batchsize, self.out_channels, x.size(-2), x.size(-1) // 2 + 1, device=x.device,
+                                dtype=torch.cfloat)
+        out_ft[:, :, :self.modes1, :self.modes2] = \
+            compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
+        out_ft[:, :, -self.modes1:, :self.modes2] = \
+            compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
 
-            # Return to physical space
-            x = torch.fft.irfftn(out_ft, s=(x.size(-2), x.size(-1)), dim=[2, 3])
-        else:
-            factor1 = compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
-            factor2 = compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
-            x = self.ifft2d(gridy, factor1, factor2, self.modes1, self.modes2) / (size1 * size2)
+        # Return to physical space
+        x = torch.fft.irfftn(out_ft, s=(x.size(-2), x.size(-1)), dim=[2, 3])
         return x
-
-    def ifft2d(self, gridy, coeff1, coeff2, k1, k2):
-
-        # y (batch, N, 2) locations in [0,1]*[0,1]
-        # coeff (batch, channels, kmax, kmax)
-
-        batchsize = gridy.shape[0]
-        N = gridy.shape[1]
-        device = gridy.device
-        m1 = 2 * k1
-        m2 = 2 * k2 - 1
-
-        # wavenumber (m1, m2)
-        k_x1 =  torch.cat((torch.arange(start=0, end=k1, step=1), \
-                            torch.arange(start=-(k1), end=0, step=1)), 0).reshape(m1,1).repeat(1,m2).to(device)
-        k_x2 =  torch.cat((torch.arange(start=0, end=k2, step=1), \
-                            torch.arange(start=-(k2-1), end=0, step=1)), 0).reshape(1,m2).repeat(m1,1).to(device)
-
-        # K = <y, k_x>,  (batch, N, m1, m2)
-        K1 = torch.outer(gridy[:,:,0].view(-1), k_x1.view(-1)).reshape(batchsize, N, m1, m2)
-        K2 = torch.outer(gridy[:,:,1].view(-1), k_x2.view(-1)).reshape(batchsize, N, m1, m2)
-        K = K1 + K2
-
-        # basis (N, m1, m2)
-        basis = torch.exp( 1j * 2* np.pi * K).to(device)
-
-        # coeff (batch, channels, m1, m2)
-        coeff3 = coeff1[:,:,1:,1:].flip(-1, -2).conj()
-        coeff4 = torch.cat([coeff1[:,:,0:1,1:].flip(-1).conj(), coeff2[:,:,:,1:].flip(-1, -2).conj()], dim=-2)
-        coeff12 = torch.cat([coeff1, coeff2], dim=-2)
-        coeff43 = torch.cat([coeff4, coeff3], dim=-2)
-        coeff = torch.cat([coeff12, coeff43], dim=-1)
-
-        # Y (batch, channels, N)
-        Y = torch.einsum("bcxy,bnxy->bcn", coeff, basis)
-        Y = Y.real
-        return Y
 
 
 class SpectralConv3d(nn.Module):
@@ -159,17 +117,28 @@ class SpectralConv3d(nn.Module):
         batchsize = x.shape[0]
         # Compute Fourier coeffcients up to factor of e^(- something constant)
         x_ft = torch.fft.rfftn(x, dim=[2,3,4])
+        
+        z_dim = min(x_ft.shape[4], self.modes3)
+        
         # Multiply relevant Fourier modes
-        out_ft = torch.zeros(batchsize, self.out_channels, x.size(2), x.size(3), x.size(4)//2 + 1, device=x.device, dtype=torch.cfloat)
-        # coeff = torch.zeros(batchsize, self.out_channels, self.modes1)
-        out_ft[:, :, :self.modes1, :self.modes2, :self.modes3] = \
-            compl_mul3d(x_ft[:, :, :self.modes1, :self.modes2, :self.modes3], self.weights1)
-        out_ft[:, :, -self.modes1:, :self.modes2, :self.modes3] = \
-            compl_mul3d(x_ft[:, :, -self.modes1:, :self.modes2, :self.modes3], self.weights2)
-        out_ft[:, :, :self.modes1, -self.modes2:, :self.modes3] = \
-            compl_mul3d(x_ft[:, :, :self.modes1, -self.modes2:, :self.modes3], self.weights3)
-        out_ft[:, :, -self.modes1:, -self.modes2:, :self.modes3] = \
-            compl_mul3d(x_ft[:, :, -self.modes1:, -self.modes2:, :self.modes3], self.weights4)
+        out_ft = torch.zeros(batchsize, self.out_channels, x_ft.shape[2], x_ft.shape[3], self.modes3, device=x.device, dtype=torch.cfloat)
+        
+        # if x_ft.shape[4] > self.modes3, truncate; if x_ft.shape[4] < self.modes3, add zero padding 
+        coeff = torch.zeros(batchsize, self.in_channels, self.modes1, self.modes2, self.modes3, device=x.device, dtype=torch.cfloat)        
+        coeff[..., :z_dim] = x_ft[:, :, :self.modes1, :self.modes2, :z_dim]
+        out_ft[:, :, :self.modes1, :self.modes2, :] = compl_mul3d(coeff, self.weights1)
+        
+        coeff = torch.zeros(batchsize, self.in_channels, self.modes1, self.modes2, self.modes3, device=x.device, dtype=torch.cfloat)        
+        coeff[..., :z_dim] = x_ft[:, :, -self.modes1:, :self.modes2, :z_dim]
+        out_ft[:, :, -self.modes1:, :self.modes2, :] = compl_mul3d(coeff, self.weights2)
+        
+        coeff = torch.zeros(batchsize, self.in_channels, self.modes1, self.modes2, self.modes3, device=x.device, dtype=torch.cfloat)        
+        coeff[..., :z_dim] = x_ft[:, :, :self.modes1, -self.modes2:, :z_dim]
+        out_ft[:, :, :self.modes1, -self.modes2:, :] = compl_mul3d(coeff, self.weights3)
+        
+        coeff = torch.zeros(batchsize, self.in_channels, self.modes1, self.modes2, self.modes3, device=x.device, dtype=torch.cfloat)        
+        coeff[..., :z_dim] = x_ft[:, :, -self.modes1:, -self.modes2:, :z_dim]
+        out_ft[:, :, -self.modes1:, -self.modes2:, :] = compl_mul3d(coeff, self.weights4)
 
         #Return to physical space
         x = torch.fft.irfftn(out_ft, s=(x.size(2), x.size(3), x.size(4)), dim=[2,3,4])
