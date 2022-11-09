@@ -457,10 +457,7 @@ class DarcyFlow(Dataset):
                  nx, sub,
                  offset=0,
                  num=1):
-        if sub == 1:
-            self.S = nx
-        else:
-            self.S = int(nx // sub) + 1
+        self.S = int(nx // sub) + 1 if sub > 1 else nx
         data = scipy.io.loadmat(datapath)
         a = data['coeff']
         u = data['sol']
@@ -482,13 +479,16 @@ class DarcyIC(Dataset):
                  nx, sub,
                  offset=0,
                  num=1):
-        if sub == 1:
-            self.S = nx
-        else:
-            self.S = int(nx // sub) + 1
+        self.S = int(nx // sub) + 1 if sub > 1 else nx
         data = scipy.io.loadmat(datapath)
         a = data['coeff']
         self.a = torch.tensor(a[offset: offset + num, ::sub, ::sub], dtype=torch.float)
+        self.mesh = torch2dgrid(self.S, self.S)
+        data = scipy.io.loadmat(datapath)
+        a = data['coeff']
+        u = data['sol']
+        self.a = torch.tensor(a[offset: offset + num, ::sub, ::sub], dtype=torch.float)
+        self.u = torch.tensor(u[offset: offset + num, ::sub, ::sub], dtype=torch.float)
         self.mesh = torch2dgrid(self.S, self.S)
 
     def __len__(self):
@@ -499,8 +499,36 @@ class DarcyIC(Dataset):
         return torch.cat([fa.unsqueeze(2), self.mesh], dim=2) 
 
 
+class DarcyCombo(Dataset):
+    def __init__(self, 
+                 datapath, 
+                 nx, 
+                 sub, pde_sub, 
+                 num=1000, offset=0) -> None:
+        super().__init__()
+        self.S = int(nx // sub) + 1 if sub > 1 else nx
+        self.pde_S = int(nx // pde_sub) + 1 if sub > 1 else nx
+        data = scipy.io.loadmat(datapath)
+        a = data['coeff']
+        u = data['sol']
+        self.a = torch.tensor(a[offset: offset + num, ::sub, ::sub], dtype=torch.float)
+        self.u = torch.tensor(u[offset: offset + num, ::sub, ::sub], dtype=torch.float)
+        self.mesh = torch2dgrid(self.S, self.S)
+        self.pde_a = torch.tensor(a[offset: offset + num, ::pde_sub, ::pde_sub], dtype=torch.float)
+        self.pde_mesh = torch2dgrid(self.pde_S, self.pde_S)
+
+    def __len__(self):
+        return self.a.shape[0]
+
+    def __getitem__(self, item):
+        fa = self.a[item]
+        pde_a = self.pde_a[item]
+        data_ic = torch.cat([fa.unsqueeze(2), self.mesh], dim=2)
+        pde_ic = torch.cat([pde_a.unsqueeze(2), self.pde_mesh], dim=2)
+        return data_ic, self.u[item], pde_ic
+
 '''
-dataset class for loading initial conditions
+dataset class for loading initial conditions for Komogrov flow
 '''
 class KFaDataset(Dataset):
     def __init__(self, paths, 

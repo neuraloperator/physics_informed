@@ -6,7 +6,7 @@ data:
   total_num: 300
   raw_res: [256, 256, 513]
   n_data_samples: 100
-  data_res: [64, 64, 257]  # resolution in 1 second
+  data_res: [32, 32, 129]  # resolution in 1 second
   pde_res: [256, 256, 513]   # resolution in 1 second
   a_offset: 0
   n_a_samples: 275
@@ -42,7 +42,7 @@ test:
   data_res: [256, 256, 513]
 
 log:
-  logdir: Re500-1_8s-800-PINO-s
+  logdir: Re500-1_8s-800-PINO-s-32
   entity: hzzheng-pino
   project: PINO-KF-Re500
-  group: Re500-1_8s-800-PINO-s
+  group: Re500-1_8s-800-PINO-s-32

@@ -57,20 +57,24 @@ def train_2d_operator(model,
     mesh = train_loader.dataset.mesh
     mollifier = torch.sin(np.pi * mesh[..., 0]) * torch.sin(np.pi * mesh[..., 1]) * 0.001
     mollifier = mollifier.to(rank)
+    pde_mesh = train_loader.dataset.pde_mesh
+    pde_mol = torch.sin(np.pi * pde_mesh[..., 0]) * torch.sin(np.pi * pde_mesh[..., 1]) * 0.001
+    pde_mol = pde_mol.to(rank)
     for e in pbar:
         loss_dict = {'train_loss': 0.0,
                      'data_loss': 0.0,
                      'f_loss': 0.0,
                      'test_error': 0.0}
-        for x, y in train_loader:
-            x, y = x.to(rank), y.to(rank)
+        for data_ic, u, pde_ic in train_loader:
+            data_ic, u, pde_ic = data_ic.to(rank), u.to(rank), pde_ic.to(rank)
 
             optimizer.zero_grad()
 
-            pred = model(x).reshape(y.shape)
-            pred = pred * mollifier
-
-            data_loss = myloss(pred, y)
+            # data loss
+            if data_weight > 0:
+                pred = model(data_ic).squeeze(dim=-1)
+                pred = pred * mollifier
+                data_loss = myloss(pred, y)
 
             a = x[..., 0]
             f_loss = darcy_loss(pred, a)

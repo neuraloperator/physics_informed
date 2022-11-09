@@ -6,6 +6,7 @@ data:
   n_sample: 1000
   nx: 421
   sub: 7
+  pde_sub: 2
 
 model:
   layers: [64, 64, 64, 64, 64]
@@ -28,5 +29,6 @@ train:
 log:
   project: 'PINO-Darcy-pretrain'
   group: 'gelu-pino'
+  entity: hzzheng-pino
 
 
