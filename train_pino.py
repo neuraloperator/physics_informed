@@ -219,6 +219,7 @@ def subprocess(args):
             ckpt = torch.load(ckpt_path)
             optimizer.load_state_dict(ckpt['optim'])
             scheduler.load_state_dict(ckpt['scheduler'])
+            config['train']['start_iter'] = scheduler.last_epoch
         train_ns(model, 
                  u_loader, a_loader, 
                  val_loader, 
