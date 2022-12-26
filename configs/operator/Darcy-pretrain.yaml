@@ -14,7 +14,7 @@ model:
   modes2: [20, 20, 20, 20]
   fc_dim: 128
   act: gelu
-  pad_ratio: [0.0666, 0.0666]
+  pad_ratio: [0., 0.]
 
 train:
   batchsize: 20
