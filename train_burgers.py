@@ -37,6 +37,7 @@ def run(args, config):
                                                      gamma=config['train']['scheduler_gamma'])
     train_2d_burger(model,
                     train_loader,
+                    dataset.v,
                     optimizer,
                     scheduler,
                     config,

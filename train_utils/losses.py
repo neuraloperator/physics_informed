@@ -198,7 +198,7 @@ class LpLoss(object):
         return self.rel(x, y)
 
 
-def FDM_Burgers(u, D=1, v=1/100):
+def FDM_Burgers(u, v, D=1):
     batchsize = u.size(0)
     nt = u.size(1)
     nx = u.size(2)
@@ -221,7 +221,7 @@ def FDM_Burgers(u, D=1, v=1/100):
     return Du
 
 
-def PINO_loss(u, u0):
+def PINO_loss(u, u0, v):
     batchsize = u.size(0)
     nt = u.size(1)
     nx = u.size(2)
@@ -234,7 +234,7 @@ def PINO_loss(u, u0):
     boundary_u = u[:, index_t, index_x]
     loss_u = F.mse_loss(boundary_u, u0)
 
-    Du = FDM_Burgers(u)[:, :, :]
+    Du = FDM_Burgers(u, v)[:, :, :]
     f = torch.zeros(Du.shape, device=u.device)
     loss_f = F.mse_loss(Du, f)
 

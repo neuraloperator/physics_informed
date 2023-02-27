@@ -117,7 +117,7 @@ def train_2d_operator(model,
 
 
 def train_2d_burger(model,
-                    train_loader,
+                    train_loader, v,
                     optimizer, scheduler,
                     config,
                     rank=0, log=False,
@@ -153,7 +153,7 @@ def train_2d_burger(model,
             out = model(x).reshape(y.shape)
             data_loss = myloss(out, y)
 
-            loss_u, loss_f = PINO_loss(out, x[:, 0, :, 0])
+            loss_u, loss_f = PINO_loss(out, x[:, 0, :, 0], v)
             total_loss = loss_u * ic_weight + loss_f * f_weight + data_loss * data_weight
 
             optimizer.zero_grad()

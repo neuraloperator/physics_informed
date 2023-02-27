@@ -89,6 +89,7 @@ class BurgersLoader(object):
             self.T += 1
         self.x_data = dataloader.read_field('input')[:, ::sub]
         self.y_data = dataloader.read_field('output')[:, ::sub_t, ::sub]
+        self.v = dataloader.read_field('visc').item()
 
     def make_loader(self, n_sample, batch_size, start=0, train=True):
         Xs = self.x_data[start:start + n_sample]
