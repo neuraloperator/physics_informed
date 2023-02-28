@@ -37,6 +37,7 @@ def run(args, config):
                                                      gamma=config['train']['scheduler_gamma'])
     train_2d_burger(model,
                     train_loader,
+                    dataset.v,
                     optimizer,
                     scheduler,
                     config,
@@ -67,7 +68,7 @@ def test(config):
         ckpt = torch.load(ckpt_path)
         model.load_state_dict(ckpt['model'])
         print('Weights loaded from %s' % ckpt_path)
-    eval_burgers(model, dataloader, config, device)
+    eval_burgers(model, dataloader, dataset.v, config, device)
 
 
 if __name__ == '__main__':
