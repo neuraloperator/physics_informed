@@ -290,3 +290,50 @@ def get_forcing(S):
     x1 = torch.tensor(np.linspace(0, 2*np.pi, S, endpoint=False), dtype=torch.float).reshape(S, 1).repeat(1, S)
     x2 = torch.tensor(np.linspace(0, 2*np.pi, S, endpoint=False), dtype=torch.float).reshape(1, S).repeat(S, 1)
     return -4 * (torch.cos(4*(x2))).reshape(1,S,S,1)
+
+
+## ML4Physics additions
+
+def transvese_laplacian(E,x,y):
+    '''
+    calculates the transverse laplacian given E and coordinates.
+
+    NOTE:
+    need to check if needs to multiply by minus
+    '''
+    E_grad_x=torch.autograd.grad(outputs=[E],inputs=[x])
+    E_grad_y=torch.autograd.grad(outputs=[E],inputs=[y])
+    E_grad_xx=torch.autograd.grad(outputs=[E_grad_x],inputs=[x])
+    E_grad_yy=torch.autograd.grad(outputs=[E_grad_y],inputs=[y])
+    return E_grad_xx+E_grad_yy
+
+def coupled_wave_eq_PDE_Loss(model,X,k_arr: torch.tensor(dtype=torch.float64),omega_arr: torch.tensor(dtype=torch.float64), kappa_i, kappa_s) -> torch.float64:
+
+    '''
+    A NAIVE coupled wave equation pde loss calculation.
+    Params:
+        model - the nn, an object/function(?) which gets the spacial arguments 
+        and returns u - a tensor which describes the obtained function at the coordinates (explained also bellow).
+        X - spacial coordinates to evaluate at. a tensor of size (N,3). N - number of spacial points, 3 - |{x,y,z}|.
+        k_arr = [k_p,k_s,k_i]
+
+        u - a tensor of (E_vac_i,E_out_s) , E_vac_i and E_out_s are tensors of size (3,N). or putting it differently, u is of size (6,N).
+
+    '''
+    u=model(X)
+    x=X[0]
+    y=X[1]
+    z=X[2]
+    E_vac_i= u[:3,:]
+    E_out_s=u[3:,:]
+    delta_k=k_arr[0]-(k_arr[1]+k_arr[2])
+
+    E_vac_i_grad_z=torch.autograd.grad(outputs=[E_vac_i],inputs=[z])
+    E_vac_i_transverse_laplacian=transvese_laplacian(E_vac_i,x,y)
+
+    E_out_s_grad_z=torch.autograd.grad(outputs=[E_out_s],inputs=[z])
+    E_out_s_transverse_laplacian=transvese_laplacian(E_out_s,x,y)
+
+    residual_1 = -E_vac_i_transverse_laplacian/(2*k_arr[2]) + kappa_i*torch.exp(-1j*delta_k*z)*E_out_s.conj()-1j*E_vac_i_grad_z
+    residual_2 = -E_out_s_transverse_laplacian/(2*k_arr[1]) + kappa_s*torch.exp(-1j*delta_k*z)*E_vac_i.conj()-1j*E_out_s_grad_z
+    return abs(residual_1.sum())+abs(residual_2.sum())
