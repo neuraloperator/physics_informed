@@ -1,6 +1,6 @@
 import torch.nn as nn
 from .basics import SpectralConv2d
-from .utils import _get_act, add_padding2, remove_padding2
+from .utils import _get_activation_func, add_padding2, remove_padding2
 
 
 class FNO2d(nn.Module):
@@ -48,7 +48,7 @@ class FNO2d(nn.Module):
         self.fc1 = nn.Linear(layers[-1], fc_dim)
         self.fc2 = nn.Linear(fc_dim, layers[-1])
         self.fc3 = nn.Linear(layers[-1], out_dim)
-        self.act = _get_act(act)
+        self.act = _get_activation_func(act)
 
     def forward(self, x):
         '''

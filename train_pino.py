@@ -157,7 +157,7 @@ def subprocess(args):
                   modes3=config['model']['modes3'],
                   fc_dim=config['model']['fc_dim'],
                   layers=config['model']['layers'], 
-                  act=config['model']['act'], 
+                  activation_func=config['model']['act'], 
                   pad_ratio=config['model']['pad_ratio']).to(device)
     num_params = count_params(model)
     config['num_params'] = num_params
