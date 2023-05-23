@@ -1,6 +1,6 @@
 import torch.nn as nn
 from .basics import SpectralConv3d
-from .utils import add_padding, remove_padding, _get_act
+from .utils import add_padding, remove_padding, _get_activation_func
 
 
 class FNO3d(nn.Module):
@@ -10,7 +10,7 @@ class FNO3d(nn.Module):
                  fc_dim=128,
                  layers=None,
                  in_dim=4, out_dim=1,
-                 act='gelu', 
+                 activation_func='gelu', 
                  pad_ratio=[0., 0.]):
         '''
         Args:
@@ -53,7 +53,7 @@ class FNO3d(nn.Module):
 
         self.fc1 = nn.Linear(layers[-1], fc_dim)
         self.fc2 = nn.Linear(fc_dim, out_dim)
-        self.act = _get_act(act)
+        self.act = _get_activation_func(activation_func)
 
     def forward(self, x):
         '''

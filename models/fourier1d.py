@@ -1,6 +1,6 @@
 import torch.nn as nn
 from .basics import SpectralConv1d
-from .utils import _get_act
+from .utils import _get_activation_func
 
 
 class FNO1d(nn.Module):
@@ -40,7 +40,7 @@ class FNO1d(nn.Module):
 
         self.fc1 = nn.Linear(layers[-1], fc_dim)
         self.fc2 = nn.Linear(fc_dim, out_dim)
-        self.act = _get_act(act)
+        self.act = _get_activation_func(act)
 
     def forward(self, x):
         length = len(self.ws)

@@ -33,7 +33,7 @@ def remove_padding2(x, num_pad1, num_pad2):
     return res
 
 
-def _get_act(act):
+def _get_activation_func(act):
     if act == 'tanh':
         func = F.tanh
     elif act == 'gelu':
