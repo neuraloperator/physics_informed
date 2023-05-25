@@ -96,7 +96,7 @@ python3 deeponet.py --config_path configs/pretrain/Darcy-pretrain-deeponet.yaml 
 ```
 To test DeepONet, use, e.g., 
 ```bash
-python3 deeponet.py --config_path configs/test/darcy.yaml --mode test
+python3 deeponet.py --config_path configs/test/darcy-deeponet.yaml --mode test
 ```
 
 
