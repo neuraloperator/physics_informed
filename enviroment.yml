@@ -1,0 +1,16 @@
+name: pino-env 
+channels:
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.8
+  - pytorch>=1.8.0
+  - wandb
+  - tqdm
+  - scipy
+  - h5py
+  - numpy
+  - pip:
+    - tensorflow==2.4.0
+    - git+https://github.com/lululxvi/deepxde.git
+    - git+https://github.com/tensordiffeq/TensorDiffEq.git
