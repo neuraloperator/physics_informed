@@ -16,6 +16,7 @@ url_dict = {
     'darcy-test': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/piececonst_r421_N1024_smooth2.mat', 
     'cavity': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/cavity.mat'
 }
+name_list=list(url_dict.keys())
 
 
 def download_file(url, file_path):
@@ -27,7 +28,6 @@ def download_file(url, file_path):
                 f.write(chunk)
     print('Complete')
 
-
 if __name__ == '__main__':
     parser = ArgumentParser(description='Parser for downloading data')
     parser.add_argument('--name', type=str, default='NS-T4000')
@@ -36,10 +36,19 @@ if __name__ == '__main__':
     
     os.makedirs(args.outdir, exist_ok=True)
 
-    if 'NS' in args.name:
-        file_path = os.path.join(args.outdir, f'{args.name}.npy')
+    if 'all' in args.name:
+        for name in name_list:
+            if 'NS' in name:
+                file_path = os.path.join(args.outdir, f'{name}.npy')
+            else:
+                file_path = os.path.join(args.outdir, f'{name}.mat')
+            download_url = url_dict[name]
+            download_file(download_url, file_path)
+        
     else:
-        file_path = os.path.join(args.outdir, f'{args.name}.mat')
-    download_url = url_dict[args.name]
-    
-    download_file(download_url, file_path)
+        if 'NS' in args.name:
+            file_path = os.path.join(args.outdir, f'{args.name}.npy')
+        else:
+            file_path = os.path.join(args.outdir, f'{args.name}.mat')
+        download_url = url_dict[args.name]
+        download_file(download_url, file_path)
