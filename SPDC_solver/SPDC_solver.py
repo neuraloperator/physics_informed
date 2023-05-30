@@ -14,7 +14,7 @@ import seaborn as sns
 import pandas as pd
 
 # second harmonic generation coupled wave equations
-class SHGCWE(object):
+class SPDC_solver(object):
         """
     Class that holds all the problem's information and solve it numericly with split step
 

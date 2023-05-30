@@ -1,4 +1,4 @@
-from SHGCWE import *
+from SPDC_solver import *
 
-A = SHGCWE(return_err=True)
+A = SPDC_solver(return_err=True)
 print(A.solve())
