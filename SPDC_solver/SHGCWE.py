@@ -25,21 +25,11 @@ class SHGCWE(object):
     N: Number of vacum field
     seed: the seed for the randomization
     pump_coef: Holds the coef for building the pump profile from LG basis
+    is_crystal: True/False if there is a structrue to the crystal
     crystal_coef: Holds the coef for building the crystal profile from LG basis
-    check_sol: If True prints the log of MSE on each of the equations at each step
-    interaction: A class that represents the SPDC interaction process, on all of its physical parameters.
-    poling_period: Poling period (dk_offset * delta_k) :=
-      # = interaction.dk_offset * self.delta_k, 
-      delta_k= pump.k - signal.k - idler.k  
-      # phase  mismatch
-    N: number of vacuum_state elements
-    crystal_hologram: 3D crystal hologram
-    infer: (True/False) if in inference mode, we include more coefficients in the poling
-                description for better validation
-    signal_init: initial signal profile. If None, initiate to zero
-    idler_init: initial idler profile. If None, initiate to zero
-    check_sol: calculte the MSE of the solution on the equation at each dz
-
+    print_err: If True prints the log of MSE on each of the equations at each step
+    return_err: If True return the MSE on each of the equations at each step
+    draw_sol: draw a 3D graph of the intensety of each field at the end of the propogation
 
     """
 
@@ -49,8 +39,10 @@ class SHGCWE(object):
                      N = 1,
                      seed = 1701,
                      pump_coef = {"max_mode1": 1, "max_mode2":0, "real_coef":np.array([1]),"img_coef":np.array([0])},
+                     is_crystal = False,
                      crystal_coef = {"max_mode1": 1, "max_mode2":0, "real_coef":np.array([1]),"img_coef":np.array([0])},
-                     check_sol = False,
+                     print_err = False,
+                     return_err = False,
                      draw_sol = False
                      ):
                          
@@ -60,8 +52,15 @@ class SHGCWE(object):
                   self.N = N
                   self.pump_coef = pump_coef
                   self.crystal_coef = crystal_coef
-                  self.check_sol = check_sol
+                  self.is_crystal = is_crystal
+                  self.check_sol = print_err or return_err
+                  self.print_err = print_err
+                  self.return_err = return_err
                   self.draw_sol = draw_sol
+
+                  if self.check_sol:
+                        N = 1
+                        is_crystal = False
 
                   self.pump = pump = Beam(lam=config.pump_lam, polarization="y", T=config.T, power=config.pump_power) 
                   self.signal = signal = Beam(lam=2*pump.lam, polarization="y", T=config.T, power=config.signal_power)
@@ -78,19 +77,21 @@ class SHGCWE(object):
                   pump_img_coef = pump_coef["img_coef"]
                   self.pump_profile = profile_laguerre_gauss(pump_real_coef,pump_img_coef,config.pump_waist,shape,pump_max_mode1,pump_max_mode2,pump,mode="pump")
                 # crystal
-                  crystal_max_mode1 = crystal_coef["max_mode1"]
-                  crystal_max_mode2 = crystal_coef["max_mode2"]
-                  crystal_real_coef = crystal_coef["real_coef"]
-                  crystal_img_coef = crystal_coef["img_coef"]
-                  crystal_profile = profile_laguerre_gauss(crystal_real_coef,crystal_img_coef,config.r_scale0,shape,crystal_max_mode1,crystal_max_mode2,signal,mode="crystal")
+                  crystal_profile = None
+                  if is_crystal:
+                    crystal_max_mode1 = crystal_coef["max_mode1"]
+                    crystal_max_mode2 = crystal_coef["max_mode2"]
+                    crystal_real_coef = crystal_coef["real_coef"]
+                    crystal_img_coef = crystal_coef["img_coef"]
+                    crystal_profile = profile_laguerre_gauss(crystal_real_coef,crystal_img_coef,config.r_scale0,shape,crystal_max_mode1,crystal_max_mode2,signal,mode="crystal")
 
                   delta_k = pump.k - signal.k - idler.k  
                   poling_period = config.dk_offset * delta_k
-                  if check_sol:
-                        crystal_profile = None
-      
+
                   PP = PP_crystal_slab(delta_k=delta_k, shape=shape, crystal_profile=crystal_profile)
                   self.chi2 = PP*config.d33 
+
+                  
                 # Random N vacum state
                   key = random.PRNGKey(seed)
                   rand_key, subkey = random.split(key)
@@ -106,7 +107,9 @@ class SHGCWE(object):
                 chi2 = self.chi2, 
                 N = self.N,
                 shape = self.shape,
-                check_sol = self.check_sol) 
+                print_err = self.print_err,
+                return_err = self.return_err
+                ) 
 
                 if self.draw_sol:
                         dict = {0:"signal out", 1:"signal vac", 2:"idler out", 3:"idler vac"}
@@ -120,4 +123,8 @@ class SHGCWE(object):
                                          plt.title(f"{dict[i]}")
                         plt.show()
 
+                if self.return_err:
+                      err =  np.array(sol[-1]).T
+                      return err
+                
                 return sol

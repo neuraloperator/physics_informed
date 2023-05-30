@@ -112,12 +112,12 @@ class Shape():
     """
     def __init__(
             self,
-            dx: float = 2e-6,
-            dy: float = 2e-6,
-            dz: float = 10e-6,
-            maxX: float = 120e-6,
-            maxY: float = 120e-6,
-            maxZ: float = 1e-4,
+            dx: float = 2e-6, # [1e-6,2e-6,3e-6,4e-6,5e-6,6e-6]
+            dy: float = 2e-6, # [1e-6,2e-6,3e-6,4e-6,5e-6,6e-6]
+            dz: float = 10e-6,  # [2e-6,5e-6,10e-6,20e-6]
+            maxX: float = 120e-6, # [80e-6,120e-6,160e-6,200e-6,240e-6]
+            maxY: float = 120e-6, # [80e-6,120e-6,160e-6,200e-6,240e-6]
+            maxZ: float = 1e-4, # [1e-4,2e-4,3e-4,4e-4,5e-4]
     ):
 
 
@@ -251,7 +251,7 @@ def check_equations(
     dd_dyy = lambda E: (E[:,1:-1,2:]+E[:,1:-1,:-2]-2*E[:,1:-1,1:-1])/dy**2
     trans_laplasian=  lambda E: (dd_dxx(E)+dd_dyy(E))
     f = lambda dE1_dz,E1,k1,kapa1,E2: (1j*dE1_dz[:,1:-1,1:-1] + trans_laplasian(E1)/(2*k1) 
-         - kapa1*chi2[1:-1,1:-1]*pump_profile[1:-1,1:-1]*np.exp(-1j*deltaK*z)*np.conj(E2[:,1:-1,1:-1]))/dE1_dz[:,1:-1,1:-1]
+         - kapa1*chi2[1:-1,1:-1]*pump_profile[1:-1,1:-1]*np.exp(-1j*deltaK*z)*np.conj(E2[:,1:-1,1:-1]))/E1[:,1:-1,1:-1]*dz
     
     m1 = np.mean(np.abs(f(dEi_out_dz,idler_out,idler_field_k,idler_field_kappa,signal_vac))**2)
     m2 = np.mean(np.abs(f(dEi_vac_dz,idler_vac,idler_field_k,idler_field_kappa,signal_out))**2)
