@@ -257,8 +257,8 @@ def check_equations(
     m2 = np.mean(np.abs(f(dEi_vac_dz,idler_vac,idler_field_k,idler_field_kappa,signal_out))**2)
     m3 = np.mean(np.abs(f(dEs_out_dz,signal_out,signal_field_k,signal_field_kappa,idler_vac))**2)
     m4 = np.mean(np.abs(f(dEs_vac_dz,signal_vac,signal_field_k,signal_field_kappa,idler_out))**2)
-    # return (m1,m2,m3,m4)
-    return (np.log(m1)/np.log(10),np.log(m2)/np.log(10),np.log(m3)/np.log(10),np.log(m4)/np.log(10))
+    return (m1,m2,m3,m4)
+    # return (np.log(m1)/np.log(10),np.log(m2)/np.log(10),np.log(m3)/np.log(10),np.log(m4)/np.log(10))
 
 
 def LaguerreP(p, l, x):

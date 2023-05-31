@@ -1,8 +1,14 @@
 import sys
 import pandas as pd
 sys.path.insert(1, '/mnt/c/Users/dorsh/Documents/technion/semester8/project/physics_informed/SPDC_solver/')
+import json
+import numpy as np
 from SPDC_solver import *
 
+
+def stat(err):
+    for mse in err:
+        (np.max(mse),np.min(mse),np.mean(mse),np.median(mse),np.std(mse),mse[-1])
 
 '''
 Calculate the error on different sizes and save them into a file
@@ -23,7 +29,8 @@ for d in  dxdy:
     shape = Shape(dx=d,dy=d)
     A = SPDC_solver(return_err=True,shape=shape)
     err.append(A.solve())
-errors["dxdy"] = err
+errors["dxdy"] = [err]
+
 
 print("dz")
 err = []
@@ -31,15 +38,17 @@ for d in  dz:
     shape = Shape(dz=d)
     A = SPDC_solver(return_err=True,shape=shape)
     err.append(A.solve())
-errors["dz"] = err
+errors["dz"] = [err]
+
+
 
 print("maxXY")
 err = []
 for mxy in  maxXY:
-    shape = Shape(maxXY=mxy)
+    shape = Shape(maxX=mxy,maxY=mxy)
     A = SPDC_solver(return_err=True,shape=shape)
     err.append(A.solve())
-errors["maxXY"] = err
+errors["maxXY"] = [err]
 
 print("maxZ")
 err = []
@@ -47,8 +56,9 @@ for mz in  maxZ:
     shape = Shape(maxZ=mz)
     A = SPDC_solver(return_err=True,shape=shape)
     err.append(A.solve())
-errors["maxZ"] = err
+errors["maxZ"] = [err]
 
 
 df = pd.DataFrame(errors)
-df.to_csv("errors.csv")
+df.to_pickle("./errors.txt")
+print("Done!")
