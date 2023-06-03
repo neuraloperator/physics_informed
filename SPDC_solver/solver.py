@@ -28,7 +28,8 @@ def crystal_prop(
         infer=None,
         signal_init=None,
         idler_init=None,
-        check_sol = False
+        print_err = False,
+        return_err = False
 ):
     """
     Crystal propagation
@@ -58,7 +59,7 @@ def crystal_prop(
     -------
 
     """
-
+    check_sol = print_err or return_err
     x  = shape.x
     y  = shape.y
     z  = shape.z
@@ -91,18 +92,22 @@ def crystal_prop(
 
     signal_vac = signal_field.vac * (vacuum_states[:, 0, 0] + 1j * vacuum_states[:, 0, 1]) / np.sqrt(2)
     idler_vac  = idler_field.vac * (vacuum_states[:, 1, 0] + 1j * vacuum_states[:, 1, 1]) / np.sqrt(2)
-
+    
     if check_sol:
         signal_vac = np.resize(pump_profile,(1,shape.Nx,shape.Ny))
         idler_vac = np.resize(pump_profile,(1,shape.Nx,shape.Ny))
 
+    err = []
 
     for i in range(shape.Nz):
-        signal_out, signal_vac, idler_out, idler_vac = propagate_dz(
+
+        A = propagate_dz(
             pump_profile =  pump_profile,
             x = x,
             y = y,
             z = z[i],
+            dx = dx,
+            dy = dy,
             dz = dz,
             pump_k = pump.k,
             signal_field_k = signal_field.k,
@@ -114,9 +119,18 @@ def crystal_prop(
             signal_vac = signal_vac,
             idler_out = idler_out,
             idler_vac = idler_vac,
-            check_sol = check_sol
+            print_err = print_err,
+            return_err = return_err
         )
-  
+        if return_err:
+            signal_out, signal_vac, idler_out, idler_vac, MSE = A
+            err.append(MSE)
+        else:
+            signal_out, signal_vac, idler_out, idler_vac = A
+            
+    if return_err:
+        return signal_out, signal_vac, idler_out, idler_vac, err
+
     return signal_out, signal_vac, idler_out, idler_vac
 
 
@@ -126,6 +140,8 @@ def propagate_dz(
         x,
         y,
         z,
+        dx,
+        dy,
         dz,
         pump_k,
         signal_field_k,
@@ -137,7 +153,8 @@ def propagate_dz(
         signal_vac,
         idler_out,
         idler_vac,
-        check_sol=False,
+        print_err = False,
+        return_err = False
 ):
     """
     Single step of crystal propagation
@@ -169,6 +186,7 @@ def propagate_dz(
     -------
 
     """
+    check_sol = print_err or return_err
 
     # pump beam:
     E_pump = propagate(pump_profile, x, y, pump_k, z) * np.exp(-1j * pump_k * z)
@@ -215,15 +233,14 @@ def propagate_dz(
                 dEi_out_dz = dEi_out_dz, 
                 dEi_vac_dz = dEi_vac_dz
                 )
-        print(*MSE)
-
+        if print_err:
+            print(*MSE)
+        if return_err:
+            return signal_out, signal_vac, idler_out, idler_vac, MSE
     return signal_out, signal_vac, idler_out, idler_vac
 
 
-    # return signal_out, signal_vac, idler_out, idler_vac
-
-
-#@jit
+@jit
 def propagate(A, x, y, k, dz):
     """
     Free Space propagation using the free space transfer function,

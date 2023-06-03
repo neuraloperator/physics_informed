@@ -1,4 +1,5 @@
-from SHGCWE import *
+from SPDC_solver import *
 
-A = SHGCWE(check_sol = True, draw_sol = True,N=1)
+A = SPDC_solver(draw_sol=True,N=10)
 A.solve()
+print("Done")
