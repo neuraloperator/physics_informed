@@ -87,7 +87,7 @@ def train_2d(args, config):
                          nx=data_config['nx'], 
                          sub=data_config['sub'], 
                          pde_sub=data_config['pde_sub'], 
-                         num=data_config['n_samples'], 
+                         num=data_config['n_sample'], 
                          offset=data_config['offset'])
     train_loader = DataLoader(dataset, batch_size=config['train']['batchsize'], shuffle=True)
     model = FNO2d(modes1=config['model']['modes1'],
