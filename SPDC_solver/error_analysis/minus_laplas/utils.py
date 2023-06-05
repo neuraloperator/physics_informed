@@ -249,7 +249,7 @@ def check_equations(
     deltaK = pump_k - signal_field_k - idler_field_k
     dd_dxx = lambda E: (E[:,2:,1:-1]+E[:,:-2,1:-1]-2*E[:,1:-1,1:-1])/dx**2
     dd_dyy = lambda E: (E[:,1:-1,2:]+E[:,1:-1,:-2]-2*E[:,1:-1,1:-1])/dy**2
-    trans_laplasian=  lambda E: (dd_dxx(E)+dd_dyy(E))
+    trans_laplasian=  lambda E: -(dd_dxx(E)+dd_dyy(E))
     f = lambda dE1_dz,E1,k1,kapa1,E2: (1j*dE1_dz[:,1:-1,1:-1] + trans_laplasian(E1)/(2*k1) 
          - kapa1*chi2[1:-1,1:-1]*pump_profile[1:-1,1:-1]*np.exp(-1j*deltaK*z)*np.conj(E2[:,1:-1,1:-1]))/E1[:,1:-1,1:-1]*dz
     
