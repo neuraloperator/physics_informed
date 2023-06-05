@@ -1,6 +1,7 @@
 data:
   name: 'Darcy'
-  datapath: '/mnt/md1/zongyi/piececonst_r421_N1024_smooth1.mat'
+  #datapath: '/mnt/md1/zongyi/piececonst_r421_N1024_smooth1.mat'
+  datapath: '/home/nativ.maor/ML4PHYSICS/data/darcy-train.mat'
   total_num: 1024
   offset: 0
   n_sample: 1000
@@ -14,6 +15,7 @@ model:
   modes2: [20, 20, 20, 20]
   fc_dim: 128
   act: gelu
+  pad_ratio: [0.,0.]
 
 train:
   batchsize: 20

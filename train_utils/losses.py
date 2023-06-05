@@ -307,7 +307,8 @@ def transvese_laplacian(E,x,y):
     E_grad_yy=torch.autograd.grad(outputs=[E_grad_y],inputs=[y])
     return E_grad_xx+E_grad_yy
 
-def coupled_wave_eq_PDE_Loss(model,X,k_arr: torch.tensor(dtype=torch.float64),omega_arr: torch.tensor(dtype=torch.float64), kappa_i, kappa_s) -> torch.float64:
+#def coupled_wave_eq_PDE_Loss(model,X,k_arr: torch.tensor(dtype=torch.float64),omega_arr: torch.tensor(dtype=torch.float64), kappa_i, kappa_s) -> torch.float64:
+def coupled_wave_eq_PDE_Loss(model,X,k_arr,omega_arr, kappa_i, kappa_s) -> torch.float64:
 
     '''
     A NAIVE coupled wave equation pde loss calculation.
