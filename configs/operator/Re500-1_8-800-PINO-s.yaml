@@ -1,6 +1,6 @@
 data:
   name: KF
-  paths: ['/raid/hongkai/NS-Re500_T300_id0-shuffle.npy']
+  paths: ['/home/nativ.maor/ML4PHYSICS/data/NS-Re500_T300_id0-shuffle.npy']
   Re: 500
   offset: 0
   total_num: 300
