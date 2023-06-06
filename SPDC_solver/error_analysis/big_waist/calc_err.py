@@ -16,8 +16,10 @@ dxdy = [1e-6,2e-6,3e-6,4e-6,5e-6,6e-6]
 dz = [2e-6,5e-6,10e-6,20e-6]
 maxXY = [80e-6,120e-6,160e-6,200e-6,240e-6]
 maxZ = [1e-4,2e-4,3e-4,4e-4,5e-4]
-config = Config(pump_waist=120e-6)
-
+config = Config(pump_waist=80e-6)
+# A = SPDC_solver(config=config,draw_sol=True,return_err=True)
+# A.solve()
+# exit()
 errors = {}
 
 
