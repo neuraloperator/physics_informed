@@ -3,14 +3,10 @@ from jax import jit
 import math
 import jax.numpy as np
 import jax.random as random
-import os
-from jax.ops import index_update
-from typing import Dict
 from utils import *
 from solver import *
 import matplotlib.pyplot as plt
 from matplotlib import cm
-import seaborn as sns
 import pandas as pd
 import numpy
 

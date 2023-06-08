@@ -3,9 +3,6 @@ from jax import jit
 import math
 import jax.numpy as np
 import jax.random as random
-import os
-from jax.ops import index_update
-from typing import Dict
 from utils import *
 
 # Constants:
@@ -152,7 +149,7 @@ def crystal_prop(
     return signal_out, signal_vac, idler_out, idler_vac
 
 
-# @jit
+#@jit
 def propagate_dz(
         pump_profile,
         x,
@@ -262,7 +259,7 @@ def propagate_dz(
     return signal_out, signal_vac, idler_out, idler_vac, E_pump
 
 
-@jit
+#@jit
 def propagate(A, x, y, k, dz):
     """
     Free Space propagation using the free space transfer function,

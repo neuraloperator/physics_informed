@@ -1,15 +1,8 @@
 from abc import ABC
 from jax import jit
 import math
-
 import jax.numpy as np
-
-
 import jax.random as random
-import os
-
-from jax.ops import index_update
-from typing import Dict
 
 # Constants:
 pi      = np.pi
