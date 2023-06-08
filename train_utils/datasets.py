@@ -114,40 +114,56 @@ class BurgersLoader(object):
         return loader
 
 class SPDCInvLoader(object):
-    def __init__(self, datapath, nx=2 ** 10, nt=100, sub=8, sub_t=1, new=False):
-        dataloader = MatReader(datapath)
-        self.sub = sub
-        self.sub_t = sub_t
-        self.s = nx // sub
-        self.T = nt // sub_t
-        self.new = new
-        if new:
-            self.T += 1
-        self.x_data = dataloader.read_field('input')[:, ::sub]
-        self.y_data = dataloader.read_field('output')[:, ::sub_t, ::sub]
-        self.v = dataloader.read_field('visc').item()
+    def __init__(self, datapath1, nx = 121, ny = 121, nz =10,F=5,datapath2 = None, sub_xy=1, sub_z=1,
+                 N=10):
+        '''
+        Load data from npy at shape (N,F=5, X, Y, Z)
+        Args:
+            datapath: path to data
+            nx: size of x axis
+            ny: size of y axis
+            nz: size of z axis
+            sub_xy: reduce the resoultion in xy plane
+            sub_t: reduce the resoultion in z axis
+            N: number of data samples
+        '''
+        self.X = nx // sub_xy
+        self.y = ny // sub_xy
+        self.Z =  nz // sub_z
+        self.F = F
+        data1 = np.load(datapath1)
+        data1 = torch.tensor(data1, dtype=torch.complex128)[..., ::sub_xy, ::sub_xy, ::sub_z]
+
+        if datapath2 is not None:
+            data2 = np.load(datapath2)
+            data2 = torch.tensor(data2, dtype=torch.complex128)[..., ::sub_xy, ::sub_xy, ::sub_z]
+
+        if datapath2 is not None:
+            self.data = torch.cat((data1, data2), dim=0)
+        else:
+            self.data = data1
 
     def make_loader(self, n_sample, batch_size, start=0, train=True):
-        Xs = self.x_data[start:start + n_sample]
-        ys = self.y_data[start:start + n_sample]
-
-        if self.new:
-            gridx = torch.tensor(np.linspace(0, 1, self.s + 1)[:-1], dtype=torch.float)
-            gridt = torch.tensor(np.linspace(0, 1, self.T), dtype=torch.float)
-        else:
-            gridx = torch.tensor(np.linspace(0, 1, self.s), dtype=torch.float)
-            gridt = torch.tensor(np.linspace(0, 1, self.T + 1)[1:], dtype=torch.float)
-        gridx = gridx.reshape(1, 1, self.s)
-        gridt = gridt.reshape(1, self.T, 1)
-
-        Xs = Xs.reshape(n_sample, 1, self.s).repeat([1, self.T, 1])
-        Xs = torch.stack([Xs, gridx.repeat([n_sample, self.T, 1]), gridt.repeat([n_sample, 1, self.s])], dim=3)
-        dataset = torch.utils.data.TensorDataset(Xs, ys)
         if train:
-            loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
+            a_data = self.data[start:start + n_sample,:, :, :, 0].reshape(n_sample,self.F, self.X, self.Y)
+            u_data = self.data[start:start + n_sample].reshape(n_sample,self.F, self.X, self.Y, self.Z)
         else:
-            loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False)
+            a_data = self.data[start:start + n_sample,:, :, :, 0].reshape(n_sample,self.F, self.X, self.Y)
+            u_data = self.data[start:start + n_sample].reshape(n_sample,self.F, self.X, self.Y, self.Z)
+        dataset = torch.utils.data.TensorDataset(a_data, u_data)
+        loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=train)
         return loader
+
+    def make_dataset(self, n_sample, start=0, train=True):
+        if train:
+            a_data = self.data[start:start + n_sample,:, :, :, 0].reshape(n_sample,self.F, self.X, self.Y)
+            u_data = self.data[start:start + n_sample].reshape(n_sample,self.F, self.X, self.Y, self.Z)
+        else:
+            a_data = self.data[start:start + n_sample,:, :, :, 0].reshape(n_sample,self.F, self.X, self.Y)
+            u_data = self.data[start:start + n_sample].reshape(n_sample,self.F, self.X, self.Y, self.Z)
+        dataset = torch.utils.data.TensorDataset(a_data, u_data)
+        return dataset
+
 
 class NSLoader(object):
     def __init__(self, datapath1,
