@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import seaborn as sns
 import pandas as pd
+import numpy
 
 # second harmonic generation coupled wave equations
 class SPDC_solver(object):
@@ -30,6 +31,12 @@ class SPDC_solver(object):
     print_err: If True prints the log of MSE on each of the equations at each step
     return_err: If True return the MSE on each of the equations at each step
     draw_sol: draw a 3D graph of the intensety of each field at the end of the propogation
+    data_creation: If true saves a np ndarray at the shape (N,F = 5,X,Y,Z) where:
+                    N - number of samples
+                    F=5 - The 5 fields: pump, signal vac, signal out, idler vac, idler out
+                    X - Nx i.e number of elements in the X array
+                    Y - Ny i.e number of elements in the Y array
+                    Z - Nz i.e number of elements in the Z array
 
     """
 
@@ -43,7 +50,8 @@ class SPDC_solver(object):
                      crystal_coef = {"max_mode1": 1, "max_mode2":0, "real_coef":np.array([1]),"img_coef":np.array([0])},
                      print_err = False,
                      return_err = False,
-                     draw_sol = False
+                     draw_sol = False,
+                     data_creation = False
                      ):
                          
 
@@ -57,6 +65,11 @@ class SPDC_solver(object):
                   self.print_err = print_err
                   self.return_err = return_err
                   self.draw_sol = draw_sol
+                  self.data_creation = data_creation
+                  self.data = None
+
+                  if data_creation:
+                        self.data =  numpy.zeros(shape=(N,5,shape.Nx,shape.Ny,shape.Nz),dtype=complex)
 
                   if self.check_sol:
                         N = 1
@@ -108,7 +121,8 @@ class SPDC_solver(object):
                 N = self.N,
                 shape = self.shape,
                 print_err = self.print_err,
-                return_err = self.return_err
+                return_err = self.return_err,
+                data = self.data
                 ) 
 
                 if self.draw_sol:

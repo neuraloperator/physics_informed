@@ -1,6 +1,6 @@
 from SPDC_solver import *
-from utils import *
+import numpy as np
 
-A = SPDC_solver(draw_sol=True,N=100,print_err=True,config=Config(pump_waist=150e-6))
+A = SPDC_solver(N=100,config=Config(pump_waist=150e-6),data_creation=True)
 A.solve()
-print("Done")
+print(A.data)
