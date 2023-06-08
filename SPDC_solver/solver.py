@@ -9,27 +9,28 @@ from typing import Dict
 from utils import *
 
 # Constants:
-pi      = np.pi
-c       = 2.99792458e8  # speed of light [meter/sec]
-eps0    = 8.854187817e-12  # vacuum permittivity [Farad/meter]
-h_bar   = 1.054571800e-34  # [m^2 kg / s], taken from http://physics.nist.gov/cgi-bin/cuu/Value?hbar|search_for=planck
-
+pi = np.pi
+c = 2.99792458e8  # speed of light [meter/sec]
+eps0 = 8.854187817e-12  # vacuum permittivity [Farad/meter]
+# [m^2 kg / s], taken from http://physics.nist.gov/cgi-bin/cuu/Value?hbar|search_for=planck
+h_bar = 1.054571800e-34
 
 
 def crystal_prop(
-        pump_profile, 
+        pump_profile,
         pump: Beam,
         signal_field: Field,
         idler_field: Field,
         vacuum_states,
-        chi2, 
+        chi2,
         N,
         shape,
         infer=None,
         signal_init=None,
         idler_init=None,
-        print_err = False,
-        return_err = False
+        print_err=False,
+        return_err=False,
+        data=None
 ):
     """
     Crystal propagation
@@ -60,16 +61,15 @@ def crystal_prop(
 
     """
     check_sol = print_err or return_err
-    x  = shape.x
-    y  = shape.y
-    z  = shape.z
+    x = shape.x
+    y = shape.y
+    z = shape.z
     Nx = shape.Nx
     Ny = shape.Ny
     Nz = shape.Nz
     dx = shape.dx
     dy = shape.dy
     dz = shape.dz
-
 
     if signal_init is None:
         signal_out = np.zeros([N, Nx, Ny])
@@ -89,52 +89,70 @@ def crystal_prop(
         assert idler_init.shape[2] == Ny
         idler_out = idler_init
 
+    signal_vac = signal_field.vac * \
+        (vacuum_states[:, 0, 0] + 1j * vacuum_states[:, 0, 1]) / np.sqrt(2)
+    idler_vac = idler_field.vac * \
+        (vacuum_states[:, 1, 0] + 1j * vacuum_states[:, 1, 1]) / np.sqrt(2)
 
-    signal_vac = signal_field.vac * (vacuum_states[:, 0, 0] + 1j * vacuum_states[:, 0, 1]) / np.sqrt(2)
-    idler_vac  = idler_field.vac * (vacuum_states[:, 1, 0] + 1j * vacuum_states[:, 1, 1]) / np.sqrt(2)
-    
     if check_sol:
-        signal_vac = np.resize(pump_profile,(1,shape.Nx,shape.Ny))
-        idler_vac = np.resize(pump_profile,(1,shape.Nx,shape.Ny))
+        signal_vac = np.resize(pump_profile, (1, shape.Nx, shape.Ny))
+        idler_vac = np.resize(pump_profile, (1, shape.Nx, shape.Ny))
+        err = []
 
-    err = []
+    if data is not None:
+        assert data.shape == (N, 5, Nx, Ny, Nz)
+        data[:, 0, :, :, 0] = np.tile(pump_profile, reps=(N, 1, 1))  # pump
+        data[:, 1, :, :, 0] = signal_vac
+        data[:, 2, :, :, 0] = signal_out
+        data[:, 3, :, :, 0] = idler_vac
+        data[:, 4, :, :, 0] = idler_out
+        
 
     for i in range(shape.Nz):
 
         A = propagate_dz(
-            pump_profile =  pump_profile,
-            x = x,
-            y = y,
-            z = z[i],
-            dx = dx,
-            dy = dy,
-            dz = dz,
-            pump_k = pump.k,
-            signal_field_k = signal_field.k,
-            idler_field_k = idler_field.k,
-            signal_field_kappa = signal_field.kappa,
-            idler_field_kappa = idler_field.kappa,
-            chi2 = chi2[i,:,:],
-            signal_out = signal_out,
-            signal_vac = signal_vac,
-            idler_out = idler_out,
-            idler_vac = idler_vac,
-            print_err = print_err,
-            return_err = return_err
+            pump_profile=pump_profile,
+            x=x,
+            y=y,
+            z=z[i],
+            dx=dx,
+            dy=dy,
+            dz=dz,
+            pump_k=pump.k,
+            signal_field_k=signal_field.k,
+            idler_field_k=idler_field.k,
+            signal_field_kappa=signal_field.kappa,
+            idler_field_kappa=idler_field.kappa,
+            chi2=chi2[i, :, :],
+            signal_out=signal_out,
+            signal_vac=signal_vac,
+            idler_out=idler_out,
+            idler_vac=idler_vac,
+            print_err=print_err,
+            return_err=return_err
         )
+
         if return_err:
-            signal_out, signal_vac, idler_out, idler_vac, MSE = A
+            signal_out, signal_vac, idler_out, idler_vac, E_pump, MSE = A
             err.append(MSE)
         else:
-            signal_out, signal_vac, idler_out, idler_vac = A
-            
+            signal_out, signal_vac, idler_out, idler_vac, E_pump = A
+
+    if data is not None:
+        data[:, 0, :, :, i] = E_pump
+        data[:, 1, :, :, i] = signal_vac
+        data[:, 2, :, :, i] = signal_out
+        data[:, 3, :, :, i] = idler_vac
+        data[:, 4, :, :, i] = idler_out
+        
+
     if return_err:
         return signal_out, signal_vac, idler_out, idler_vac, err
 
     return signal_out, signal_vac, idler_out, idler_vac
 
 
-#@jit
+# @jit
 def propagate_dz(
         pump_profile,
         x,
@@ -153,8 +171,8 @@ def propagate_dz(
         signal_vac,
         idler_out,
         idler_vac,
-        print_err = False,
-        return_err = False
+        print_err=False,
+        return_err=False
 ):
     """
     Single step of crystal propagation
@@ -189,8 +207,8 @@ def propagate_dz(
     check_sol = print_err or return_err
 
     # pump beam:
-    E_pump = propagate(pump_profile, x, y, pump_k, z) * np.exp(-1j * pump_k * z)
-
+    E_pump = propagate(pump_profile, x, y, pump_k, z) * \
+        np.exp(-1j * pump_k * z)
 
     # coupled wave equations - split step
     # signal:
@@ -206,38 +224,42 @@ def propagate_dz(
     idler_vac = idler_vac + dEi_vac_dz * dz
 
     # propagate
-    signal_out = propagate(signal_out, x, y, signal_field_k, dz) * np.exp(-1j * signal_field_k * dz)
-    signal_vac = propagate(signal_vac, x, y, signal_field_k, dz) * np.exp(-1j * signal_field_k * dz)
-    idler_out = propagate(idler_out, x, y, idler_field_k, dz) * np.exp(-1j * idler_field_k * dz)
-    idler_vac = propagate(idler_vac, x, y, idler_field_k, dz) * np.exp(-1j * idler_field_k * dz)
+    signal_out = propagate(signal_out, x, y, signal_field_k,
+                           dz) * np.exp(-1j * signal_field_k * dz)
+    signal_vac = propagate(signal_vac, x, y, signal_field_k,
+                           dz) * np.exp(-1j * signal_field_k * dz)
+    idler_out = propagate(idler_out, x, y, idler_field_k,
+                          dz) * np.exp(-1j * idler_field_k * dz)
+    idler_vac = propagate(idler_vac, x, y, idler_field_k,
+                          dz) * np.exp(-1j * idler_field_k * dz)
 
     if check_sol:
         MSE = check_equations(
-                pump_profile = E_pump,
-                z = z,
-                dx = np.abs(x[1]-x[0]),
-                dy = np.abs(y[1]-y[0]),
-                dz = dz,
-                pump_k = pump_k,
-                signal_field_k = signal_field_k,
-                idler_field_k = idler_field_k,
-                signal_field_kappa = signal_field_kappa,
-                idler_field_kappa =idler_field_kappa,
-                chi2 = chi2,
-                signal_out = signal_out,
-                signal_vac = signal_vac,
-                idler_out = idler_out,
-                idler_vac = idler_vac,
-                dEs_out_dz = dEs_out_dz, 
-                dEs_vac_dz = dEs_vac_dz, 
-                dEi_out_dz = dEi_out_dz, 
-                dEi_vac_dz = dEi_vac_dz
-                )
+            pump_profile=E_pump,
+            z=z,
+            dx=np.abs(x[1]-x[0]),
+            dy=np.abs(y[1]-y[0]),
+            dz=dz,
+            pump_k=pump_k,
+            signal_field_k=signal_field_k,
+            idler_field_k=idler_field_k,
+            signal_field_kappa=signal_field_kappa,
+            idler_field_kappa=idler_field_kappa,
+            chi2=chi2,
+            signal_out=signal_out,
+            signal_vac=signal_vac,
+            idler_out=idler_out,
+            idler_vac=idler_vac,
+            dEs_out_dz=dEs_out_dz,
+            dEs_vac_dz=dEs_vac_dz,
+            dEi_out_dz=dEi_out_dz,
+            dEi_vac_dz=dEi_vac_dz
+        )
         if print_err:
             print(*MSE)
         if return_err:
-            return signal_out, signal_vac, idler_out, idler_vac, MSE
-    return signal_out, signal_vac, idler_out, idler_vac
+            return signal_out, signal_vac, idler_out, idler_vac, E_pump, MSE
+    return signal_out, signal_vac, idler_out, idler_vac, E_pump
 
 
 @jit
@@ -258,13 +280,13 @@ def propagate(A, x, y, k, dz):
     -------
 
     """
-    dx      = np.abs(x[1] - x[0])
-    dy      = np.abs(y[1] - y[0])
+    dx = np.abs(x[1] - x[0])
+    dy = np.abs(y[1] - y[0])
 
     # define the fourier vectors
-    X, Y    = np.meshgrid(x, y, indexing='ij')
-    KX      = 2 * np.pi * (X / dx) / (np.size(X, 1) * dx)
-    KY      = 2 * np.pi * (Y / dy) / (np.size(Y, 1) * dy)
+    X, Y = np.meshgrid(x, y, indexing='ij')
+    KX = 2 * np.pi * (X / dx) / (np.size(X, 1) * dx)
+    KY = 2 * np.pi * (Y / dy) / (np.size(Y, 1) * dy)
 
     # The Free space transfer function of propagation, using the Fresnel approximation
     # (from "Engineering optics with matlab"/ing-ChungPoon&TaegeunKim):
@@ -272,12 +294,14 @@ def propagate(A, x, y, k, dz):
     H_w = np.fft.ifftshift(H_w)
 
     # Fourier Transform: move to k-space
-    G = np.fft.fft2(A)  # The two-dimensional discrete Fourier transform (DFT) of A.
+    # The two-dimensional discrete Fourier transform (DFT) of A.
+    G = np.fft.fft2(A)
 
     # propoagte in the fourier space
     F = np.multiply(G, H_w)
 
     # inverse Fourier Transform: go back to real space
-    Eout = np.fft.ifft2(F)  # [in real space]. E1 is the two-dimensional INVERSE discrete Fourier transform (DFT) of F1
+    # [in real space]. E1 is the two-dimensional INVERSE discrete Fourier transform (DFT) of F1
+    Eout = np.fft.ifft2(F)
 
     return Eout
