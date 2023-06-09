@@ -365,6 +365,6 @@ def SPDC_loss(u,x, y):
     u0 = u[..., 0]
     ic_loss = LpLoss2D(u0, x)
     data_loss = LpLoss3D(u,y)
-    pde_loss = calc_pde_loss(u) # TODO
+    pde_loss = 0 # TODO
 
     return data_loss,ic_loss,pde_loss

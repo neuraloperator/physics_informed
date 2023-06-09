@@ -128,7 +128,7 @@ class SPDCLoader(object):
             N: number of data samples
         '''
         self.X = nx // sub_xy
-        self.y = ny // sub_xy
+        self.Y = ny // sub_xy
         self.Z =  nz // sub_z
         self.F = F
         data1 = np.load(datapath1)
