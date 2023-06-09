@@ -113,7 +113,7 @@ class BurgersLoader(object):
             loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False)
         return loader
 
-class SPDCInvLoader(object):
+class SPDCLoader(object):
     def __init__(self, datapath1, nx = 121, ny = 121, nz =10,F=5,datapath2 = None, sub_xy=1, sub_z=1,
                  N=10):
         '''

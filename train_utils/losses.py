@@ -338,3 +338,33 @@ def coupled_wave_eq_PDE_Loss(model,X,k_arr,omega_arr, kappa_i, kappa_s) -> torch
     residual_1 = -E_vac_i_transverse_laplacian/(2*k_arr[2]) + kappa_i*torch.exp(-1j*delta_k*z)*E_out_s.conj()-1j*E_vac_i_grad_z
     residual_2 = -E_out_s_transverse_laplacian/(2*k_arr[1]) + kappa_s*torch.exp(-1j*delta_k*z)*E_vac_i.conj()-1j*E_out_s_grad_z
     return abs(residual_1.sum())+abs(residual_2.sum())
+
+
+def SPDC_loss(u,x, y):
+    '''
+    Calcultae and return the data loss, pde loss and ic (Initial condition) loss
+    Args:
+    u: The out put of the network
+    x: The ic used by the network
+    y: The entire ground truth solution (y[...,0]=x)
+
+    Return: (data_loss,ic_loss,pde_loss)
+    '''
+    assert y[...,0] == x
+
+    batchsize = u.size(0)
+    F = u.size(1)
+    nx = u.size(2)
+    ny = u.size(3)
+    nz = u.size(4)
+
+    u = u.reshape(batchsize,F, nx, ny, nz)
+    LpLoss3D = LpLoss(d=3,size_average=True)
+    LpLoss2D = LpLoss(d=2,size_average=True)
+
+    u0 = u[..., 0]
+    ic_loss = LpLoss2D(u0, x)
+    data_loss = LpLoss3D(u,y)
+    pde_loss = calc_pde_loss(u) # TODO
+
+    return data_loss,ic_loss,pde_loss
