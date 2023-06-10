@@ -12,12 +12,13 @@ data:
   sub_z: 1
 
 model:
-  layers: [16, 24, 24, 32, 32]
-  modes1: [15, 12, 9, 9]
-  modes2: [15, 12, 9, 9]
+  layers: [64, 64, 64, 64, 64]
+  modes1: [8, 8, 8, 8]
+  modes2: [8, 8, 8, 8]
+  modes3: [8, 8, 8, 8]
   fc_dim: 128
   act: gelu
-  num_pad: 4
+  num_pad: 5
 
 train:
   batchsize: 1

@@ -3,7 +3,7 @@ import yaml
 
 import torch
 import numpy as np
-from models import FNO2d
+from models import FNO3d
 from train_utils import Adam
 from train_utils.datasets import SPDCLoader
 from train_utils.utils import save_checkpoint
@@ -103,6 +103,7 @@ def eval_SPDC(model,
 
     test_err = []
     f_err = []
+    ic_err = []
 
     for x, y in pbar:
         x, y = x.to(device), y.to(device)
@@ -110,6 +111,7 @@ def eval_SPDC(model,
         data_loss,ic_loss,f_loss = SPDC_loss(out,x,y)
         test_err.append(data_loss.item())
         f_err.append(f_loss.item())
+        ic_err.append(ic_loss.item())
 
     mean_f_err = np.mean(f_err)
     std_f_err = np.std(f_err, ddof=1) / np.sqrt(len(f_err))
@@ -117,8 +119,12 @@ def eval_SPDC(model,
     mean_err = np.mean(test_err)
     std_err = np.std(test_err, ddof=1) / np.sqrt(len(test_err))
 
+    mean_ic_err = np.mean(ic_err)
+    std_ic_err = np.std(ic_err, ddof=1) / np.sqrt(len(ic_err))
+
     print(f'==Averaged relative L2 error mean: {mean_err}, std error: {std_err}==\n'
-          f'==Averaged equation error mean: {mean_f_err}, std error: {std_f_err}==')
+          f'==Averaged equation error mean: {mean_f_err}, std error: {std_f_err}==\n'
+          f'==Averaged initial condition error mean: {mean_ic_err}, std error: {std_ic_err}==')
 
 
 def run(args, config):
@@ -137,12 +143,12 @@ def run(args, config):
                                        batch_size=config['train']['batchsize'],
                                        start=data_config['offset'])
 
-    model = FNO2d(in_dim=121, # should check more carfully
-                  modes1=config['model']['modes1'],
+    model = FNO3d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
+                  modes3=config['model']['modes3'],
                   fc_dim=config['model']['fc_dim'],
                   layers=config['model']['layers'],
-                  act=config['model']['act']).to(device)
+                  activation_func=config['model']['act']).to(device)
     # Load from checkpoint
     if 'ckpt' in config['train']:
         ckpt_path = config['train']['ckpt']
@@ -179,11 +185,11 @@ def test(config):
                                      batch_size=config['test']['batchsize'],
                                      start=data_config['offset'])
 
-    model = FNO2d(modes1=config['model']['modes1'],
+    model = FNO3d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
                   fc_dim=config['model']['fc_dim'],
                   layers=config['model']['layers'],
-                  act=config['model']['act']).to(device)
+                  activation_func=config['model']['act']).to(device)
     # Load from checkpoint
     if 'ckpt' in config['test']:
         ckpt_path = config['test']['ckpt']
