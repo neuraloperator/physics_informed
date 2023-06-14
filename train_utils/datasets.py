@@ -124,7 +124,7 @@ class SPDCLoader(object):
             ny: size of y axis
             nz: size of z axis
             nin: number of input fields (pump, signal vac, idler vac)
-            nin: number of output fields (signal vac, idler vac, signal out, idler out)
+            nout: number of output fields (signal vac, idler vac, signal out, idler out)
             sub_xy: reduce the resoultion in xy plane
             sub_t: reduce the resoultion in z axis
             N: number of data samples
