@@ -116,7 +116,7 @@ class SpectralConv3d(nn.Module):
     def forward(self, x):
         batchsize = x.shape[0]
         # Compute Fourier coeffcients up to factor of e^(- something constant)
-        x_ft = torch.fft.rfftn(x, dim=[2,3,4])
+        x_ft = torch.fft.fftn(x, dim=[2,3,4])
         
         z_dim = min(x_ft.shape[4], self.modes3)
         
