@@ -9,6 +9,8 @@ from train_utils.datasets import SPDCLoader
 from train_utils.utils import save_checkpoint
 from train_utils.losses import LpLoss, darcy_loss, PINO_loss, SPDC_loss
 from tqdm import tqdm
+import torch.nn.functional as F
+
 
 try:
     import wandb
@@ -20,7 +22,8 @@ def train_SPDC(model,
                     optimizer, scheduler,
                     config,
                     rank=0, log=False,
-                    project='PINO-2d-default',
+                    padding = 0,
+                    project='PINO-3d-default',
                     group='default',
                     tags=['default'],
                     use_tqdm=True):
@@ -35,6 +38,8 @@ def train_SPDC(model,
     data_weight = config['train']['xy_loss']
     f_weight = config['train']['f_loss']
     ic_weight = config['train']['ic_loss']
+    batch_size = config['train']['batchsize']
+
     model.train()
     pbar = range(config['train']['epochs'])
     if use_tqdm:
@@ -48,7 +53,11 @@ def train_SPDC(model,
 
         for x, y in train_loader:
             x, y = x.to(rank), y.to(rank)
-            out = model(x).reshape(y.shape)
+            x_in = F.pad(x,(0,0,0,padding),"constant",0)
+            print(x_in.shape)
+            out = model(x_in).reshape(batch_size,SPDCLoader.X,SPDCLoader.Y,SPDCLoader.Z + padding, SPDCLoader.nout)
+            out = out[...,:-padding, :]
+
             data_loss,ic_loss,f_loss = SPDC_loss(out,x,y)
             total_loss = ic_loss * ic_weight + f_loss * f_weight + data_loss * data_weight
 
@@ -134,20 +143,23 @@ def run(args, config):
                             nx=data_config['nx'], 
                             ny=data_config['ny'],
                             nz=data_config['nz'],
-                            F = data_config['F'],
+                            nin = data_config['nin'],
+                            nout = data_config['nout'],
                             datapath2 = None,
                             sub_xy=data_config['sub_xy'],
                             sub_z=data_config['sub_z'])
     
     train_loader = dataset.make_loader(n_sample=data_config['n_sample'],
                                        batch_size=config['train']['batchsize'],
-                                       start=data_config['offset'])
+                                       start=data_config['offset'],train=True)
 
     model = FNO3d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
                   modes3=config['model']['modes3'],
                   fc_dim=config['model']['fc_dim'],
                   layers=config['model']['layers'],
+                  in_dim=config['model']['in_dim'],
+                  out_dim=config['model']['out_dim'],
                   activation_func=config['model']['act']).to(device)
     # Load from checkpoint
     if 'ckpt' in config['train']:

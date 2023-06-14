@@ -114,7 +114,7 @@ class BurgersLoader(object):
         return loader
 
 class SPDCLoader(object):
-    def __init__(self, datapath1, nx = 121, ny = 121, nz =10,F=5,datapath2 = None, sub_xy=1, sub_z=1,
+    def __init__(self, datapath1, nx = 121, ny = 121, nz =10,nin=3,nout=4,datapath2 = None, sub_xy=1, sub_z=1,
                  N=10):
         '''
         Load data from npy at shape (N,F=5, X, Y, Z)
@@ -123,6 +123,8 @@ class SPDCLoader(object):
             nx: size of x axis
             ny: size of y axis
             nz: size of z axis
+            nin: number of input fields (pump, signal vac, idler vac)
+            nin: number of output fields (signal vac, idler vac, signal out, idler out)
             sub_xy: reduce the resoultion in xy plane
             sub_t: reduce the resoultion in z axis
             N: number of data samples
@@ -130,7 +132,8 @@ class SPDCLoader(object):
         self.X = nx // sub_xy
         self.Y = ny // sub_xy
         self.Z =  nz // sub_z
-        self.F = F
+        self.nin = nin
+        self.nout = nout
         data1 = np.load(datapath1)
         data1 = torch.tensor(data1, dtype=torch.complex128)[..., ::sub_xy, ::sub_xy, ::sub_z]
 
@@ -142,25 +145,36 @@ class SPDCLoader(object):
             self.data = torch.cat((data1, data2), dim=0)
         else:
             self.data = data1
+        self.data = self.data.permute(0,2,3,4,1)
 
     def make_loader(self, n_sample, batch_size, start=0, train=True):
-        if train:
-            a_data = self.data[start:start + n_sample,:, :, :, 0].reshape(n_sample,self.F, self.X, self.Y)
-            u_data = self.data[start:start + n_sample].reshape(n_sample,self.F, self.X, self.Y, self.Z)
-        else:
-            a_data = self.data[start:start + n_sample,:, :, :, 0].reshape(n_sample,self.F, self.X, self.Y)
-            u_data = self.data[start:start + n_sample].reshape(n_sample,self.F, self.X, self.Y, self.Z)
+        a_data = self.data[start:start + n_sample,:, :, 0,:self.nin].reshape(n_sample, self.X, self.Y,self.nin)
+        u_data = self.data[start:start + n_sample,:,:,:,-self.nout:].reshape(n_sample, self.X, self.Y, self.Z, self.nout)
+
+        assert self.X == self.Y
+        gridx, gridy, gridz = get_grid3d(self.X, self.Z)
+        a_data = a_data.reshape(n_sample, self.X, self.Y, 1, self.nin).repeat([1, 1, 1, self.Z, 1])
+        a_data = torch.cat((gridx.repeat([n_sample, 1, 1, 1, 1]),
+                            gridy.repeat([n_sample, 1, 1, 1, 1]),
+                            gridz.repeat([n_sample, 1, 1, 1, 1]),
+                            a_data), dim=-1)
+
         dataset = torch.utils.data.TensorDataset(a_data, u_data)
         loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=train)
         return loader
 
     def make_dataset(self, n_sample, start=0, train=True):
-        if train:
-            a_data = self.data[start:start + n_sample,:, :, :, 0].reshape(n_sample,self.F, self.X, self.Y)
-            u_data = self.data[start:start + n_sample].reshape(n_sample,self.F, self.X, self.Y, self.Z)
-        else:
-            a_data = self.data[start:start + n_sample,:, :, :, 0].reshape(n_sample,self.F, self.X, self.Y)
-            u_data = self.data[start:start + n_sample].reshape(n_sample,self.F, self.X, self.Y, self.Z)
+        a_data = self.data[start:start + n_sample,:, :, 0,:self.nin].reshape(n_sample, self.X, self.Y,self.nin)
+        u_data = self.data[start:start + n_sample,:,:,:,-self.nout:].reshape(n_sample, self.X, self.Y, self.Z, self.nout)
+
+        assert self.X == self.Y
+        gridx, gridy, gridz = get_grid3d(self.X, self.Z)
+        a_data = a_data.reshape(n_sample, self.X, self.Y, 1, self.nin).repeat([1, 1, 1, self.Z, 1])
+        a_data = torch.cat((gridx.repeat([n_sample, 1, 1, 1, 1]),
+                            gridy.repeat([n_sample, 1, 1, 1, 1]),
+                            gridz.repeat([n_sample, 1, 1, 1, 1]),
+                            a_data), dim=-1)
+
         dataset = torch.utils.data.TensorDataset(a_data, u_data)
         return dataset
 
