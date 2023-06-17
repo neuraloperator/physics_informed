@@ -2,8 +2,10 @@ from SPDC_solver import *
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
+import pickle
 
-dict = np.load("fixed_pump_30.npy",allow_pickle=True).item()
+with open(file="fixed_pump_30.bin",mode="rb") as file:
+    dict = pickle.load(file)
 fields = dict["fields"]
 
 dict = {0:"pump", 1:"signal vac", 2:"idler vac", 3:"signal out", 4:"idler out"}

@@ -1,5 +1,6 @@
 import scipy.io
 import numpy as np
+import pickle
 
 try:
     from pyDOE import lhs
@@ -141,7 +142,8 @@ class SPDCLoader(object):
         self.Z =  nz // sub_z
         self.nin = nin
         self.nout = nout
-        self.data_dict = np.load(datapath,allow_pickle=True).item()
+        with open(file=datapath,mode="rb") as file:
+            self.data_dict = pickle.load(file)
         self.data = torch.tensor(self.data_dict["fields"], dtype=torch.complex128)[..., ::sub_xy, ::sub_xy, ::sub_z]
         del self.data_dict["fields"]
         self.data = self.data.permute(0,2,3,4,1)

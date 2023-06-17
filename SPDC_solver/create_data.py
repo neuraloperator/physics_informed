@@ -1,7 +1,7 @@
 from SPDC_solver import *
 import numpy as np
 from argparse import ArgumentParser
-
+import pickle
 
 N_samples = 10
 fixed_pump = True
@@ -22,13 +22,14 @@ if __name__ == '__main__':
 if fixed_pump:
     defult_loc = "/home/dor-hay.sha/project/data/spdc/"
     if loc is not None:
-        file_name = str(f"{loc}/fixed_pump_{N_samples}.npy")
+        file_name = str(f"{loc}/fixed_pump_{N_samples}.bin")
     else:
-        file_name = str(f"{defult_loc}/fixed_pump_{N_samples}.npy")
+        file_name = str(f"{defult_loc}/fixed_pump_{N_samples}.bin")
 
 print("creating data")
 A = SPDC_solver(N=N_samples,config=config,data_creation=True)
 A.solve()
 print("saving data")
-np.save(file=file_name,arr=A.data)
+with open(file_name, "wb") as file:
+    pickle.dump(obj=A.data,file=file,protocol=4)
 print("Done!")
