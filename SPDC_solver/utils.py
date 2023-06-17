@@ -277,7 +277,7 @@ def LaguerreP(p, l, x):
 
 
 
-def Laguerre_gauss(lam, refractive_index, W0, l, p, z, x, y, coef=None):
+def Laguerre_gauss(lam, refractive_index, W0, l, p, x, y, z, coef=None):
     """
     Laguerre Gauss in 2D
 
@@ -287,8 +287,8 @@ def Laguerre_gauss(lam, refractive_index, W0, l, p, z, x, y, coef=None):
     refractive_index: refractive index
     W0: beam waists
     l, p: order of the LG beam
-    z: the place in z to calculate for
     x,y: matrices of x and y
+    z: the place in z to calculate for
     coef
 
     Returns
