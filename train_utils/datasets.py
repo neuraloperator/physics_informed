@@ -114,10 +114,17 @@ class BurgersLoader(object):
         return loader
 
 class SPDCLoader(object):
-    def __init__(self, datapath1, nx = 121, ny = 121, nz =10,nin=3,nout=4,datapath2 = None, sub_xy=1, sub_z=1,
+    def __init__(self, datapath, nx = 121, ny = 121, nz =10,nin=3,nout=4, sub_xy=1, sub_z=1,
                  N=10):
         '''
-        Load data from npy at shape (N,F=5, X, Y, Z)
+        Load data from npy from a dictonary:
+         "fields": np.ndarry shape (N,F=5, X, Y, Z)
+         "chi" : np.ndarry shape (X,Y,Z) 
+         "k_pump" : scalar - The k of the pump
+         "k_signal" : scalar - The k of the signal
+         "k_idler" : scalar - The k of the idler
+         "kappa_signal" : scalar - The kappa of the signal
+        The fields are in order  (pump, signal vac, idler vac,signal out, idler out)
         Args:
             datapath: path to data
             nx: size of x axis
@@ -134,17 +141,9 @@ class SPDCLoader(object):
         self.Z =  nz // sub_z
         self.nin = nin
         self.nout = nout
-        data1 = np.load(datapath1)
-        data1 = torch.tensor(data1, dtype=torch.complex128)[..., ::sub_xy, ::sub_xy, ::sub_z]
-
-        if datapath2 is not None:
-            data2 = np.load(datapath2)
-            data2 = torch.tensor(data2, dtype=torch.complex128)[..., ::sub_xy, ::sub_xy, ::sub_z]
-
-        if datapath2 is not None:
-            self.data = torch.cat((data1, data2), dim=0)
-        else:
-            self.data = data1
+        self.data_dict = np.load(datapath,allow_pickle=True).item()
+        self.data = torch.tensor(self.data_dict["fields"], dtype=torch.complex128)[..., ::sub_xy, ::sub_xy, ::sub_z]
+        del self.data_dict["fields"]
         self.data = self.data.permute(0,2,3,4,1)
 
     def make_loader(self, n_sample, batch_size, start=0, train=True):

@@ -340,30 +340,36 @@ def coupled_wave_eq_PDE_Loss(model,X,k_arr,omega_arr, kappa_i, kappa_s) -> torch
     return abs(residual_1.sum())+abs(residual_2.sum())
 
 
-def SPDC_loss(u,x, y):
+def SPDC_loss(u,y,equation_dict):
     '''
     Calcultae and return the data loss, pde loss and ic (Initial condition) loss
     Args:
     u: The out put of the network
-    x: The ic used by the network
-    y: The entire ground truth solution (y[...,0]=x)
+    y: The entire ground truth solution 
+    equation_dict: A dictionary containing
+        "chi" -  np.ndarray of the shape (X,Y,Z) contain the chi2 
+        "k_pump" -  scalar, the k pump coef
+        "k_signal" -  scalar, the k signal coef
+        "k_idler" -  scalar, the k idler coef
+        "kappa_signal" -  scalar, the kappa signal coef
+        "kappa_idler" -  scalar, the kappa idler coef
 
     Return: (data_loss,ic_loss,pde_loss)
     '''
-    assert y[...,0] == x
 
     batchsize = u.size(0)
-    F = u.size(1)
-    nx = u.size(2)
-    ny = u.size(3)
-    nz = u.size(4)
+    nx = u.size(1)
+    ny = u.size(2)
+    nz = u.size(3)
+    nfields = u.size(4) # should be 4
 
-    u = u.reshape(batchsize,F, nx, ny, nz)
+    u = u.reshape(batchsize,nx, ny, nz,nfields)
     LpLoss3D = LpLoss(d=3,size_average=True)
     LpLoss2D = LpLoss(d=2,size_average=True)
 
-    u0 = u[..., 0]
-    ic_loss = LpLoss2D(u0, x)
+    u0 = u[..., 0,:]
+    y0 = y[..., 0,:]
+    ic_loss = LpLoss2D(u0, y0)
     data_loss = LpLoss3D(u,y)
     pde_loss = 0 # TODO
 

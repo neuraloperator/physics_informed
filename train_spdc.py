@@ -21,6 +21,7 @@ def train_SPDC(model,
                     train_loader, 
                     optimizer, scheduler,
                     config,
+                    equation_dict,
                     rank=0, log=False,
                     padding = 0,
                     project='PINO-3d-default',
@@ -58,7 +59,7 @@ def train_SPDC(model,
             out = model(x_in).reshape(batch_size,SPDCLoader.X,SPDCLoader.Y,SPDCLoader.Z + padding, SPDCLoader.nout)
             out = out[...,:-padding, :]
 
-            data_loss,ic_loss,f_loss = SPDC_loss(out,x,y)
+            data_loss,ic_loss,f_loss = SPDC_loss(out,y,equation_dict)
             total_loss = ic_loss * ic_weight + f_loss * f_weight + data_loss * data_weight
 
             optimizer.zero_grad()
@@ -102,6 +103,7 @@ def train_SPDC(model,
 def eval_SPDC(model,
                  dataloader,
                  config,
+                 equation_dict,
                  device,
                  use_tqdm=True):
     model.eval()
@@ -117,7 +119,7 @@ def eval_SPDC(model,
     for x, y in pbar:
         x, y = x.to(device), y.to(device)
         out = model(x).reshape(y.shape)
-        data_loss,ic_loss,f_loss = SPDC_loss(out,x,y)
+        data_loss,ic_loss,f_loss = SPDC_loss(out,y,equation_dict)
         test_err.append(data_loss.item())
         f_err.append(f_loss.item())
         ic_err.append(ic_loss.item())
@@ -139,16 +141,16 @@ def eval_SPDC(model,
 def run(args, config):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     data_config = config['data']
-    dataset = SPDCLoader(data_config['datapath'],
+    dataset = SPDCLoader(   datapath = data_config['datapath'],
                             nx=data_config['nx'], 
                             ny=data_config['ny'],
                             nz=data_config['nz'],
                             nin = data_config['nin'],
                             nout = data_config['nout'],
-                            datapath2 = None,
                             sub_xy=data_config['sub_xy'],
                             sub_z=data_config['sub_z'])
     
+    equation_dict = dataset.data_dict
     train_loader = dataset.make_loader(n_sample=data_config['n_sample'],
                                        batch_size=config['train']['batchsize'],
                                        start=data_config['offset'],train=True)
@@ -177,6 +179,7 @@ def run(args, config):
                     optimizer, 
                     scheduler,
                     config,
+                    equation_dict,
                     rank=0, 
                     log=args.log,
                     project=config['log']['project'],
@@ -193,6 +196,7 @@ def test(config):
                             datapath2 = None,
                             sub_xy=data_config['sub_xy'],
                             sub_z=data_config['sub_z'])
+    equation_dict  = dataset.data_dict
     dataloader = dataset.make_loader(n_sample=data_config['n_sample'],
                                      batch_size=config['test']['batchsize'],
                                      start=data_config['offset'])
@@ -208,7 +212,7 @@ def test(config):
         ckpt = torch.load(ckpt_path)
         model.load_state_dict(ckpt['model'])
         print('Weights loaded from %s' % ckpt_path)
-    eval_SPDC(model, dataloader, config, device)
+    eval_SPDC(model, dataloader, config, equation_dict, device)
 
 
 if __name__ == '__main__':

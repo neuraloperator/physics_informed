@@ -27,12 +27,22 @@ class SPDC_solver(object):
     print_err: If True prints the log of MSE on each of the equations at each step
     return_err: If True return the MSE on each of the equations at each step
     draw_sol: draw a 3D graph of the intensety of each field at the end of the propogation
-    data_creation: If true saves a np ndarray at the shape (N,F = 5,X,Y,Z) where:
+    data_creation: If true creates a dictonary conataina:
+                   fields:
+                    np ndarray at the shape (N,F = 5,X,Y,Z) where:
                     N - number of samples
-                    F=5 - The 5 fields: pump, signal vac, signal out, idler vac, idler out
+                    F=5 - The 5 fields: pump, signal vac, idler vac, signal out, idler out
                     X - Nx i.e number of elements in the X array
                     Y - Ny i.e number of elements in the Y array
                     Z - Nz i.e number of elements in the Z array
+                   chi:
+                    np ndarray at shape (X,Y,Z) containg chi2 at each point of the grid
+                  k_pump: k_pump
+                  k_signal: k_signal
+                  k_idler: k_idler
+                  kappa_signal: kappa_signal
+                  kappa_idler: kappa_idler
+                    
 
     """
 
@@ -63,9 +73,8 @@ class SPDC_solver(object):
                   self.draw_sol = draw_sol
                   self.data_creation = data_creation
                   self.data = None
+                  self.fields = None
 
-                  if data_creation:
-                        self.data =  numpy.zeros(shape=(N,5,shape.Nx,shape.Ny,shape.Nz),dtype=complex)
 
                   if self.check_sol:
                         N = 1
@@ -100,6 +109,18 @@ class SPDC_solver(object):
                   PP = PP_crystal_slab(delta_k=delta_k, shape=shape, crystal_profile=crystal_profile)
                   self.chi2 = PP*config.d33 
 
+                  if data_creation:
+                        self.data = {}
+                        self.fields =  numpy.zeros(shape=(N,5,shape.Nx,shape.Ny,shape.Nz),dtype=complex)
+                        self.data["fields"] = self.fields
+                        self.data["chi"] = self.chi2
+                        self.data["k_pump"] = pump.k
+                        self.data["k_signal"] = signal.k
+                        self.data["k_idler"] = idler.k
+                        self.data["kappa_signal"] = self.signal_field.kappa
+                        self.data["kappa_idler"] = self.idler_field.kappa
+
+
                   
                 # Random N vacum state
                   key = random.PRNGKey(seed)
@@ -118,7 +139,7 @@ class SPDC_solver(object):
                 shape = self.shape,
                 print_err = self.print_err,
                 return_err = self.return_err,
-                data = self.data
+                data = self.fields
                 ) 
 
                 if self.draw_sol:

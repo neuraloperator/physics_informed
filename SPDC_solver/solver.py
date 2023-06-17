@@ -100,8 +100,8 @@ def crystal_prop(
         assert data.shape == (N, 5, Nx, Ny, Nz)
         data[:, 0, :, :, 0] = np.tile(pump_profile, reps=(N, 1, 1))  # pump
         data[:, 1, :, :, 0] = signal_vac
-        data[:, 2, :, :, 0] = signal_out
-        data[:, 3, :, :, 0] = idler_vac
+        data[:, 2, :, :, 0] = idler_vac
+        data[:, 3, :, :, 0] = signal_out
         data[:, 4, :, :, 0] = idler_out
         
 
@@ -138,8 +138,8 @@ def crystal_prop(
     if data is not None:
         data[:, 0, :, :, i] = E_pump
         data[:, 1, :, :, i] = signal_vac
-        data[:, 2, :, :, i] = signal_out
-        data[:, 3, :, :, i] = idler_vac
+        data[:, 2, :, :, i] = idler_vac
+        data[:, 3, :, :, i] = signal_out
         data[:, 4, :, :, i] = idler_out
         
 
