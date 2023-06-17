@@ -120,7 +120,7 @@ def crystal_prop(
             idler_field_k=idler_field.k,
             signal_field_kappa=signal_field.kappa,
             idler_field_kappa=idler_field.kappa,
-            chi2=chi2[i, :, :],
+            chi2=chi2[:, :, i],
             signal_out=signal_out,
             signal_vac=signal_vac,
             idler_out=idler_out,

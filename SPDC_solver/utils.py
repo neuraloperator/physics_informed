@@ -330,7 +330,7 @@ def profile_laguerre_gauss(
             [X, Y] = np.meshgrid(shape.x, shape.y)
             Z = shape.z[0]
         elif mode == "crystal":
-            [Z, X, Y] = np.meshgrid(shape.z,shape.x, shape.y, indexing='ij')
+            [X, Y, Z] = np.meshgrid(shape.x, shape.y, shape.z, indexing='ij')
         
         pump_profile = np.zeros((shape.Nx, shape.Ny))
         idx = 0
@@ -338,7 +338,7 @@ def profile_laguerre_gauss(
             for l in range(-max_mode2, max_mode2 + 1):
                 pump_profile += coeffs[idx] * \
                                 Laguerre_gauss(beam.lam, beam.n,
-                                               waist_pump , l, p, Z, X, Y)
+                                               waist_pump , l, p,  X, Y, Z)
                 idx += 1
 
         pump_profile = fix_power(pump_profile, beam.power, beam.n,
@@ -369,7 +369,7 @@ def PP_crystal_slab(
     -------
 
     """
-    [Z, X, Y] = np.meshgrid(shape.z,shape.x, shape.y, indexing='ij')
+    [X, Y, Z] = np.meshgrid(shape.x, shape.y, shape.z, indexing='ij')
     if crystal_profile is None:
         return np.sign(np.cos(np.abs(delta_k) * Z))
     else:
