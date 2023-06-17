@@ -29,6 +29,6 @@ if fixed_pump:
 print("creating data")
 A = SPDC_solver(N=N_samples,config=config,data_creation=True)
 A.solve()
-print("saveing data")
+print("saving data")
 np.save(file=file_name,arr=A.data)
 print("Done!")
