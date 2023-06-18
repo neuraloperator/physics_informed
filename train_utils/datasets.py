@@ -155,15 +155,15 @@ class SPDCLoader(object):
 
 
     def make_loader(self, n_sample, batch_size, start=0, train=True):
-        a_data = self.data[start:start + n_sample,:, :, 0,:,:self.nin].reshape(n_sample, self.X, self.Y,2,self.nin)
-        u_data = self.data[start:start + n_sample,:,:,:,:,-self.nout:].reshape(n_sample, self.X, self.Y, self.Z, 2, self.nout)
+        a_data = self.data[start:start + n_sample,:, :, 0,:,:self.nin].reshape(n_sample, self.X, self.Y,self.nin*2)
+        u_data = self.data[start:start + n_sample,:,:,:,:,-self.nout:].reshape(n_sample, self.X, self.Y, self.Z, self.nout*2)
 
         assert self.X == self.Y
         gridx, gridy, gridz = get_grid3d(self.X, self.Z)
-        a_data = a_data.reshape(n_sample, self.X, self.Y, 1, 2,self.nin).repeat([1, 1, 1, self.Z, 1, 1])
-        a_data = torch.cat((gridx.reshape(1,self.X,self.X,self.Z,1,1).repeat([n_sample, 1, 1, 1, 2, 1]),
-                            gridy.reshape(1,self.X,self.X,self.Z,1,1).repeat([n_sample, 1, 1, 1, 2, 1]),
-                            gridz.reshape(1,self.X,self.X,self.Z,1,1).repeat([n_sample, 1, 1, 1, 2, 1]),
+        a_data = a_data.reshape(n_sample, self.X, self.Y, 1, self.nin*2).repeat([1, 1, 1, self.Z, 1])
+        a_data = torch.cat((gridx.reshape(1,self.X,self.X,self.Z,1).repeat([n_sample, 1, 1, 1, 1]),
+                            gridy.reshape(1,self.X,self.X,self.Z,1).repeat([n_sample, 1, 1, 1, 1]),
+                            gridz.reshape(1,self.X,self.X,self.Z,1).repeat([n_sample, 1, 1, 1, 1]),
                             a_data), dim=-1)
 
         dataset = torch.utils.data.TensorDataset(a_data, u_data)
@@ -171,15 +171,15 @@ class SPDCLoader(object):
         return loader
 
     def make_dataset(self, n_sample, start=0, train=True):
-        a_data = self.data[start:start + n_sample,:, :, 0,:,:self.nin].reshape(n_sample, self.X, self.Y,2,self.nin)
-        u_data = self.data[start:start + n_sample,:,:,:,:,-self.nout:].reshape(n_sample, self.X, self.Y, self.Z, 2, self.nout)
+        a_data = self.data[start:start + n_sample,:, :, 0,:,:self.nin].reshape(n_sample, self.X, self.Y,self.nin*2)
+        u_data = self.data[start:start + n_sample,:,:,:,:,-self.nout:].reshape(n_sample, self.X, self.Y, self.Z, self.nout*2)
 
         assert self.X == self.Y
         gridx, gridy, gridz = get_grid3d(self.X, self.Z)
-        a_data = a_data.reshape(n_sample, self.X, self.Y, 1, 2,self.nin).repeat([1, 1, 1, self.Z, 1, 1])
-        a_data = torch.cat((gridx.repeat([n_sample, 1, 1, 1, 1, 1]),
-                            gridy.repeat([n_sample, 1, 1, 1, 1, 1]),
-                            gridz.repeat([n_sample, 1, 1, 1, 1, 1]),
+        a_data = a_data.reshape(n_sample, self.X, self.Y, 1, self.nin*2).repeat([1, 1, 1, self.Z, 1])
+        a_data = torch.cat((gridx.reshape(1,self.X,self.X,self.Z,1).repeat([n_sample, 1, 1, 1, 1]),
+                            gridy.reshape(1,self.X,self.X,self.Z,1).repeat([n_sample, 1, 1, 1, 1]),
+                            gridz.reshape(1,self.X,self.X,self.Z,1).repeat([n_sample, 1, 1, 1, 1]),
                             a_data), dim=-1)
 
         dataset = torch.utils.data.TensorDataset(a_data, u_data)

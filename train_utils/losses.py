@@ -361,9 +361,13 @@ def SPDC_loss(u,y,equation_dict):
     nx = u.size(1)
     ny = u.size(2)
     nz = u.size(3)
-    nfields = u.size(4) # should be 4
+    nfields = u.size(-1) # should be 4
 
-    u = u.reshape(batchsize,nx, ny, nz,nfields)
+    u = u.reshape(batchsize,nx, ny, nz,2,nfields)
+    y = y.reshape(batchsize,nx, ny, nz,2,nfields)
+    u = u[...,0,:] + 1j*u[...,1,:] # real part + j * imag part
+    y = y[...,0,:] + 1j*y[...,1,:] # real part + j * imag part
+    
     LpLoss3D = LpLoss(d=3,size_average=True)
     LpLoss2D = LpLoss(d=2,size_average=True)
 
