@@ -1,6 +1,7 @@
 import scipy.io
 import numpy as np
 import pickle
+import gc
 
 try:
     from pyDOE import lhs
@@ -146,6 +147,8 @@ class SPDCLoader(object):
             self.data_dict = pickle.load(file)
         self.data = torch.tensor(self.data_dict["fields"], dtype=torch.complex128)[..., ::sub_xy, ::sub_xy, ::sub_z]
         del self.data_dict["fields"]
+        gc.collect()
+        
         self.data = self.data.permute(0,2,3,4,1)
         self.F = self.data.size(4)
 

@@ -140,6 +140,8 @@ def eval_SPDC(model,
 
 def run(args, config):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    torch.cuda.empty_cache()
+
     data_config = config['data']
     dataset = SPDCLoader(   datapath = data_config['datapath'],
                             nx=data_config['nx'], 
