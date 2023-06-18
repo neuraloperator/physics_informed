@@ -56,7 +56,7 @@ def train_SPDC(model,
             x, y = x.to(rank), y.to(rank)
             x_in = F.pad(x,(0,0,0,padding),"constant",0)
             print(x_in.shape)
-            out = model(x_in).reshape(batch_size,SPDCLoader.X,SPDCLoader.Y,SPDCLoader.Z + padding, SPDCLoader.nout)
+            out = model(x_in).reshape(batch_size,SPDCLoader.X,SPDCLoader.Y,SPDCLoader.Z + padding, 2,SPDCLoader.nout)
             out = out[...,:-padding, :]
 
             data_loss,ic_loss,f_loss = SPDC_loss(out,y,equation_dict)
