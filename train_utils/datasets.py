@@ -161,9 +161,9 @@ class SPDCLoader(object):
         assert self.X == self.Y
         gridx, gridy, gridz = get_grid3d(self.X, self.Z)
         a_data = a_data.reshape(n_sample, self.X, self.Y, 1, 2,self.nin).repeat([1, 1, 1, self.Z, 1, 1])
-        a_data = torch.cat((gridx.repeat([n_sample, 1, 1, 1, 1, 1]),
-                            gridy.repeat([n_sample, 1, 1, 1, 1, 1]),
-                            gridz.repeat([n_sample, 1, 1, 1, 1, 1]),
+        a_data = torch.cat((gridx.reshape(1,self.X,self.X,self.Z,1,1).repeat([n_sample, 1, 1, 1, 2, 1]),
+                            gridy.reshape(1,self.X,self.X,self.Z,1,1).repeat([n_sample, 1, 1, 1, 2, 1]),
+                            gridz.reshape(1,self.X,self.X,self.Z,1,1).repeat([n_sample, 1, 1, 1, 2, 1]),
                             a_data), dim=-1)
 
         dataset = torch.utils.data.TensorDataset(a_data, u_data)
