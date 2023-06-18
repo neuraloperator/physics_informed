@@ -18,6 +18,7 @@ except ImportError:
     wandb = None
 
 def train_SPDC(model,
+                    dataset,
                     train_loader, 
                     optimizer, scheduler,
                     config,
@@ -54,10 +55,9 @@ def train_SPDC(model,
 
         for x, y in train_loader:
             x, y = x.to(rank), y.to(rank)
-            x_in = F.pad(x,(0,0,0,padding),"constant",0)
-            print(x_in.shape)
-            out = model(x_in).reshape(batch_size,SPDCLoader.X,SPDCLoader.Y,SPDCLoader.Z + padding, 2,SPDCLoader.nout)
-            out = out[...,:-padding, :]
+            x_in = F.pad(x,(0,0,0,padding),"constant",0).type(torch.float32)
+            out = model(x_in).reshape(batch_size,dataset.X,dataset.Y,dataset.Z + padding, 2,dataset.nout)
+            # out = out[...,:-padding,:, :] # if padding is not 0
 
             data_loss,ic_loss,f_loss = SPDC_loss(out,y,equation_dict)
             total_loss = ic_loss * ic_weight + f_loss * f_weight + data_loss * data_weight
@@ -67,24 +67,24 @@ def train_SPDC(model,
             optimizer.step()
 
             data_l2 += data_loss.item()
-            train_pino += f_loss.item()
+            # train_pino += f_loss.item() # need to implement
             train_loss += total_loss.item()
         scheduler.step()
         data_l2 /= len(train_loader)
-        train_pino /= len(train_loader)
+        # train_pino /= len(train_loader)
         train_loss /= len(train_loader)
         if use_tqdm:
             pbar.set_description(
                 (
                     f'Epoch {e}, train loss: {train_loss:.5f} '
-                    f'train f error: {train_pino:.5f}; '
+                    # f'train f error: {train_pino:.5f}; '
                     f'data l2 error: {data_l2:.5f}'
                 )
             )
         if wandb and log:
             wandb.log(
                 {
-                    'Train f error': train_pino,
+                    # 'Train f error': train_pino,
                     'Train L2 error': data_l2,
                     'Train loss': train_loss,
                 }
@@ -175,6 +175,7 @@ def run(args, config):
                                                      milestones=config['train']['milestones'],
                                                      gamma=config['train']['scheduler_gamma'])
     train_SPDC(model,
+                    dataset,
                     train_loader, 
                     optimizer, 
                     scheduler,
