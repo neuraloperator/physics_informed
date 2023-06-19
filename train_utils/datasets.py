@@ -145,7 +145,6 @@ class SPDCLoader(object):
             self.data_dict = pickle.load(file)
         self.data = torch.tensor(self.data_dict["fields"], dtype=torch.complex128)[..., ::sub_xy, ::sub_xy, ::sub_z]
         del self.data_dict["fields"]
-        gc.collect()
 
         self.X = self.data.size(2)
         self.Y = self.data.size(3)
@@ -153,9 +152,11 @@ class SPDCLoader(object):
         self.F = self.data.size(1)
         self.data = self.data.permute(0,2,3,4,1)
 
-        real = self.data.real.reshape(N, self.X, self.Y, self.Z, 1, self.F)
-        imag = self.data.imag.reshape(N, self.X, self.Y, self.Z, 1, self.F)
+        real = self.data.real.reshape(N, self.X, self.Y, self.Z, 1, self.F).type(torch.float32)
+        imag = self.data.imag.reshape(N, self.X, self.Y, self.Z, 1, self.F).type(torch.float32)
         self.data = torch.cat((real,imag),dim=-2)
+        gc.collect()
+
 
 
     def make_loader(self, n_sample, batch_size, start=0, train=True):

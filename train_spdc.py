@@ -54,8 +54,8 @@ def train_SPDC(model,
         train_loss = 0.0
 
         for x, y in train_loader:
-            torch.cuda.empty_cache()
             gc.collect()
+            torch.cuda.empty_cache()
             x, y = x.to(rank), y.to(rank)
             x_in = F.pad(x,(0,0,0,padding),"constant",0).type(torch.float32)
             out = model(x_in).reshape(batch_size,y.size(1),y.size(2),y.size(3) + padding, y.size(4))
@@ -120,10 +120,10 @@ def eval_SPDC(model,
     ic_err = []
 
     for x, y in pbar:
-        torch.cuda.empty_cache()
         gc.collect()
+        torch.cuda.empty_cache()
         x, y = x.to(device), y.to(device)
-        x_in = F.pad(x,(0,0,0,padding),"constant",0).type(torch.float32)
+        x_in = F.pad(x,(0,0,0,padding),"constant",0)
         out = model(x_in).reshape(dataloader.batch_size,y.size(1),y.size(2),y.size(3) + padding, y.size(4))
             # out = out[...,:-padding,:, :] # if padding is not 0
 
@@ -200,7 +200,6 @@ def run(args, config):
 
 def test(config):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    torch.cuda.empty_cache()
 
     data_config = config['data']
     dataset = SPDCLoader(   datapath = data_config['datapath'],
@@ -219,6 +218,7 @@ def test(config):
                                      start=data_config['offset'])
     del dataset
     gc.collect()
+    torch.cuda.empty_cache()
 
     model = FNO3d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
