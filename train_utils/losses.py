@@ -361,7 +361,7 @@ def SPDC_loss(u,y,equation_dict):
     nx = u.size(1)
     ny = u.size(2)
     nz = u.size(3)
-    nfields = u.size(-1) # should be 4
+    nfields = u.size(-1)//2 # should be 8
 
     u = u.reshape(batchsize,nx, ny, nz,2,nfields)
     y = y.reshape(batchsize,nx, ny, nz,2,nfields)

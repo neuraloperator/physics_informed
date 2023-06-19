@@ -10,6 +10,7 @@ from train_utils.utils import save_checkpoint
 from train_utils.losses import LpLoss, darcy_loss, PINO_loss, SPDC_loss
 from tqdm import tqdm
 import torch.nn.functional as F
+import gc
 
 
 try:
@@ -18,7 +19,6 @@ except ImportError:
     wandb = None
 
 def train_SPDC(model,
-                    dataset,
                     train_loader, 
                     optimizer, scheduler,
                     config,
@@ -54,9 +54,11 @@ def train_SPDC(model,
         train_loss = 0.0
 
         for x, y in train_loader:
+            torch.cuda.empty_cache()
+            gc.collect()
             x, y = x.to(rank), y.to(rank)
             x_in = F.pad(x,(0,0,0,padding),"constant",0).type(torch.float32)
-            out = model(x_in).reshape(batch_size,dataset.X,dataset.Y,dataset.Z + padding, 2,dataset.nout)
+            out = model(x_in).reshape(batch_size,y.size(1),y.size(2),y.size(3) + padding, y.size(4))
             # out = out[...,:-padding,:, :] # if padding is not 0
 
             data_loss,ic_loss,f_loss = SPDC_loss(out,y,equation_dict)
@@ -105,6 +107,7 @@ def eval_SPDC(model,
                  config,
                  equation_dict,
                  device,
+                 padding = 0,
                  use_tqdm=True):
     model.eval()
     if use_tqdm:
@@ -117,15 +120,20 @@ def eval_SPDC(model,
     ic_err = []
 
     for x, y in pbar:
+        torch.cuda.empty_cache()
+        gc.collect()
         x, y = x.to(device), y.to(device)
-        out = model(x).reshape(y.shape)
+        x_in = F.pad(x,(0,0,0,padding),"constant",0).type(torch.float32)
+        out = model(x_in).reshape(dataloader.batch_size,y.size(1),y.size(2),y.size(3) + padding, y.size(4))
+            # out = out[...,:-padding,:, :] # if padding is not 0
+
         data_loss,ic_loss,f_loss = SPDC_loss(out,y,equation_dict)
         test_err.append(data_loss.item())
-        f_err.append(f_loss.item())
+        # f_err.append(f_loss.item())
         ic_err.append(ic_loss.item())
 
-    mean_f_err = np.mean(f_err)
-    std_f_err = np.std(f_err, ddof=1) / np.sqrt(len(f_err))
+    # mean_f_err = np.mean(f_err)
+    # std_f_err = np.std(f_err, ddof=1) / np.sqrt(len(f_err))
 
     mean_err = np.mean(test_err)
     std_err = np.std(test_err, ddof=1) / np.sqrt(len(test_err))
@@ -134,7 +142,7 @@ def eval_SPDC(model,
     std_ic_err = np.std(ic_err, ddof=1) / np.sqrt(len(ic_err))
 
     print(f'==Averaged relative L2 error mean: {mean_err}, std error: {std_err}==\n'
-          f'==Averaged equation error mean: {mean_f_err}, std error: {std_f_err}==\n'
+        #   f'==Averaged equation error mean: {mean_f_err}, std error: {std_f_err}==\n'
           f'==Averaged initial condition error mean: {mean_ic_err}, std error: {std_ic_err}==')
 
 
@@ -150,12 +158,15 @@ def run(args, config):
                             nin = data_config['nin'],
                             nout = data_config['nout'],
                             sub_xy=data_config['sub_xy'],
-                            sub_z=data_config['sub_z'])
+                            sub_z=data_config['sub_z'],
+                            N=data_config['total_num'])
     
     equation_dict = dataset.data_dict
     train_loader = dataset.make_loader(n_sample=data_config['n_sample'],
                                        batch_size=config['train']['batchsize'],
                                        start=data_config['offset'],train=True)
+    del dataset
+    gc.collect()
 
     model = FNO3d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
@@ -177,7 +188,6 @@ def run(args, config):
                                                      milestones=config['train']['milestones'],
                                                      gamma=config['train']['scheduler_gamma'])
     train_SPDC(model,
-                    dataset,
                     train_loader, 
                     optimizer, 
                     scheduler,
@@ -190,24 +200,33 @@ def run(args, config):
 
 def test(config):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    torch.cuda.empty_cache()
+
     data_config = config['data']
-    dataset =  SPDCLoader(data_config['datapath'],
+    dataset = SPDCLoader(   datapath = data_config['datapath'],
                             nx=data_config['nx'], 
                             ny=data_config['ny'],
                             nz=data_config['nz'],
-                            F = data_config['F'],
-                            datapath2 = None,
+                            nin = data_config['nin'],
+                            nout = data_config['nout'],
                             sub_xy=data_config['sub_xy'],
-                            sub_z=data_config['sub_z'])
-    equation_dict  = dataset.data_dict
+                            sub_z=data_config['sub_z'],
+                            N=data_config['total_num'])
+    
+    equation_dict = dataset.data_dict
     dataloader = dataset.make_loader(n_sample=data_config['n_sample'],
                                      batch_size=config['test']['batchsize'],
                                      start=data_config['offset'])
+    del dataset
+    gc.collect()
 
     model = FNO3d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
+                  modes3=config['model']['modes3'],
                   fc_dim=config['model']['fc_dim'],
                   layers=config['model']['layers'],
+                  in_dim=config['model']['in_dim'],
+                  out_dim=config['model']['out_dim'],
                   activation_func=config['model']['act']).to(device)
     # Load from checkpoint
     if 'ckpt' in config['test']:
@@ -215,7 +234,7 @@ def test(config):
         ckpt = torch.load(ckpt_path)
         model.load_state_dict(ckpt['model'])
         print('Weights loaded from %s' % ckpt_path)
-    eval_SPDC(model, dataloader, config, equation_dict, device)
+    eval_SPDC(model,dataloader, config, equation_dict, device)
 
 
 if __name__ == '__main__':

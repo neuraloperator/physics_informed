@@ -2,8 +2,8 @@ data:
   name: spdc
   datapath: '/home/dor-hay.sha/project/data/spdc/fixed_pump_100.bin'
   total_num: 100
-  offset: 0
-  n_sample: 80
+  offset: 80
+  n_sample: 20
   nx: 121
   ny: 121
   nz: 10
@@ -23,17 +23,10 @@ model:
   act: gelu
   num_pad: 5
 
-train:
+test:
   batchsize: 1
-  epochs: 500
-  milestones: [150, 300, 450]
-  base_lr: 0.001
-  scheduler_gamma: 0.5
-  ic_loss: 10.0
-  f_loss: 1.0
-  xy_loss: 0.0
-  save_dir: 'spdc-FDM'
-  save_name: 'spdc-pretrain-eqn.pt'
+  ckpt: 'checkpoints/spdc-FDM/spdc-pretrain-eqn.pt'
+
 
 log:
   project: PINO-spdc-test

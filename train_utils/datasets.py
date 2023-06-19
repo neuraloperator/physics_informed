@@ -138,9 +138,7 @@ class SPDCLoader(object):
             sub_t: reduce the resoultion in z axis
             N: number of data samples
         '''
-        self.X = nx // sub_xy
-        self.Y = ny // sub_xy
-        self.Z =  nz // sub_z
+
         self.nin = nin
         self.nout = nout
         with open(file=datapath,mode="rb") as file:
@@ -148,9 +146,12 @@ class SPDCLoader(object):
         self.data = torch.tensor(self.data_dict["fields"], dtype=torch.complex128)[..., ::sub_xy, ::sub_xy, ::sub_z]
         del self.data_dict["fields"]
         gc.collect()
-        
+
+        self.X = self.data.size(2)
+        self.Y = self.data.size(3)
+        self.Z =  self.data.size(4)
+        self.F = self.data.size(1)
         self.data = self.data.permute(0,2,3,4,1)
-        self.F = self.data.size(4)
 
         real = self.data.real.reshape(N, self.X, self.Y, self.Z, 1, self.F)
         imag = self.data.imag.reshape(N, self.X, self.Y, self.Z, 1, self.F)
