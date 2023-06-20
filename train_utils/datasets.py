@@ -138,14 +138,12 @@ class SPDCLoader(object):
             sub_t: reduce the resoultion in z axis
             N: number of data samples
         '''
-
         self.nin = nin
         self.nout = nout
         with open(file=datapath,mode="rb") as file:
             self.data_dict = pickle.load(file)
-        self.data = torch.tensor(self.data_dict["fields"], dtype=torch.complex128)[..., ::sub_xy, ::sub_xy, ::sub_z]
-        print(type(self.data_dict["chi"]))
-        self.data_dict["chi"] = torch.tensor(self.data_dict["chi"], dtype=torch.complex128)[::sub_xy, ::sub_xy, ::sub_z]
+        self.data = torch.tensor(self.data_dict["fields"], dtype=torch.complex128,requires_grad=True)[..., ::sub_xy, ::sub_xy, ::sub_z]
+        self.data_dict["chi"] = torch.tensor(np.array(self.data_dict["chi"]), dtype=torch.complex128, requires_grad=True)[::sub_xy, ::sub_xy, ::sub_z]
         del self.data_dict["fields"]
 
         self.X = self.data.size(2)
@@ -158,6 +156,7 @@ class SPDCLoader(object):
         imag = self.data.imag.reshape(N, self.X, self.Y, self.Z, 1, self.F).type(torch.float32)
         self.data = torch.cat((real,imag),dim=-2)
         gc.collect()
+        torch.cuda.empty_cache()
 
 
 

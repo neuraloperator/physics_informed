@@ -61,7 +61,7 @@ def train_SPDC(model,
             out = model(x_in).reshape(batch_size,y.size(1),y.size(2),y.size(3) + padding, y.size(4))
             # out = out[...,:-padding,:, :] # if padding is not 0
 
-            data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,grid=x[...,-3],equation_dict=equation_dict)
+            data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,grid=x[...,-3:],equation_dict=equation_dict)
             total_loss = ic_loss * ic_weight + f_loss * f_weight + data_loss * data_weight
 
             optimizer.zero_grad()
@@ -127,7 +127,7 @@ def eval_SPDC(model,
         out = model(x_in).reshape(dataloader.batch_size,y.size(1),y.size(2),y.size(3) + padding, y.size(4))
             # out = out[...,:-padding,:, :] # if padding is not 0
 
-        data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,grid=x[...,-3],equation_dict=equation_dict)
+        data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,grid=x[...,-3:],equation_dict=equation_dict)
         test_err.append(data_loss.item())
         f_err.append(f_loss.item())
         ic_err.append(ic_loss.item())
@@ -167,6 +167,7 @@ def run(args, config):
                                        start=data_config['offset'],train=True)
     del dataset
     gc.collect()
+    torch.cuda.empty_cache()
 
     model = FNO3d(modes1=config['model']['modes1'],
                   modes2=config['model']['modes2'],
