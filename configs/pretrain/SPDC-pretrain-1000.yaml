@@ -1,6 +1,6 @@
 data:
   name: spdc
-  datapath: '/home/dor-hay.sha/project/data/spdc/fixed_pump_100.bin'
+  datapath: '/home/dor-hay.sha/project/data/spdc/fixed_pump_1000.bin'
   total_num: 1000
   offset: 0
   n_sample: 800
