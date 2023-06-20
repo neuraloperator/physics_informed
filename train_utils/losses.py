@@ -307,40 +307,60 @@ def transvese_laplacian(E,x,y):
     E_grad_yy=torch.autograd.grad(outputs=[E_grad_y],inputs=[y])
     return E_grad_xx+E_grad_yy
 
-#def coupled_wave_eq_PDE_Loss(model,X,k_arr: torch.tensor(dtype=torch.float64),omega_arr: torch.tensor(dtype=torch.float64), kappa_i, kappa_s) -> torch.float64:
-def coupled_wave_eq_PDE_Loss(model,X,k_arr,omega_arr, kappa_i, kappa_s) -> torch.float64:
-
+def coupled_wave_eq_PDE_Loss(u,grid,equation_dict,pump): 
     '''
     A NAIVE coupled wave equation pde loss calculation.
-    Params:
-        model - the nn, an object/function(?) which gets the spacial arguments 
-        and returns u - a tensor which describes the obtained function at the coordinates (explained also bellow).
-        X - spacial coordinates to evaluate at. a tensor of size (N,3). N - number of spacial points, 3 - |{x,y,z}|.
-        k_arr = [k_p,k_s,k_i]
-
-        u - a tensor of (E_vac_i,E_out_s) , E_vac_i and E_out_s are tensors of size (3,N). or putting it differently, u is of size (6,N).
-
+    Args:
+    u: The out put of the network, a tensor of (batchsize,X,Y,Z,4)
+    grid: Spatial coordinates to evaluate at. a tensor of size (batchsize,X,Y,Z,3)
+    equation_dict: A dictionary containing
+        "chi" -  np.ndarray of the shape (X,Y,Z) contain the chi2 
+        "k_pump" -  scalar, the k pump coef
+        "k_signal" -  scalar, the k signal coef
+        "k_idler" -  scalar, the k idler coef
+        "kappa_signal" -  scalar, the kappa signal coef
+        "kappa_idler" -  scalar, the kappa idler coef
+    return:
+        The residule of the equations in tensor shape (batchsize,X,Y,Z,4)
     '''
-    u=model(X)
-    x=X[0]
-    y=X[1]
-    z=X[2]
-    E_vac_i= u[:3,:]
-    E_out_s=u[3:,:]
-    delta_k=k_arr[0]-(k_arr[1]+k_arr[2])
+    x=grid[0]
+    y=grid[1]
+    z=grid[2]
 
-    E_vac_i_grad_z=torch.autograd.grad(outputs=[E_vac_i],inputs=[z])
-    E_vac_i_transverse_laplacian=transvese_laplacian(E_vac_i,x,y)
+    delta_k= equation_dict["k_pump"] - equation_dict["k_signal"] - equation_dict["k_idler"]
+    kappa_s = equation_dict["kappa_signal"]
+    kappa_i = equation_dict["kappa_idler"]
+    chi= equation_dict["chi"]
 
-    E_out_s_grad_z=torch.autograd.grad(outputs=[E_out_s],inputs=[z])
-    E_out_s_transverse_laplacian=transvese_laplacian(E_out_s,x,y)
+    signal_vac = u[...,0]
+    idler_vac = u[...,1]
+    signal_out = u[...,2]
+    idler_out = u[...,3]
 
-    residual_1 = -E_vac_i_transverse_laplacian/(2*k_arr[2]) + kappa_i*torch.exp(-1j*delta_k*z)*E_out_s.conj()-1j*E_vac_i_grad_z
-    residual_2 = -E_out_s_transverse_laplacian/(2*k_arr[1]) + kappa_s*torch.exp(-1j*delta_k*z)*E_vac_i.conj()-1j*E_out_s_grad_z
-    return abs(residual_1.sum())+abs(residual_2.sum())
+# May need to add u.sum() !!! 
+    signal_vac_z=torch.autograd.grad(outputs=[signal_vac],inputs=[z])
+    signal_vac_xx_yy=transvese_laplacian(signal_vac,x,y)
 
+    idler_vac_z=torch.autograd.grad(outputs=[idler_vac],inputs=[z])
+    idler_vac_xx_yy=transvese_laplacian(idler_vac,x,y)
 
-def SPDC_loss(u,y,equation_dict):
+    signal_out_z=torch.autograd.grad(outputs=[signal_out],inputs=[z])
+    signal_out_xx_yy=transvese_laplacian(signal_out,x,y)
+    
+    idler_out_z=torch.autograd.grad(outputs=[idler_out],inputs=[z])
+    idler_out_xx_yy=transvese_laplacian(idler_out,x,y)
+
+    res = lambda E1_z,E1_xx_yy,k1,kapa1,E2: (1j*E1_z + E1_xx_yy/(2*k1) - kapa1*chi*pump*torch.exp(-1j*delta_k*z)*E2.conj())
+
+    res1 = res(idler_out_z,idler_out_xx_yy, equation_dict["k_idler"],kappa_i,signal_vac)
+    res2 = res(idler_vac_z,idler_vac_xx_yy, equation_dict["k_idler"],kappa_i,signal_out)
+    res3 = res(signal_out_z,signal_out_xx_yy, equation_dict["k_signal"],kappa_s,idler_vac)
+    res4 = res(signal_vac_z,signal_vac_xx_yy, equation_dict["k_signal"],kappa_s,idler_out)
+
+    residual = torch.cat((res1,res2,res3,res4),dim=-1)
+    return residual
+
+def SPDC_loss(u,y,grid,equation_dict):
     '''
     Calcultae and return the data loss, pde loss and ic (Initial condition) loss
     Args:
@@ -375,6 +395,8 @@ def SPDC_loss(u,y,equation_dict):
     y0 = y[..., 0,:]
     ic_loss = LpLoss2D(u0, y0)
     data_loss = LpLoss3D(u,y)
-    pde_loss = 0 # TODO
+
+    pde_res = coupled_wave_eq_PDE_Loss(u=u,grid=grid,equation_dict=equation_dict,pump=y[...,0])
+    pde_loss = LpLoss3D(pde_res,torch.zero_like(u))
 
     return data_loss,ic_loss,pde_loss

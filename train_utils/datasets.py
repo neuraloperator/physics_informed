@@ -144,6 +144,8 @@ class SPDCLoader(object):
         with open(file=datapath,mode="rb") as file:
             self.data_dict = pickle.load(file)
         self.data = torch.tensor(self.data_dict["fields"], dtype=torch.complex128)[..., ::sub_xy, ::sub_xy, ::sub_z]
+        print(type(self.data_dict["chi"]))
+        self.data_dict["chi"] = torch.tensor(self.data_dict["chi"], dtype=torch.complex128)[::sub_xy, ::sub_xy, ::sub_z]
         del self.data_dict["fields"]
 
         self.X = self.data.size(2)

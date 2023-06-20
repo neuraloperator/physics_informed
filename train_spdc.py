@@ -61,7 +61,7 @@ def train_SPDC(model,
             out = model(x_in).reshape(batch_size,y.size(1),y.size(2),y.size(3) + padding, y.size(4))
             # out = out[...,:-padding,:, :] # if padding is not 0
 
-            data_loss,ic_loss,f_loss = SPDC_loss(out,y,equation_dict)
+            data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,grid=x[...,-3],equation_dict=equation_dict)
             total_loss = ic_loss * ic_weight + f_loss * f_weight + data_loss * data_weight
 
             optimizer.zero_grad()
@@ -69,24 +69,24 @@ def train_SPDC(model,
             optimizer.step()
 
             data_l2 += data_loss.item()
-            # train_pino += f_loss.item() # need to implement
+            train_pino += f_loss.item() # need to implement
             train_loss += total_loss.item()
         scheduler.step()
         data_l2 /= len(train_loader)
-        # train_pino /= len(train_loader)
+        train_pino /= len(train_loader)
         train_loss /= len(train_loader)
         if use_tqdm:
             pbar.set_description(
                 (
                     f'Epoch {e}, train loss: {train_loss:.5f} '
-                    # f'train f error: {train_pino:.5f}; '
+                    f'train f error: {train_pino:.5f}; '
                     f'data l2 error: {data_l2:.5f}'
                 )
             )
         if wandb and log:
             wandb.log(
                 {
-                    # 'Train f error': train_pino,
+                    'Train f error': train_pino,
                     'Train L2 error': data_l2,
                     'Train loss': train_loss,
                 }
@@ -127,13 +127,13 @@ def eval_SPDC(model,
         out = model(x_in).reshape(dataloader.batch_size,y.size(1),y.size(2),y.size(3) + padding, y.size(4))
             # out = out[...,:-padding,:, :] # if padding is not 0
 
-        data_loss,ic_loss,f_loss = SPDC_loss(out,y,equation_dict)
+        data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,grid=x[...,-3],equation_dict=equation_dict)
         test_err.append(data_loss.item())
-        # f_err.append(f_loss.item())
+        f_err.append(f_loss.item())
         ic_err.append(ic_loss.item())
 
-    # mean_f_err = np.mean(f_err)
-    # std_f_err = np.std(f_err, ddof=1) / np.sqrt(len(f_err))
+    mean_f_err = np.mean(f_err)
+    std_f_err = np.std(f_err, ddof=1) / np.sqrt(len(f_err))
 
     mean_err = np.mean(test_err)
     std_err = np.std(test_err, ddof=1) / np.sqrt(len(test_err))
@@ -142,7 +142,7 @@ def eval_SPDC(model,
     std_ic_err = np.std(ic_err, ddof=1) / np.sqrt(len(ic_err))
 
     print(f'==Averaged relative L2 error mean: {mean_err}, std error: {std_err}==\n'
-        #   f'==Averaged equation error mean: {mean_f_err}, std error: {std_f_err}==\n'
+          f'==Averaged equation error mean: {mean_f_err}, std error: {std_f_err}==\n'
           f'==Averaged initial condition error mean: {mean_ic_err}, std error: {std_ic_err}==')
 
 
