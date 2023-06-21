@@ -61,7 +61,7 @@ def train_SPDC(model,
             out = model(x_in).reshape(batch_size,y.size(1),y.size(2),y.size(3) + padding, y.size(4))
             # out = out[...,:-padding,:, :] # if padding is not 0
 
-            data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,grid=x[...,-3:],equation_dict=equation_dict)
+            data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,input=x,equation_dict=equation_dict)
             total_loss = ic_loss * ic_weight + f_loss * f_weight + data_loss * data_weight
 
             optimizer.zero_grad()

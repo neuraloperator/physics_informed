@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import pickle
 
-with open(file="fixed_pump_30.bin",mode="rb") as file:
+with open(file='/home/dor-hay.sha/project/data/spdc/fixed_pump_10.bin',mode="rb") as file:
     dict = pickle.load(file)
 fields = dict["fields"]
 

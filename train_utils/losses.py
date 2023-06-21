@@ -307,7 +307,7 @@ def transvese_laplacian(E,x,y):
     E_grad_yy, =torch.autograd.grad(outputs=E_grad_y.sum(),inputs=y)
     return E_grad_xx+E_grad_yy
 
-def coupled_wave_eq_PDE_Loss(u,grid,equation_dict,pump): 
+def coupled_wave_eq_PDE_Loss(u,input,equation_dict,pump): 
     '''
     A NAIVE coupled wave equation pde loss calculation.
     Args:
@@ -323,6 +323,7 @@ def coupled_wave_eq_PDE_Loss(u,grid,equation_dict,pump):
     return:
         The residule of the equations in tensor shape (batchsize,X,Y,Z,4)
     '''
+    grid = input[...,-3:]
     x=grid[...,0]
     y=grid[...,1]
     z=grid[...,2]
@@ -337,8 +338,8 @@ def coupled_wave_eq_PDE_Loss(u,grid,equation_dict,pump):
     signal_out = u[...,2]
     idler_out = u[...,3]
 
-# May need to add u.sum() !!! 
-    signal_vac_z, =torch.autograd.grad(outputs=signal_vac.sum(),inputs=z)
+    signal_vac_z =torch.autograd.grad(outputs=signal_vac.sum(),inputs=input, create_graph=True)[0][...,-1]
+    print(signal_vac_z.shape)
     signal_vac_xx_yy=transvese_laplacian(signal_vac,x,y)
 
     idler_vac_z, =torch.autograd.grad(outputs=idler_vac.sum(),inputs=z)
@@ -360,7 +361,7 @@ def coupled_wave_eq_PDE_Loss(u,grid,equation_dict,pump):
     residual = torch.cat((res1,res2,res3,res4),dim=-1)
     return residual
 
-def SPDC_loss(u,y,grid,equation_dict):
+def SPDC_loss(u,y,input,equation_dict):
     '''
     Calcultae and return the data loss, pde loss and ic (Initial condition) loss
     Args:
@@ -396,10 +397,7 @@ def SPDC_loss(u,y,grid,equation_dict):
     ic_loss = LpLoss2D(u0, y0)
     data_loss = LpLoss3D(u,y)
 
-    print(u.requires_grad)
-    print(y.requires_grad)
-    print(grid.requires_grad)
-    pde_res = coupled_wave_eq_PDE_Loss(u=u,grid=grid,equation_dict=equation_dict,pump=y[...,0])
-    pde_loss = LpLoss3D(pde_res,torch.zero_like(u))
+    pde_res = coupled_wave_eq_PDE_Loss(u=u,input=input,equation_dict=equation_dict,pump=y[...,0])
+    pde_loss = LpLoss3D(pde_res,torch.zero_like(pde_res))
 
     return data_loss,ic_loss,pde_loss
