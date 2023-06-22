@@ -294,17 +294,22 @@ def get_forcing(S):
 
 ## ML4Physics additions
 
-def transvese_laplacian(E,x,y):
+def transvese_laplacian(E,input):
     '''
     calculates the transverse laplacian given E and coordinates.
+    Args:
+    E: The tensor to be drived.
+    input: The input to the network. a tensor of size (batchsize,X,Y,Z,9)
 
+    return:
+    Tensor of size (batchsize,X,Y,Z) of the drived field
     NOTE:
     need to check if needs to multiply by minus
     '''
-    E_grad_x, =torch.autograd.grad(outputs=E.sum(),inputs=x)
-    E_grad_y, =torch.autograd.grad(outputs=E.sum(),inputs=y)
-    E_grad_xx, =torch.autograd.grad(outputs=E_grad_x.sum(),inputs=x)
-    E_grad_yy, =torch.autograd.grad(outputs=E_grad_y.sum(),inputs=y)
+    E_grad_x =torch.autograd.grad(outputs=E.sum(),inputs=input, create_graph=True)[0][...,-3]
+    E_grad_y =torch.autograd.grad(outputs=E.sum(),inputs=input, create_graph=True)[0][...,-2]
+    E_grad_xx =torch.autograd.grad(outputs=E_grad_x.sum(),inputs=input, create_graph=True)[0][...,-3]
+    E_grad_yy =torch.autograd.grad(outputs=E_grad_y.sum(),inputs=input, create_graph=True)[0][...,-2]
     return E_grad_xx+E_grad_yy
 
 def coupled_wave_eq_PDE_Loss(u,input,equation_dict,pump): 
@@ -312,7 +317,7 @@ def coupled_wave_eq_PDE_Loss(u,input,equation_dict,pump):
     A NAIVE coupled wave equation pde loss calculation.
     Args:
     u: The out put of the network, a tensor of (batchsize,X,Y,Z,4)
-    grid: Spatial coordinates to evaluate at. a tensor of size (batchsize,X,Y,Z,3)
+    input: The input to the network. a tensor of size (batchsize,X,Y,Z,9)
     equation_dict: A dictionary containing
         "chi" -  np.ndarray of the shape (X,Y,Z) contain the chi2 
         "k_pump" -  scalar, the k pump coef
@@ -323,10 +328,7 @@ def coupled_wave_eq_PDE_Loss(u,input,equation_dict,pump):
     return:
         The residule of the equations in tensor shape (batchsize,X,Y,Z,4)
     '''
-    grid = input[...,-3:]
-    x=grid[...,0]
-    y=grid[...,1]
-    z=grid[...,2]
+
 
     delta_k= equation_dict["k_pump"].item() - equation_dict["k_signal"].item() - equation_dict["k_idler"].item()
     kappa_s = equation_dict["kappa_signal"].item()
@@ -339,17 +341,16 @@ def coupled_wave_eq_PDE_Loss(u,input,equation_dict,pump):
     idler_out = u[...,3]
 
     signal_vac_z =torch.autograd.grad(outputs=signal_vac.sum(),inputs=input, create_graph=True)[0][...,-1]
-    print(signal_vac_z.shape)
-    signal_vac_xx_yy=transvese_laplacian(signal_vac,x,y)
+    signal_vac_xx_yy=transvese_laplacian(E=signal_vac, input=input)
 
-    idler_vac_z, =torch.autograd.grad(outputs=idler_vac.sum(),inputs=z)
-    idler_vac_xx_yy=transvese_laplacian(idler_vac,x,y)
+    idler_vac_z, =torch.autograd.grad(outputs=idler_vac.sum(),inputs=input, create_graph=True)[0][...,-1]
+    idler_vac_xx_yy=transvese_laplacian(E=idler_vac, input=input)
 
-    signal_out_z, =torch.autograd.grad(outputs=signal_out.sum(),inputs=z)
-    signal_out_xx_yy=transvese_laplacian(signal_out,x,y)
+    signal_out_z, =torch.autograd.grad(outputs=signal_out.sum(),inputs=input, create_graph=True)[0][...,-1]
+    signal_out_xx_yy=transvese_laplacian(E=signal_out, input=input)
     
-    idler_out_z, =torch.autograd.grad(outputs=idler_out.sum(),inputs=z)
-    idler_out_xx_yy=transvese_laplacian(idler_out,x,y)
+    idler_out_z, =torch.autograd.grad(outputs=idler_out.sum(),inputs=input, create_graph=True)[0][...,-1]
+    idler_out_xx_yy=transvese_laplacian(E=idler_out, input=input)
 
     res = lambda E1_z,E1_xx_yy,k1,kapa1,E2: (1j*E1_z + E1_xx_yy/(2*k1) - kapa1*chi*pump*torch.exp(-1j*delta_k*z)*E2.conj())
 
@@ -365,8 +366,9 @@ def SPDC_loss(u,y,input,equation_dict):
     '''
     Calcultae and return the data loss, pde loss and ic (Initial condition) loss
     Args:
-    u: The out put of the network
+    u: The output of the network
     y: The entire ground truth solution 
+    input: The input of the netwrok 
     equation_dict: A dictionary containing
         "chi" -  np.ndarray of the shape (X,Y,Z) contain the chi2 
         "k_pump" -  scalar, the k pump coef

@@ -127,7 +127,7 @@ def eval_SPDC(model,
         out = model(x_in).reshape(dataloader.batch_size,y.size(1),y.size(2),y.size(3) + padding, y.size(4))
             # out = out[...,:-padding,:, :] # if padding is not 0
 
-        data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,grid=x[...,-3:],equation_dict=equation_dict)
+        data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,input=x,equation_dict=equation_dict)
         test_err.append(data_loss.item())
         f_err.append(f_loss.item())
         ic_err.append(ic_loss.item())
@@ -159,7 +159,8 @@ def run(args, config):
                             nout = data_config['nout'],
                             sub_xy=data_config['sub_xy'],
                             sub_z=data_config['sub_z'],
-                            N=data_config['total_num'])
+                            N=data_config['total_num'],
+                            device=device)
     
     equation_dict = dataset.data_dict
     train_loader = dataset.make_loader(n_sample=data_config['n_sample'],

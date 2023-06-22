@@ -117,7 +117,7 @@ class BurgersLoader(object):
 
 class SPDCLoader(object):
     def __init__(self, datapath, nx = 121, ny = 121, nz =10,nin=3,nout=4, sub_xy=1, sub_z=1,
-                 N=10):
+                 N=10, device="cuda:0"):
         '''
         Load data from npy from a dictonary:
          "fields": np.ndarry shape (N,F=5, X, Y, Z)
@@ -142,10 +142,9 @@ class SPDCLoader(object):
         self.nout = nout
         with open(file=datapath,mode="rb") as file:
             self.data_dict = pickle.load(file)
-        self.data = torch.tensor(self.data_dict["fields"], dtype=torch.complex128,requires_grad=True)[..., ::sub_xy, ::sub_xy, ::sub_z]
-        self.data_dict["chi"] = torch.tensor(np.array(self.data_dict["chi"]), dtype=torch.complex128, requires_grad=True)[::sub_xy, ::sub_xy, ::sub_z]
+        self.data = torch.tensor(self.data_dict["fields"], dtype=torch.complex128,requires_grad=True,device=device)[..., ::sub_xy, ::sub_xy, ::sub_z]
+        self.data_dict["chi"] = torch.tensor(np.array(self.data_dict["chi"]), dtype=torch.complex128, requires_grad=True,device=device)[::sub_xy, ::sub_xy, ::sub_z]
         del self.data_dict["fields"]
-
         self.X = self.data.size(2)
         self.Y = self.data.size(3)
         self.Z =  self.data.size(4)
