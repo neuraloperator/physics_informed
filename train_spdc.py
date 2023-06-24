@@ -195,7 +195,7 @@ def run(args, config):
                     scheduler,
                     config,
                     equation_dict,
-                    rank=0, 
+                    rank=device, 
                     log=args.log,
                     project=config['log']['project'],
                     group=config['log']['group'])
@@ -212,7 +212,8 @@ def test(config):
                             nout = data_config['nout'],
                             sub_xy=data_config['sub_xy'],
                             sub_z=data_config['sub_z'],
-                            N=data_config['total_num'])
+                            N=data_config['total_num'],
+                            device=device)
     
     equation_dict = dataset.data_dict
     dataloader = dataset.make_loader(n_sample=data_config['n_sample'],
@@ -236,7 +237,7 @@ def test(config):
         ckpt = torch.load(ckpt_path)
         model.load_state_dict(ckpt['model'])
         print('Weights loaded from %s' % ckpt_path)
-    eval_SPDC(model,dataloader, config, equation_dict, device)
+    eval_SPDC(model=model,dataloader=dataloader, config=config, equation_dict=equation_dict, device=device)
 
 
 if __name__ == '__main__':

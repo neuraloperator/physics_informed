@@ -306,10 +306,10 @@ def transvese_laplacian(E,input):
     NOTE:
     need to check if needs to multiply by minus
     '''
-    E_grad_x =torch.autograd.grad(outputs=E.sum(),inputs=input, create_graph=True)[0][...,-3]
-    E_grad_y =torch.autograd.grad(outputs=E.sum(),inputs=input, create_graph=True)[0][...,-2]
-    E_grad_xx =torch.autograd.grad(outputs=E_grad_x.sum(),inputs=input, create_graph=True)[0][...,-3]
-    E_grad_yy =torch.autograd.grad(outputs=E_grad_y.sum(),inputs=input, create_graph=True)[0][...,-2]
+    E_grad_x =torch.autograd.grad(outputs=E.sum(),inputs=input,retain_graph =True, create_graph=True)[0][...,-3]
+    E_grad_y =torch.autograd.grad(outputs=E.sum(),inputs=input,retain_graph =True, create_graph=True)[0][...,-2]
+    E_grad_xx =torch.autograd.grad(outputs=E_grad_x.sum(),inputs=input)[0][...,-3]
+    E_grad_yy =torch.autograd.grad(outputs=E_grad_y.sum(),inputs=input)[0][...,-2]
     return E_grad_xx+E_grad_yy
 
 def coupled_wave_eq_PDE_Loss(u,input,equation_dict,pump): 
