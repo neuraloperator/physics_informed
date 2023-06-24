@@ -7,7 +7,7 @@ data:
   nx: 121
   ny: 121
   nz: 10
-  sub_xy: 10
+  sub_xy: 25
   sub_z: 1
   nin: 3
   nout: 4

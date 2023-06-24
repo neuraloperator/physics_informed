@@ -142,7 +142,7 @@ class SPDCLoader(object):
         self.nout = nout
         with open(file=datapath,mode="rb") as file:
             self.data_dict = pickle.load(file)
-        self.data = torch.tensor(self.data_dict["fields"], dtype=torch.complex128,requires_grad=True,device=device)[..., ::sub_xy, ::sub_xy, ::sub_z]
+        self.data = torch.tensor(self.data_dict["fields"], dtype=torch.complex128,requires_grad=True)[..., ::sub_xy, ::sub_xy, ::sub_z]
         self.data_dict["chi"] = torch.tensor(np.array(self.data_dict["chi"]), dtype=torch.complex128, requires_grad=True,device=device)[::sub_xy, ::sub_xy, ::sub_z]
         del self.data_dict["fields"]
         self.X = self.data.size(2)
