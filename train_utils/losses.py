@@ -298,19 +298,22 @@ def transvese_laplacian(E,input):
     '''
     calculates the transverse laplacian given E and coordinates.
     Args:
-    E: The tensor to be drived.
-    input: The input to the network. a tensor of size (batchsize,X,Y,Z,9)
+    E: The tensor to be derived.
+    input: The input to the network. a tensor of size (batchsize,X,Y,Z,9) where input[...,-3:] = grid_x,grid_y,grid_z
 
     return:
-    Tensor of size (batchsize,X,Y,Z) of the drived field
+    Tuple (E_z,E_xx_yy) each of which is a tensor in shape (batchsize,X,Y,Z) of the derived field according to the z axis and the tranverse laplecian
     NOTE:
     need to check if needs to multiply by minus
     '''
-    E_grad_x =torch.autograd.grad(outputs=E.sum(),inputs=input,retain_graph =True, create_graph=True)[0][...,-3]
-    E_grad_y =torch.autograd.grad(outputs=E.sum(),inputs=input,retain_graph =True, create_graph=True)[0][...,-2]
-    E_grad_xx =torch.autograd.grad(outputs=E_grad_x.sum(),inputs=input)[0][...,-3]
-    E_grad_yy =torch.autograd.grad(outputs=E_grad_y.sum(),inputs=input)[0][...,-2]
-    return E_grad_xx+E_grad_yy
+    grad =torch.autograd.grad(outputs=E.sum(),inputs=input,retain_graph=True, create_graph=True)[0]
+    E_z = grad[...,-1]
+    E_x = grad[...,-3]
+    E_y = grad[...,-2]
+    E_xx =torch.autograd.grad(outputs=E_x.sum(),inputs=input, create_graph=True)[0][...,-3]
+    E_yy =torch.autograd.grad(outputs=E_y.sum(),inputs=input, create_graph=True)[0][...,-2]
+    E_xx_yy = E_xx + E_yy
+    return (E_z,E_xx_yy)
 
 def coupled_wave_eq_PDE_Loss(u,input,equation_dict,pump): 
     '''
@@ -339,20 +342,17 @@ def coupled_wave_eq_PDE_Loss(u,input,equation_dict,pump):
     idler_vac = u[...,1]
     signal_out = u[...,2]
     idler_out = u[...,3]
+    grid_z = input[...,-1]
 
-    signal_vac_z =torch.autograd.grad(outputs=signal_vac.sum(),inputs=input, create_graph=True)[0][...,-1]
-    signal_vac_xx_yy=transvese_laplacian(E=signal_vac, input=input)
+    signal_vac_z ,signal_vac_xx_yy= transvese_laplacian(E=signal_vac, input=input)
 
-    idler_vac_z, =torch.autograd.grad(outputs=idler_vac.sum(),inputs=input, create_graph=True)[0][...,-1]
-    idler_vac_xx_yy=transvese_laplacian(E=idler_vac, input=input)
+    idler_vac_z, idler_vac_xx_yy=transvese_laplacian(E=idler_vac, input=input)
 
-    signal_out_z, =torch.autograd.grad(outputs=signal_out.sum(),inputs=input, create_graph=True)[0][...,-1]
-    signal_out_xx_yy=transvese_laplacian(E=signal_out, input=input)
+    signal_out_z, signal_out_xx_yy=transvese_laplacian(E=signal_out, input=input)
     
-    idler_out_z, =torch.autograd.grad(outputs=idler_out.sum(),inputs=input, create_graph=True)[0][...,-1]
-    idler_out_xx_yy=transvese_laplacian(E=idler_out, input=input)
+    idler_out_z, idler_out_xx_yy=transvese_laplacian(E=idler_out, input=input)
 
-    res = lambda E1_z,E1_xx_yy,k1,kapa1,E2: (1j*E1_z + E1_xx_yy/(2*k1) - kapa1*chi*pump*torch.exp(-1j*delta_k*z)*E2.conj())
+    res = lambda E1_z,E1_xx_yy,k1,kapa1,E2: (1j*E1_z + E1_xx_yy/(2*k1) - kapa1*chi*pump*torch.exp(-1j*delta_k*grid_z)*E2.conj())
 
     res1 = res(idler_out_z,idler_out_xx_yy, equation_dict["k_idler"].item(),kappa_i,signal_vac)
     res2 = res(idler_vac_z,idler_vac_xx_yy, equation_dict["k_idler"].item(),kappa_i,signal_out)
