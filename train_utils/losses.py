@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
+import gc
 
 
 def FDM_Darcy(u, a, D=1):
@@ -336,7 +337,7 @@ def coupled_wave_eq_PDE_Loss(u,input,equation_dict,pump):
     delta_k= equation_dict["k_pump"].item() - equation_dict["k_signal"].item() - equation_dict["k_idler"].item()
     kappa_s = equation_dict["kappa_signal"].item()
     kappa_i = equation_dict["kappa_idler"].item()
-    chi= equation_dict["chi"]
+    chi= equation_dict["chi"].to(u.device)
 
     signal_vac = u[...,0]
     idler_vac = u[...,1]
@@ -400,6 +401,8 @@ def SPDC_loss(u,y,input,equation_dict):
     data_loss = LpLoss3D(u,y)
 
     pde_res = coupled_wave_eq_PDE_Loss(u=u,input=input,equation_dict=equation_dict,pump=y[...,0])
-    pde_loss = LpLoss3D(pde_res,torch.zero_like(pde_res))
+    pde_loss = LpLoss3D(pde_res,torch.zeros_like(pde_res))
 
+    gc.collect()
+    torch.cuda.empty_cache()
     return data_loss,ic_loss,pde_loss

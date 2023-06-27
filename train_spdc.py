@@ -64,6 +64,8 @@ def train_SPDC(model,
             data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,input=x,equation_dict=equation_dict)
             total_loss = ic_loss * ic_weight + f_loss * f_weight + data_loss * data_weight
 
+            gc.collect()
+            torch.cuda.empty_cache()
             optimizer.zero_grad()
             total_loss.backward()
             optimizer.step()
