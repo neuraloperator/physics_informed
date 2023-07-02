@@ -360,8 +360,8 @@ def coupled_wave_eq_PDE_Loss(u,input,equation_dict,pump):
     res3 = res(signal_out_z,signal_out_xx_yy, equation_dict["k_signal"].item(),kappa_s,idler_vac)
     res4 = res(signal_vac_z,signal_vac_xx_yy, equation_dict["k_signal"].item(),kappa_s,idler_out)
 
-    residual = torch.cat((res1,res2,res3,res4),dim=-1)
-    return residual
+    residual = torch.cat((res1,res2,res3,res4),dim=-1) # may need to add differend weights
+    return torch.abs(residual)
 
 def fourier_diff_of_E(E,k):
     factor=2j*np.pi
@@ -473,15 +473,20 @@ def SPDC_loss(u,y,input,equation_dict):
     
     LpLoss3D = LpLoss(d=3,size_average=True)
     LpLoss2D = LpLoss(d=2,size_average=True)
+    mse_loss = lambda x: F.mse_loss(torch.abs(x),torch.zeros(x.shape,device=x.device,dtype=torch.abs(x).dtype))
 
     u0 = u[..., 0,:]
     y0 = y[..., 0,:]
-    ic_loss = LpLoss2D(u0, y0)
-    data_loss = LpLoss3D(u,y)
+    # ic_loss = LpLoss2D(u0, y0)
+    ic_loss = mse_loss(u0-y0)
+
+
+    # data_loss = LpLoss3D(u,y) # not sure what loss should be used
+    # data_loss = F.mse_loss(torch.abs(u-y),torch.zeros_like(torch.abs(u),device=u.device))
+    data_loss = mse_loss(u-y)
 
     pde_res = coupled_wave_eq_PDE_Loss(u=u,input=input,equation_dict=equation_dict,pump=y[...,0])
-    pde_loss = LpLoss3D(pde_res,torch.zeros_like(pde_res))
-
+    pde_loss = mse_loss(pde_res)
     gc.collect()
     torch.cuda.empty_cache()
     return data_loss,ic_loss,pde_loss

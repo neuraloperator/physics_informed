@@ -71,7 +71,7 @@ def train_SPDC(model,
             optimizer.step()
 
             data_l2 += data_loss.item()
-            train_pino += f_loss.item() # need to implement
+            train_pino += f_loss.item() 
             train_loss += total_loss.item()
         scheduler.step()
         data_l2 /= len(train_loader)
