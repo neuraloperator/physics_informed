@@ -329,6 +329,8 @@ def coupled_wave_eq_PDE_Loss(u,input,equation_dict,pump):
         "k_idler" -  scalar, the k idler coef
         "kappa_signal" -  scalar, the kappa signal coef
         "kappa_idler" -  scalar, the kappa idler coef
+
+
     return:
         The residule of the equations in tensor shape (batchsize,X,Y,Z,4)
     '''
@@ -346,11 +348,8 @@ def coupled_wave_eq_PDE_Loss(u,input,equation_dict,pump):
     grid_z = input[...,-1]
 
     signal_vac_z ,signal_vac_xx_yy= transvese_laplacian(E=signal_vac, input=input)
-
     idler_vac_z, idler_vac_xx_yy=transvese_laplacian(E=idler_vac, input=input)
-
     signal_out_z, signal_out_xx_yy=transvese_laplacian(E=signal_out, input=input)
-    
     idler_out_z, idler_out_xx_yy=transvese_laplacian(E=idler_out, input=input)
 
     res = lambda E1_z,E1_xx_yy,k1,kapa1,E2: (1j*E1_z + E1_xx_yy/(2*k1) - kapa1*chi*pump*torch.exp(-1j*delta_k*grid_z)*E2.conj())
@@ -362,6 +361,56 @@ def coupled_wave_eq_PDE_Loss(u,input,equation_dict,pump):
 
     residual = torch.cat((res1,res2,res3,res4),dim=-1) # may need to add differend weights
     return torch.abs(residual)
+
+
+def coupled_wave_eq_PDE_Loss_numeric(u,equation_dict,grid_z,pump):
+    '''
+    A NAIVE coupled wave equation pde loss calculation numercial.
+    Args:
+    u: The out put of the network, a tensor of (batchsize,X,Y,Z,4)
+    equation_dict: A dictionary containing
+        "chi" -  np.ndarray of the shape (X,Y,Z) contain the chi2 
+        "k_pump" -  scalar, the k pump coef
+        "k_signal" -  scalar, the k signal coef
+        "k_idler" -  scalar, the k idler coef
+        "kappa_signal" -  scalar, the kappa signal coef
+        "kappa_idler" -  scalar, the kappa idler coef
+
+
+    return:
+        The residule of the equations in tensor shape (batchsize,X,Y,Z,4)
+    '''
+
+    delta_k= equation_dict["k_pump"].item() - equation_dict["k_signal"].item() - equation_dict["k_idler"].item()
+    kappa_s = equation_dict["kappa_signal"].item()
+    kappa_i = equation_dict["kappa_idler"].item()
+    chi= equation_dict["chi"][1:-1,1:-1,1:-1,None].to(u.device)
+    pump = pump.permute(1,2,3,0)[1:-1,1:-1,1:-1]
+    grid_z = grid_z.permute(1,2,3,0)[1:-1,1:-1,1:-1]
+    dx = 2e-6 # SHOULD not be hardcoded
+    dy = 2e-6
+    dz = 10e-6
+
+    u = u.permute(1,2,3,0,4)
+    signal_vac = u[...,0]
+    idler_vac = u[...,1]
+    signal_out = u[...,2]
+    idler_out = u[...,3]
+
+    dd_dxx = lambda E: (E[2:,1:-1]+E[:-2,1:-1]-2*E[1:-1,1:-1])/dx**2
+    dd_dyy = lambda E: (E[1:-1,2:]+E[1:-1,:-2]-2*E[1:-1,1:-1])/dy**2
+    trans_laplasian=  lambda E: (dd_dxx(E)+dd_dyy(E))
+    d_dz = lambda E: (E[:,:,2:] - E[:,:,:-2])/(2*dz)
+
+    res = lambda E1,k1,kapa1,E2: (1j*d_dz(E1)[1:-1,1:-1] + trans_laplasian(E1)[:,:,1:-1]/(2*k1) - kapa1*chi*pump*torch.exp(-1j*delta_k*grid_z)*E2[1:-1,1:-1,1:-1].conj())
+
+    res1 = res(idler_out, equation_dict["k_idler"].item(),kappa_i,signal_vac)
+    res2 = res(idler_vac, equation_dict["k_idler"].item(),kappa_i,signal_out)
+    res3 = res(signal_out, equation_dict["k_signal"].item(),kappa_s,idler_vac)
+    res4 = res(signal_vac, equation_dict["k_signal"].item(),kappa_s,idler_out)
+
+    residual = torch.cat((res1,res2,res3,res4),dim=-1) # may need to add differend weights
+    return torch.abs(residual).type(torch.float32)
 
 def fourier_diff_of_E(E,k):
     factor=2j*np.pi
@@ -442,7 +491,7 @@ def coupled_wave_eq_PDE_Loss_fourier(u,input,k_arr, kappa_i, kappa_s):
 
     return torch.sum(abs(residual_1))+torch.sum(abs(residual_2))+torch.sum(abs(residual_3))+torch.sum(abs(residual_4))
 
-def SPDC_loss(u,y,input,equation_dict):
+def SPDC_loss(u,y,input,equation_dict, grad="autograd"):
     '''
     Calcultae and return the data loss, pde loss and ic (Initial condition) loss
     Args:
@@ -456,6 +505,11 @@ def SPDC_loss(u,y,input,equation_dict):
         "k_idler" -  scalar, the k idler coef
         "kappa_signal" -  scalar, the kappa signal coef
         "kappa_idler" -  scalar, the kappa idler coef
+    grad: Method of derivation: 
+        "autograd" - torch.guto gard
+        "numeric" - numericaly
+        "fourier_diff" - fourier diffrentiention
+        "none" - does not calculate pde loss
 
     Return: (data_loss,ic_loss,pde_loss)
     '''
@@ -473,20 +527,22 @@ def SPDC_loss(u,y,input,equation_dict):
     
     LpLoss3D = LpLoss(d=3,size_average=True)
     LpLoss2D = LpLoss(d=2,size_average=True)
-    mse_loss = lambda x: F.mse_loss(torch.abs(x),torch.zeros(x.shape,device=x.device,dtype=torch.abs(x).dtype))
+    mse_loss = lambda x: F.mse_loss(torch.abs(x),torch.zeros(x.shape,device=x.device,dtype=input.dtype))
 
     u0 = u[..., 0,:]
     y0 = y[..., 0,:]
-    # ic_loss = LpLoss2D(u0, y0)
     ic_loss = mse_loss(u0-y0)
-
-
-    # data_loss = LpLoss3D(u,y) # not sure what loss should be used
-    # data_loss = F.mse_loss(torch.abs(u-y),torch.zeros_like(torch.abs(u),device=u.device))
     data_loss = mse_loss(u-y)
 
-    pde_res = coupled_wave_eq_PDE_Loss(u=u,input=input,equation_dict=equation_dict,pump=y[...,0])
+    if grad == "autograd":
+        pde_res = coupled_wave_eq_PDE_Loss(u=u,input=input,equation_dict=equation_dict,pump=y[...,0])
+    elif grad == "numeric":
+        pde_res = coupled_wave_eq_PDE_Loss_numeric(u=u,equation_dict=equation_dict,grid_z=input[...,-1],pump=y[...,0])
+    elif grad == "none":
+        pde_res = torch.zeros(u.shape,dtype=input.dtype)
+    
     pde_loss = mse_loss(pde_res)
     gc.collect()
     torch.cuda.empty_cache()
+
     return data_loss,ic_loss,pde_loss
