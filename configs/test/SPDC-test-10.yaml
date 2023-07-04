@@ -19,13 +19,13 @@ model:
   modes3: [8, 8, 8, 8]
   fc_dim: 128
   in_dim: 9
-  out_dim: 8
+  out_dim: 4
   act: gelu
   num_pad: 5
 
 test:
   batchsize: 1
-  ckpt: 'checkpoints/spdc-FDM/spdc-pretrain-eqn.pt'
+  ckpt: 'checkpoints/spdc-FDM/spdc-FNO-eqn.pt'
 
 
 log:

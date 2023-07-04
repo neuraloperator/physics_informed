@@ -319,7 +319,7 @@ def transvese_laplacian(E,input):
 
     #imag part
     E_imag = E[...,1]
-    grad =torch.autograd.grad(outputs=E_real.sum(),inputs=input,retain_graph=True, create_graph=True)[0]
+    grad =torch.autograd.grad(outputs=E_imag.sum(),inputs=input,retain_graph=True, create_graph=True)[0]
     E_z_imag = grad[...,-1]
     E_x_imag = grad[...,-3]
     E_y_imag = grad[...,-2]
@@ -525,7 +525,7 @@ def coupled_wave_eq_PDE_Loss_fourier(u,input,k_arr, kappa_i, kappa_s):
 
     return torch.sum(abs(residual_1))+torch.sum(abs(residual_2))+torch.sum(abs(residual_3))+torch.sum(abs(residual_4))
 
-def SPDC_loss(u,y,input,equation_dict, grad="none"):
+def SPDC_loss(u,y,input,equation_dict, grad="autograd"):
     '''
     Calcultae and return the data loss, pde loss and ic (Initial condition) loss
     Args:

@@ -22,15 +22,16 @@ except ImportError:
 
 def plot_av_sol(u,y):
 
-    N,nx,ny,nz,nfields = u.shape
-    u = u.reshape(N,nx, ny, nz,2,nfields//2)
-    y = y.reshape(N,nx, ny, nz,2,nfields//2)
+    N,nx,ny,nz,u_nfields = u.shape
+    y_nfields = y.shape[4]
+    u = u.reshape(N,nx, ny, nz,2,u_nfields//2)
+    y = y.reshape(N,nx, ny, nz,2,y_nfields//2)[...,-2:]
     u = (u[...,0,:] + 1j*u[...,1,:]).detach().numpy()
     y = (y[...,0,:] + 1j*y[...,1,:]).detach().numpy()
     for sol,src in zip([u,y],["prediction", "grt"]):
-        dict = {0:"signal vac", 1:"idler vac", 2:"signal out", 3:"idler out"}
+        dict = {0:"signal out", 1:"idler out"}
         X,Y = np.meshgrid(range(u.shape[1]),range(u.shape[2]))
-        for i in range(4):
+        for i in range(2):
             fig, ax = plt.subplots(dpi=150,subplot_kw={"projection": "3d"})
             surf = ax.plot_surface(X, Y, (np.mean(np.abs(sol[...,-1,i])**2,axis=0)), cmap=cm.coolwarm,linewidth=0, antialiased=False)
             fig.colorbar(surf, shrink=0.5, aspect=5)
@@ -67,6 +68,7 @@ def draw_SPDC(model,
                  padding = 0,
                  use_tqdm=True):
     model.eval()
+    nout = config['data']['nout']
     if use_tqdm:
         pbar = tqdm(dataloader, dynamic_ncols=True, smoothing=0.05)
     else:
@@ -79,7 +81,7 @@ def draw_SPDC(model,
         torch.cuda.empty_cache()
         x, y = x.to(device), y.to(device)
         x_in = F.pad(x,(0,0,0,padding),"constant",0)
-        out = model(x_in).reshape(dataloader.batch_size,y.size(1),y.size(2),y.size(3) + padding, y.size(4))
+        out = model(x_in).reshape(dataloader.batch_size,y.size(1),y.size(2),y.size(3) + padding, 2*nout)
             # out = out[...,:-padding,:, :] # if padding is not 0
         total_out = torch.cat((total_out,out.to("cpu")),dim=0)
         total_y = torch.cat((total_y,y.to("cpu")),dim=0)
