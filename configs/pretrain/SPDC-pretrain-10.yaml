@@ -10,7 +10,7 @@ data:
   sub_xy: 2
   sub_z: 1
   nin: 3
-  nout: 4
+  nout: 2
 
 model:
   layers: [64, 64, 64, 64, 64]
@@ -19,7 +19,7 @@ model:
   modes3: [8, 8, 8, 8]
   fc_dim: 128
   in_dim: 9
-  out_dim: 8
+  out_dim: 4
   act: gelu
   num_pad: 5
 

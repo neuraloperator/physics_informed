@@ -10,7 +10,7 @@ data:
   sub_xy: 4
   sub_z: 1
   nin: 3
-  nout: 4
+  nout: 2
 
 model:
   layers: [64, 64, 64, 64, 64]

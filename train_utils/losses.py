@@ -299,29 +299,49 @@ def transvese_laplacian(E,input):
     '''
     calculates the transverse laplacian given E and coordinates.
     Args:
-    E: The tensor to be derived.
+    E: The tensor to be derived of shape (batchsize,X,Y,Z,2) the last index is the real and imag part.
     input: The input to the network. a tensor of size (batchsize,X,Y,Z,9) where input[...,-3:] = grid_x,grid_y,grid_z
 
     return:
-    Tuple (E_z,E_xx_yy) each of which is a tensor in shape (batchsize,X,Y,Z) of the derived field according to the z axis and the tranverse laplecian
+    Tuple (E_z,E_xx_yy) each of which is a complex tensor in shape (batchsize,X,Y,Z) of the derived field according to the z axis and the tranverse laplecian
     NOTE:
     need to check if needs to multiply by minus
     '''
-    grad =torch.autograd.grad(outputs=E.sum(),inputs=input,retain_graph=True, create_graph=True)[0]
-    E_z = grad[...,-1]
-    E_x = grad[...,-3]
-    E_y = grad[...,-2]
-    E_xx =torch.autograd.grad(outputs=E_x.sum(),inputs=input, create_graph=True)[0][...,-3]
-    E_yy =torch.autograd.grad(outputs=E_y.sum(),inputs=input, create_graph=True)[0][...,-2]
-    E_xx_yy = E_xx + E_yy
+    #real part
+    E_real = E[...,0]
+    grad =torch.autograd.grad(outputs=E_real.sum(),inputs=input,retain_graph=True, create_graph=True)[0]
+    E_z_real = grad[...,-1]
+    E_x_real = grad[...,-3]
+    E_y_real = grad[...,-2]
+    E_xx_real =torch.autograd.grad(outputs=E_x_real.sum(),inputs=input, create_graph=True)[0][...,-3]
+    E_yy_real =torch.autograd.grad(outputs=E_y_real.sum(),inputs=input, create_graph=True)[0][...,-2]
+    E_xx_yy_real = E_xx_real + E_yy_real
+
+    #imag part
+    E_imag = E[...,1]
+    grad =torch.autograd.grad(outputs=E_real.sum(),inputs=input,retain_graph=True, create_graph=True)[0]
+    E_z_imag = grad[...,-1]
+    E_x_imag = grad[...,-3]
+    E_y_imag = grad[...,-2]
+    E_xx_imag =torch.autograd.grad(outputs=E_x_imag.sum(),inputs=input, create_graph=True)[0][...,-3]
+    E_yy_imag =torch.autograd.grad(outputs=E_y_imag.sum(),inputs=input, create_graph=True)[0][...,-2]
+    E_xx_yy_imag = E_xx_imag + E_yy_imag
+
+    E_z = E_z_real + 1j*E_z_imag
+    E_xx_yy = E_xx_yy_real + 1j*E_xx_yy_imag
     return (E_z,E_xx_yy)
 
-def coupled_wave_eq_PDE_Loss(u,y,input,equation_dict,pump): 
+def coupled_wave_eq_PDE_Loss(u,y,input,equation_dict): 
     '''
     A NAIVE coupled wave equation pde loss calculation.
     Args:
-    u: The out put of the network, a tensor of (batchsize,X,Y,Z,4)
-    input: The input to the network. a tensor of size (batchsize,X,Y,Z,9)
+    u: The out put of the network, a tensor of (batchsize,X,Y,Z,2,2)
+        The last index is the index (signal out, idler out)
+        The one before is the real/imag part (real, imag)
+    y: ground truth,  a tensor of size (batchsize,X,Y,Z,2,5)
+        The last index is the index (pump,signal vac, idler vac, signal out, idler out)
+    input: The input to the network. a tensor of size (batchsize,X,Y,9)
+        The last index is the index (pump,signal vac, idler vac, grid_x ,grid_y, grid_z), each of the first 3 appears twice, once  real and once imag part
     equation_dict: A dictionary containing
         "chi" -  np.ndarray of the shape (X,Y,Z) contain the chi2 
         "k_pump" -  scalar, the k pump coef
@@ -332,7 +352,7 @@ def coupled_wave_eq_PDE_Loss(u,y,input,equation_dict,pump):
 
 
     return:
-        The residule of the equations in tensor shape (batchsize,X,Y,Z,4)
+        The residule of the equations in tensor shape (batchsize,X,Y,Z,2)
     '''
 
 
@@ -341,29 +361,42 @@ def coupled_wave_eq_PDE_Loss(u,y,input,equation_dict,pump):
     kappa_i = equation_dict["kappa_idler"].item()
     chi= equation_dict["chi"].to(u.device)
 
-    signal_vac = y[...,0]
-    idler_vac = y[...,1]
+
     signal_out = u[...,0]
     idler_out = u[...,1]
-    grid_z = input[...,-1]
 
-    # signal_vac_z ,signal_vac_xx_yy= transvese_laplacian(E=signal_vac, input=input)
-    # idler_vac_z, idler_vac_xx_yy=transvese_laplacian(E=idler_vac, input=input)
     signal_out_z, signal_out_xx_yy=transvese_laplacian(E=signal_out, input=input)
     idler_out_z, idler_out_xx_yy=transvese_laplacian(E=idler_out, input=input)
 
+    u_full = u[...,0,:] + 1j*u[...,1,:]
+    y_full = y[...,0,:] + 1j*y[...,1,:]
+
+    pump = y_full[...,0]
+    signal_vac = y_full[...,1]
+    idler_vac = y_full[...,2]
+    signal_out = u_full[...,0]
+    idler_out = u_full[...,1]
+    grid_z = input[...,-1]
+
     res = lambda E1_z,E1_xx_yy,k1,kapa1,E2: (1j*E1_z + E1_xx_yy/(2*k1) - kapa1*chi*pump*torch.exp(-1j*delta_k*grid_z)*E2.conj())
 
+    # print("idler_out_z",idler_out_z.shape)
+    # print("idler_out_xx_yy",idler_out_xx_yy.shape)
+    # print("signal_out_z",signal_out_z.shape)
+    # print("signal_out_xx_yy",signal_out_xx_yy.shape)
+    # print("signal_vac",signal_vac.shape)
+    # print("idler_vac",idler_vac.shape)
+    # print("chi",chi.shape)
+    # print("pump",pump.shape)
+    # print("grid_z",grid_z.shape)
     res1 = res(idler_out_z,idler_out_xx_yy, equation_dict["k_idler"].item(),kappa_i,signal_vac)
-    # res2 = res(idler_vac_z,idler_vac_xx_yy, equation_dict["k_idler"].item(),kappa_i,signal_out)
-    res3 = res(signal_out_z,signal_out_xx_yy, equation_dict["k_signal"].item(),kappa_s,idler_vac)
-    # res4 = res(signal_vac_z,signal_vac_xx_yy, equation_dict["k_signal"].item(),kappa_s,idler_out)
+    res2 = res(signal_out_z,signal_out_xx_yy, equation_dict["k_signal"].item(),kappa_s,idler_vac)
 
-    # residual = torch.cat((res1,res2,res3,res4),dim=-1) # may need to add differend weights
-    residual = torch.cat((res1,res3),dim=-1) # may need to add differend weights
+    residual = torch.cat((res1,res2),dim=-1) # may need to add differend weights
     return torch.abs(residual).type(torch.float32)
 
 
+# ------ Need to be updated ---------
 def coupled_wave_eq_PDE_Loss_numeric(u,equation_dict,grid_z,pump):
     '''
     A NAIVE coupled wave equation pde loss calculation numercial.
@@ -492,12 +525,13 @@ def coupled_wave_eq_PDE_Loss_fourier(u,input,k_arr, kappa_i, kappa_s):
 
     return torch.sum(abs(residual_1))+torch.sum(abs(residual_2))+torch.sum(abs(residual_3))+torch.sum(abs(residual_4))
 
-def SPDC_loss(u,y,input,equation_dict, grad="autograd"):
+def SPDC_loss(u,y,input,equation_dict, grad="none"):
     '''
     Calcultae and return the data loss, pde loss and ic (Initial condition) loss
     Args:
-    u: The output of the network
-    y: The entire ground truth solution 
+    u: The output of the network - tensor of shape (batch size, Nx, Ny, Nz, 2*nout) - where nout is the number of out fields (*2 because of both real and imag part). The fields order: (signal out, idler outs)
+    y: The entire ground truth solution - tensor of shape 
+        (batch size, Nx, Ny, Nz, 2*(nin+nout)) - where nout is the number of out fields (*2 because of both real and imag part). The fields order:      (pump,signal vac, idler vac, signal out, idler out)
     input: The input of the netwrok 
     equation_dict: A dictionary containing
         "chi" -  np.ndarray of the shape (X,Y,Z) contain the chi2 
@@ -515,34 +549,36 @@ def SPDC_loss(u,y,input,equation_dict, grad="autograd"):
     Return: (data_loss,ic_loss,pde_loss)
     '''
 
+    mse_loss = lambda x: F.mse_loss(torch.abs(x),torch.zeros(x.shape,device=x.device,dtype=input.dtype))
     batchsize = u.size(0)
     nx = u.size(1)
     ny = u.size(2)
     nz = u.size(3)
-    nfields = u.size(-1)//2 # should be 8
+    u_nfields = u.size(4)//2 # should be 2
+    y_nfields = y.size(4)//2 # should be 2
 
-    u = u.reshape(batchsize,nx, ny, nz,2,nfields)
-    y = y.reshape(batchsize,nx, ny, nz,2,nfields)
-    u = u[...,0,-2:] + 1j*u[...,1,-2:] # real part + j * imag part
-    y = y[...,0,-2:] + 1j*y[...,1,-2:] # real part + j * imag part
-    
-    LpLoss3D = LpLoss(d=3,size_average=True)
-    LpLoss2D = LpLoss(d=2,size_average=True)
-    mse_loss = lambda x: F.mse_loss(torch.abs(x),torch.zeros(x.shape,device=x.device,dtype=input.dtype))
-
-    u0 = u[..., 0,:]
-    y0 = y[..., 0,:]
-    ic_loss = mse_loss(u0-y0)
-    data_loss = mse_loss(u-y)
-
+    u = u.reshape(batchsize,nx, ny, nz,2,u_nfields)
+    y = y.reshape(batchsize,nx, ny, nz,2,y_nfields)
+# calc pde losse
     if grad == "autograd":
-        pde_res = coupled_wave_eq_PDE_Loss(u=u,y=y,input=input,equation_dict=equation_dict,pump=y[...,0])
+        pde_res = coupled_wave_eq_PDE_Loss(u=u,y=y,input=input,equation_dict=equation_dict)
     elif grad == "numeric":
-        pde_res = coupled_wave_eq_PDE_Loss_numeric(u=u,equation_dict=equation_dict,grid_z=input[...,-1],pump=y[...,0])
+        pde_res = coupled_wave_eq_PDE_Loss_numeric(u=u,equation_dict=equation_dict,grid_z=input[...,-1])
     elif grad == "none":
         pde_res = torch.zeros(u.shape,dtype=input.dtype)
     
     pde_loss = mse_loss(pde_res)
+
+
+    u_full = u[...,0,:] + 1j*u[...,1,:] # real part + j * imag part
+    y_full = y[...,0,:] + 1j*y[...,1,:] # real part + j * imag part
+    
+
+    u0 = u_full[..., 0,:]
+    y0 = y_full[..., 0,:]
+    ic_loss = mse_loss(u0-y0[...,-2:])
+    data_loss = mse_loss(u_full-y_full[...,-2:])
+
     gc.collect()
     torch.cuda.empty_cache()
 

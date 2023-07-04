@@ -116,7 +116,7 @@ class BurgersLoader(object):
         return loader
 
 class SPDCLoader(object):
-    def __init__(self, datapath, nx = 121, ny = 121, nz =10,nin=3,nout=4, sub_xy=1, sub_z=1,
+    def __init__(self, datapath, nx = 121, ny = 121, nz =10,nin=3,nout=2, sub_xy=1, sub_z=1,
                  N=10, device="cuda:0"):
         '''
         Load data from npy from a dictonary:
@@ -126,14 +126,15 @@ class SPDCLoader(object):
          "k_signal" : scalar - The k of the signal
          "k_idler" : scalar - The k of the idler
          "kappa_signal" : scalar - The kappa of the signal
-        The fields are in order  (pump, signal vac, idler vac,signal out, idler out)
+        The fields are in order:  
+        (pump, signal vac, idler vac,signal out, idler out)
         Args:
             datapath: path to data
             nx: size of x axis
             ny: size of y axis
             nz: size of z axis
             nin: number of input fields (pump, signal vac, idler vac)
-            nout: number of output fields (signal vac, idler vac, signal out, idler out)
+            nout: number of output fields (signal out, idler out)
             sub_xy: reduce the resoultion in xy plane
             sub_t: reduce the resoultion in z axis
             N: number of data samples
@@ -161,7 +162,7 @@ class SPDCLoader(object):
 
     def make_loader(self, n_sample, batch_size, start=0, train=True):
         a_data = self.data[start:start + n_sample,:, :, 0,:,:self.nin].reshape(n_sample, self.X, self.Y,self.nin*2)
-        u_data = self.data[start:start + n_sample,:,:,:,:,-self.nout:].reshape(n_sample, self.X, self.Y, self.Z, self.nout*2)
+        u_data = self.data[start:start + n_sample,...].reshape(n_sample, self.X, self.Y, self.Z, (self.nin+self.nout)*2)
 
         assert self.X == self.Y
         gridx, gridy, gridz = get_grid3d(self.X, self.Z)
@@ -177,7 +178,7 @@ class SPDCLoader(object):
 
     def make_dataset(self, n_sample, start=0, train=True):
         a_data = self.data[start:start + n_sample,:, :, 0,:,:self.nin].reshape(n_sample, self.X, self.Y,self.nin*2)
-        u_data = self.data[start:start + n_sample,:,:,:,:,-self.nout:].reshape(n_sample, self.X, self.Y, self.Z, self.nout*2)
+        u_data = self.data[start:start + n_sample,...].reshape(n_sample, self.X, self.Y, self.Z, (self.nin + self.nout)*2)
 
         assert self.X == self.Y
         gridx, gridy, gridz = get_grid3d(self.X, self.Z)

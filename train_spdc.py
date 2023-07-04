@@ -40,7 +40,7 @@ def train_SPDC(model,
     data_weight = config['train']['xy_loss']
     f_weight = config['train']['f_loss']
     ic_weight = config['train']['ic_loss']
-    batch_size = config['train']['batchsize']
+    nout = config['data']['nout']
 
     model.train()
     pbar = range(config['train']['epochs'])
@@ -58,7 +58,7 @@ def train_SPDC(model,
             torch.cuda.empty_cache()
             x, y = x.to(rank), y.to(rank)
             x_in = F.pad(x,(0,0,0,padding),"constant",0).type(torch.float32)
-            out = model(x_in).reshape(batch_size,y.size(1),y.size(2),y.size(3) + padding, y.size(4))
+            out = model(x_in).reshape(y.shape[0],y.shape[1],y.shape[2],y.shape[3] + padding, 2*nout)
             # out = out[...,:-padding,:, :] # if padding is not 0
 
             data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,input=x,equation_dict=equation_dict)
@@ -112,6 +112,7 @@ def eval_SPDC(model,
                  padding = 0,
                  use_tqdm=True):
     model.eval()
+    nout = config['data']['nout']
     if use_tqdm:
         pbar = tqdm(dataloader, dynamic_ncols=True, smoothing=0.05)
     else:
@@ -126,7 +127,7 @@ def eval_SPDC(model,
         torch.cuda.empty_cache()
         x, y = x.to(device), y.to(device)
         x_in = F.pad(x,(0,0,0,padding),"constant",0)
-        out = model(x_in).reshape(dataloader.batch_size,y.size(1),y.size(2),y.size(3) + padding, y.size(4))
+        out = model(x_in).reshape(y.shape[0],y.shape[1],y.shape[2],y.shape[3] + padding, 2*nout)
             # out = out[...,:-padding,:, :] # if padding is not 0
 
         data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,input=x,equation_dict=equation_dict)
