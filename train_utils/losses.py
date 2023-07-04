@@ -316,7 +316,7 @@ def transvese_laplacian(E,input):
     E_xx_yy = E_xx + E_yy
     return (E_z,E_xx_yy)
 
-def coupled_wave_eq_PDE_Loss(u,input,equation_dict,pump): 
+def coupled_wave_eq_PDE_Loss(u,y,input,equation_dict,pump): 
     '''
     A NAIVE coupled wave equation pde loss calculation.
     Args:
@@ -341,26 +341,27 @@ def coupled_wave_eq_PDE_Loss(u,input,equation_dict,pump):
     kappa_i = equation_dict["kappa_idler"].item()
     chi= equation_dict["chi"].to(u.device)
 
-    signal_vac = u[...,0]
-    idler_vac = u[...,1]
-    signal_out = u[...,2]
-    idler_out = u[...,3]
+    signal_vac = y[...,0]
+    idler_vac = y[...,1]
+    signal_out = u[...,0]
+    idler_out = u[...,1]
     grid_z = input[...,-1]
 
-    signal_vac_z ,signal_vac_xx_yy= transvese_laplacian(E=signal_vac, input=input)
-    idler_vac_z, idler_vac_xx_yy=transvese_laplacian(E=idler_vac, input=input)
+    # signal_vac_z ,signal_vac_xx_yy= transvese_laplacian(E=signal_vac, input=input)
+    # idler_vac_z, idler_vac_xx_yy=transvese_laplacian(E=idler_vac, input=input)
     signal_out_z, signal_out_xx_yy=transvese_laplacian(E=signal_out, input=input)
     idler_out_z, idler_out_xx_yy=transvese_laplacian(E=idler_out, input=input)
 
     res = lambda E1_z,E1_xx_yy,k1,kapa1,E2: (1j*E1_z + E1_xx_yy/(2*k1) - kapa1*chi*pump*torch.exp(-1j*delta_k*grid_z)*E2.conj())
 
     res1 = res(idler_out_z,idler_out_xx_yy, equation_dict["k_idler"].item(),kappa_i,signal_vac)
-    res2 = res(idler_vac_z,idler_vac_xx_yy, equation_dict["k_idler"].item(),kappa_i,signal_out)
+    # res2 = res(idler_vac_z,idler_vac_xx_yy, equation_dict["k_idler"].item(),kappa_i,signal_out)
     res3 = res(signal_out_z,signal_out_xx_yy, equation_dict["k_signal"].item(),kappa_s,idler_vac)
-    res4 = res(signal_vac_z,signal_vac_xx_yy, equation_dict["k_signal"].item(),kappa_s,idler_out)
+    # res4 = res(signal_vac_z,signal_vac_xx_yy, equation_dict["k_signal"].item(),kappa_s,idler_out)
 
-    residual = torch.cat((res1,res2,res3,res4),dim=-1) # may need to add differend weights
-    return torch.abs(residual)
+    # residual = torch.cat((res1,res2,res3,res4),dim=-1) # may need to add differend weights
+    residual = torch.cat((res1,res3),dim=-1) # may need to add differend weights
+    return torch.abs(residual).type(torch.float32)
 
 
 def coupled_wave_eq_PDE_Loss_numeric(u,equation_dict,grid_z,pump):
@@ -522,8 +523,8 @@ def SPDC_loss(u,y,input,equation_dict, grad="autograd"):
 
     u = u.reshape(batchsize,nx, ny, nz,2,nfields)
     y = y.reshape(batchsize,nx, ny, nz,2,nfields)
-    u = u[...,0,:] + 1j*u[...,1,:] # real part + j * imag part
-    y = y[...,0,:] + 1j*y[...,1,:] # real part + j * imag part
+    u = u[...,0,-2:] + 1j*u[...,1,-2:] # real part + j * imag part
+    y = y[...,0,-2:] + 1j*y[...,1,-2:] # real part + j * imag part
     
     LpLoss3D = LpLoss(d=3,size_average=True)
     LpLoss2D = LpLoss(d=2,size_average=True)
@@ -535,7 +536,7 @@ def SPDC_loss(u,y,input,equation_dict, grad="autograd"):
     data_loss = mse_loss(u-y)
 
     if grad == "autograd":
-        pde_res = coupled_wave_eq_PDE_Loss(u=u,input=input,equation_dict=equation_dict,pump=y[...,0])
+        pde_res = coupled_wave_eq_PDE_Loss(u=u,y=y,input=input,equation_dict=equation_dict,pump=y[...,0])
     elif grad == "numeric":
         pde_res = coupled_wave_eq_PDE_Loss_numeric(u=u,equation_dict=equation_dict,grid_z=input[...,-1],pump=y[...,0])
     elif grad == "none":

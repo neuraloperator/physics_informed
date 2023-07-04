@@ -81,7 +81,7 @@ def train_SPDC(model,
             pbar.set_description(
                 (
                     f'Epoch {e}, train loss: {train_loss:.5f} '
-                    f'train f error: {train_pino:.5f}; '
+                    f'train f error log: {np.log(train_pino):.5f}; '
                     f'data l2 error: {data_l2:.5f}'
                 )
             )
