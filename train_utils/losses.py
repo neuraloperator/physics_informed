@@ -310,21 +310,21 @@ def transvese_laplacian(E,input):
     #real part
     E_real = E[...,0]
     grad =torch.autograd.grad(outputs=E_real.sum(),inputs=input,retain_graph=True, create_graph=True)[0]
-    E_z_real = grad[...,-1]
-    E_x_real = grad[...,-3]
-    E_y_real = grad[...,-2]
-    E_xx_real =torch.autograd.grad(outputs=E_x_real.sum(),inputs=input, create_graph=True)[0][...,-3]
-    E_yy_real =torch.autograd.grad(outputs=E_y_real.sum(),inputs=input, create_graph=True)[0][...,-2]
+    E_x_real = grad[...,0]
+    E_y_real = grad[...,1]
+    E_z_real = grad[...,2]
+    E_xx_real =torch.autograd.grad(outputs=E_x_real.sum(),inputs=input, create_graph=True)[0][...,0]
+    E_yy_real =torch.autograd.grad(outputs=E_y_real.sum(),inputs=input, create_graph=True)[0][...,1]
     E_xx_yy_real = E_xx_real + E_yy_real
 
     #imag part
     E_imag = E[...,1]
     grad =torch.autograd.grad(outputs=E_imag.sum(),inputs=input,retain_graph=True, create_graph=True)[0]
-    E_z_imag = grad[...,-1]
-    E_x_imag = grad[...,-3]
-    E_y_imag = grad[...,-2]
-    E_xx_imag =torch.autograd.grad(outputs=E_x_imag.sum(),inputs=input, create_graph=True)[0][...,-3]
-    E_yy_imag =torch.autograd.grad(outputs=E_y_imag.sum(),inputs=input, create_graph=True)[0][...,-2]
+    E_x_imag = grad[...,0]
+    E_y_imag = grad[...,1]
+    E_z_imag = grad[...,2]
+    E_xx_imag =torch.autograd.grad(outputs=E_x_imag.sum(),inputs=input, create_graph=True)[0][...,0]
+    E_yy_imag =torch.autograd.grad(outputs=E_y_imag.sum(),inputs=input, create_graph=True)[0][...,1]
     E_xx_yy_imag = E_xx_imag + E_yy_imag
 
     E_z = E_z_real + 1j*E_z_imag
@@ -340,8 +340,8 @@ def coupled_wave_eq_PDE_Loss(u,y,input,equation_dict):
         The one before is the real/imag part (real, imag)
     y: ground truth,  a tensor of size (batchsize,X,Y,Z,2,5)
         The last index is the index (pump,signal vac, idler vac, signal out, idler out)
-    input: The input to the network. a tensor of size (batchsize,X,Y,9)
-        The last index is the index (pump,signal vac, idler vac, grid_x ,grid_y, grid_z), each of the first 3 appears twice, once  real and once imag part
+    input: The input to the network. a tensor of size (batchsize,X,Y,3+2*nin = 9)
+        The last index is the index (grid_x ,grid_y, grid_z, pump,signal vac, idler vac), each of the last 3 appears twice, once  real and once imag part
     equation_dict: A dictionary containing
         "chi" -  np.ndarray of the shape (X,Y,Z) contain the chi2 
         "k_pump" -  scalar, the k pump coef
@@ -376,7 +376,7 @@ def coupled_wave_eq_PDE_Loss(u,y,input,equation_dict):
     idler_vac = y_full[...,2]
     signal_out = u_full[...,0]
     idler_out = u_full[...,1]
-    grid_z = input[...,-1]
+    grid_z = input[...,2]
 
     res = lambda E1_z,E1_xx_yy,k1,kapa1,E2: (1j*E1_z + E1_xx_yy/(2*k1) - kapa1*chi*pump*torch.exp(-1j*delta_k*grid_z)*E2.conj())
 
@@ -532,7 +532,8 @@ def SPDC_loss(u,y,input,equation_dict, grad="autograd"):
     u: The output of the network - tensor of shape (batch size, Nx, Ny, Nz, 2*nout) - where nout is the number of out fields (*2 because of both real and imag part). The fields order: (signal out, idler outs)
     y: The entire ground truth solution - tensor of shape 
         (batch size, Nx, Ny, Nz, 2*(nin+nout)) - where nout is the number of out fields (*2 because of both real and imag part). The fields order:      (pump,signal vac, idler vac, signal out, idler out)
-    input: The input of the netwrok 
+    input: The input to the network. a tensor of size (batchsize,X,Y,3+2*nin = 9)
+        The last index is the index (grid_x ,grid_y, grid_z, pump,signal vac, idler vac), each of the last 3 appears twice, once  real and once imag part
     equation_dict: A dictionary containing
         "chi" -  np.ndarray of the shape (X,Y,Z) contain the chi2 
         "k_pump" -  scalar, the k pump coef

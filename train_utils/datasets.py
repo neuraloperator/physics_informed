@@ -11,7 +11,7 @@ except ImportError:
 
 import torch
 from torch.utils.data import Dataset
-from .utils import get_grid3d, convert_ic, torch2dgrid
+from .utils import get_grid3d, convert_ic, torch2dgrid, get_spdc_grid3d
 
 
 def online_loader(sampler, S, T, time_scale, batchsize=1):
@@ -165,7 +165,7 @@ class SPDCLoader(object):
         u_data = self.data[start:start + n_sample,...].reshape(n_sample, self.X, self.Y, self.Z, (self.nin+self.nout)*2)
 
         assert self.X == self.Y
-        gridx, gridy, gridz = get_grid3d(self.X, self.Z)
+        gridx, gridy, gridz = get_spdc_grid3d(self.X, self.Z)
         a_data = a_data.reshape(n_sample, self.X, self.Y, 1, self.nin*2).repeat([1, 1, 1, self.Z, 1])
         a_data = torch.cat((gridx.reshape(1,self.X,self.X,self.Z,1).repeat([n_sample, 1, 1, 1, 1]),
                             gridy.reshape(1,self.X,self.X,self.Z,1).repeat([n_sample, 1, 1, 1, 1]),
@@ -181,7 +181,7 @@ class SPDCLoader(object):
         u_data = self.data[start:start + n_sample,...].reshape(n_sample, self.X, self.Y, self.Z, (self.nin + self.nout)*2)
 
         assert self.X == self.Y
-        gridx, gridy, gridz = get_grid3d(self.X, self.Z)
+        gridx, gridy, gridz = get_spdc_grid3d(self.X, self.Z)
         a_data = a_data.reshape(n_sample, self.X, self.Y, 1, self.nin*2).repeat([1, 1, 1, self.Z, 1])
         a_data = torch.cat((gridx.reshape(1,self.X,self.X,self.Z,1).repeat([n_sample, 1, 1, 1, 1]),
                             gridy.reshape(1,self.X,self.X,self.Z,1).repeat([n_sample, 1, 1, 1, 1]),

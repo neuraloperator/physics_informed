@@ -7,7 +7,7 @@ data:
   nx: 121
   ny: 121
   nz: 10
-  sub_xy: 2
+  sub_xy: 3
   sub_z: 1
   nin: 3
   nout: 2
@@ -25,7 +25,7 @@ model:
 
 test:
   batchsize: 1
-  ckpt: 'checkpoints/spdc-FDM/spdc-FNO-eqn.pt'
+  ckpt: 'checkpoints/spdc-FDM/spdc-pino-eqn.pt'
 
 
 log:

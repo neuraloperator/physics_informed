@@ -30,7 +30,10 @@ def plot_av_sol(u,y):
     y = (y[...,0,:] + 1j*y[...,1,:]).detach().numpy()
     for sol,src in zip([u,y],["prediction", "grt"]):
         dict = {0:"signal out", 1:"idler out"}
-        X,Y = np.meshgrid(range(u.shape[1]),range(u.shape[2]))
+        maxXY = 120e-6
+        XY = u.shape[1]
+        xy = np.linspace(-maxXY, maxXY, XY + 1)[:-1]
+        X,Y = np.meshgrid(xy,xy)
         for i in range(2):
             fig, ax = plt.subplots(dpi=150,subplot_kw={"projection": "3d"})
             surf = ax.plot_surface(X, Y, (np.mean(np.abs(sol[...,-1,i])**2,axis=0)), cmap=cm.coolwarm,linewidth=0, antialiased=False)
@@ -47,7 +50,10 @@ def plot_singel_sol(u,y,j):
     y = (y[...,0,:] + 1j*y[...,1,:]).detach().numpy()
     for sol,src in zip([u,y],["prediction", "grt"]):
         dict = {0:"signal vac", 1:"idler vac", 2:"single out", 3:"idler out"}
-        X,Y = np.meshgrid(range(u.shape[1]),range(u.shape[2]))
+        maxXY = 120e-6
+        XY = u.shape(1)
+        xy = np.linspace(-maxXY, maxXY, XY + 1)[:-1]
+        X,Y = np.meshgrid(xy,xy)
         for i in range(4):
             fig, ax = plt.subplots(dpi=150,subplot_kw={"projection": "3d"})
             surf = ax.plot_surface(X, Y, np.real(sol[j,...,-1,i]), cmap=cm.coolwarm,linewidth=0, antialiased=False)

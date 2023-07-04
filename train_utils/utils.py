@@ -113,6 +113,15 @@ def get_grid3d(S, T, time_scale=1.0, device='cpu'):
     gridt = gridt.reshape(1, 1, 1, T, 1).repeat([1, S, S, 1, 1])
     return gridx, gridy, gridt
 
+def get_spdc_grid3d(XY, Z, maxXY = 120e-6,maxZ = 1e-4, device='cpu'):
+    gridx = torch.tensor(np.linspace(-maxXY, maxXY, XY + 1)[:-1], dtype=torch.float32, device=device)
+    gridx = gridx.reshape(1, XY, 1, 1, 1).repeat([1, 1, XY, Z, 1])
+    gridy = torch.tensor(np.linspace(-maxXY, maxXY, XY + 1)[:-1], dtype=torch.float32, device=device)
+    gridy = gridy.reshape(1, 1, XY, 1, 1).repeat([1, XY, 1, Z, 1])
+    gridz = torch.tensor(np.linspace(-maxZ / 2, maxZ / 2, Z + 1)[:-1], dtype=torch.float32, device=device)
+    gridz = gridz.reshape(1, 1, 1, Z, 1).repeat([1, XY, XY, 1, 1])
+    return gridx, gridy, gridz
+
 
 def convert_ic(u0, N, S, T, time_scale=1.0):
     u0 = u0.reshape(N, S, S, 1, 1).repeat([1, 1, 1, T, 1])
