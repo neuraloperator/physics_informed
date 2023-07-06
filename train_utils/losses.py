@@ -300,7 +300,7 @@ def transvese_laplacian(E,input):
     calculates the transverse laplacian given E and coordinates.
     Args:
     E: The tensor to be derived of shape (batchsize,X,Y,Z,2) the last index is the real and imag part.
-    input: The input to the network. a tensor of size (batchsize,X,Y,Z,9) where input[...,-3:] = grid_x,grid_y,grid_z
+    input: The input to the network. a tensor of size (batchsize,X,Y,Z,9) where input[...,:3] = grid_x,grid_y,grid_z
 
     return:
     Tuple (E_z,E_xx_yy) each of which is a complex tensor in shape (batchsize,X,Y,Z) of the derived field according to the z axis and the tranverse laplecian
