@@ -87,7 +87,6 @@ class SPDC_solver(object):
                   self.idler_field = Field(beam = idler,dx=shape.dx,dy=shape.dy,maxZ=shape.maxZ)
 
                 # change to gauusian, and 
-                  X,Y = np.meshgrid(shape.x,shape.y)
                 #pump
                   pump_max_mode1 = pump_coef["max_mode1"]
                   pump_max_mode2 = pump_coef["max_mode2"]
@@ -145,7 +144,7 @@ class SPDC_solver(object):
                 if self.draw_sol:
                         dict = {0:"signal out", 1:"signal vac", 2:"idler out", 3:"idler vac"}
                         n = {0:self.signal.n, 1:self.signal.n, 2:self.idler.n, 3:self.idler.n}
-                        X,Y = np.meshgrid(self.shape.x,self.shape.y)
+                        X,Y = np.meshgrid(self.shape.x,self.shape.y, indexing='ij')
                         for i in range(4):
                                 if (i%1==0):
                                          fig, ax = plt.subplots(dpi=150,subplot_kw={"projection": "3d"})

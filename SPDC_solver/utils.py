@@ -327,7 +327,7 @@ def profile_laguerre_gauss(
     ):
         coeffs = pump_coeffs_real + 1j * pump_coeffs_imag
         if mode == "pump":
-            [X, Y] = np.meshgrid(shape.x, shape.y)
+            [X, Y] = np.meshgrid(shape.x, shape.y, indexing='ij')
             Z = shape.z[0]
         elif mode == "crystal":
             [X, Y, Z] = np.meshgrid(shape.x, shape.y, shape.z, indexing='ij')
