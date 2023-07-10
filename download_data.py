@@ -12,6 +12,7 @@ _url_dict = {
     'NS-Re100Part0': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/NS_fine_Re100_T128_part0.npy', 
     'burgers': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/burgers_pino.mat', 
     'NS-Re500_T300_id0': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS-Re500_T300_id0.npy',
+    'NS-Re500_T300_id0-shuffle': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/NS-Re500_T300_id0-shuffle.npy',
     'darcy-train': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/piececonst_r421_N1024_smooth1.mat', 
     'darcy-test': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/piececonst_r421_N1024_smooth2.mat', 
     'cavity': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/cavity.mat',

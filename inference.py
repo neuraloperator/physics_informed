@@ -1,7 +1,10 @@
+'''
+This code generates the prediction on one instance. 
+Both the ground truth and the prediction are saved in a .pt file.
+'''
 import os
 import yaml
 from argparse import ArgumentParser
-import random
 
 import torch
 from torch.utils.data import DataLoader
@@ -17,7 +20,8 @@ from train_utils.utils import count_params
 def get_pred(args):
     with open(args.config, 'r') as stream:
         config = yaml.load(stream, yaml.FullLoader)
-
+    basedir = os.path.join('exp', config['log']['logdir'])
+    save_path = os.path.join(basedir, 'predictions','prediction.pt')
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     # prepare data
@@ -55,7 +59,7 @@ def get_pred(args):
         torch.save({
             'truth': u.cpu(),
             'pred': out.cpu(),
-        }, 're500-1_8s-800-fno-50k-prediction.pt')
+        }, save_path)
         break
 
 
