@@ -4,7 +4,7 @@ import requests
 from tqdm import tqdm
 
 
-url_dict = {
+_url_dict = {
     'NS-T4000': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/NS_fft_Re500_T4000.npy', 
     'NS-Re500Part0': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/NS_fine_Re500_T128_part0.npy', 
     'NS-Re500Part1': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/NS_fine_Re500_T128_part1.npy', 
@@ -14,7 +14,8 @@ url_dict = {
     'NS-Re500_T300_id0': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/NS-Re500_T300_id0.npy',
     'darcy-train': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/piececonst_r421_N1024_smooth1.mat', 
     'darcy-test': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/piececonst_r421_N1024_smooth2.mat', 
-    'cavity': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/cavity.mat'
+    'cavity': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/cavity.mat',
+    'Re500-1_8s-800-pino-140k': 'https://hkzdata.s3.us-west-2.amazonaws.com/PINO/checkpoints/Re500-1_8s-800-PINO-140000.pt',
 }
 
 
@@ -23,23 +24,22 @@ def download_file(url, file_path):
     with requests.get(url, stream=True) as r:
         r.raise_for_status()
         with open(file_path, 'wb') as f:
-            for chunk in tqdm(r.iter_content(chunk_size=1024 * 1024 * 1024)):
+            for chunk in tqdm(r.iter_content(chunk_size=256 * 1024 * 1024)):
                 f.write(chunk)
     print('Complete')
 
 
+def main(args):
+    url = _url_dict[args.name]
+    file_name = url.split('/')[-1]
+    os.makedirs(args.outdir, exist_ok=True)
+    file_path = os.path.join(args.outdir, file_name)
+    download_file(url, file_path)
+
+
 if __name__ == '__main__':
-    parser = ArgumentParser(description='Parser for downloading data')
+    parser = ArgumentParser(description='Parser for downloading assets')
     parser.add_argument('--name', type=str, default='NS-T4000')
     parser.add_argument('--outdir', type=str, default='../data')
     args = parser.parse_args()
-    
-    os.makedirs(args.outdir, exist_ok=True)
-
-    if 'NS' in args.name:
-        file_path = os.path.join(args.outdir, f'{args.name}.npy')
-    else:
-        file_path = os.path.join(args.outdir, f'{args.name}.mat')
-    download_url = url_dict[args.name]
-    
-    download_file(download_url, file_path)
+    main(args)
