@@ -102,7 +102,7 @@ def train_SPDC(model,
         if train_loss < min_train_loss:
             min_train_loss=train_loss
             save_checkpoint(config['train']['save_dir'],
-                            config['train']['save_name'].replace('.pt', f'_best_yet_{e}.pt'),
+                            config['train']['save_name'].replace('.pt', f'_best_yet.pt'),
                             model, optimizer)
 
     save_checkpoint(config['train']['save_dir'],
