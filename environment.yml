@@ -4,12 +4,15 @@ channels:
   - conda-forge
 dependencies:
   - python=3.8
-  - pytorch>=1.8.0
+  #- pytorch>=1.8.0
   - wandb
   - tqdm
   - scipy
   - h5py
-  - numpy
+  - numpy==1.24.3
+  - jaxlib==0.4.11
+  - jax==0.4.11
+  - pandas==2.0.2
   - pip:
     - tensorflow==2.4.0
     - git+https://github.com/lululxvi/deepxde.git

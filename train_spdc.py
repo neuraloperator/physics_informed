@@ -47,6 +47,7 @@ def train_SPDC(model,
     if use_tqdm:
         pbar = tqdm(pbar, dynamic_ncols=True, smoothing=0.1)
 
+    min_train_loss=float('inf')
     for e in pbar:
         model.train()
         train_pino = 0.0
@@ -98,6 +99,12 @@ def train_SPDC(model,
             save_checkpoint(config['train']['save_dir'],
                             config['train']['save_name'].replace('.pt', f'_{e}.pt'),
                             model, optimizer)
+        if train_loss < min_train_loss:
+            min_train_loss=train_loss
+            save_checkpoint(config['train']['save_dir'],
+                            config['train']['save_name'].replace('.pt', f'_best_yet_{e}.pt'),
+                            model, optimizer)
+
     save_checkpoint(config['train']['save_dir'],
                     config['train']['save_name'],
                     model, optimizer)
@@ -151,6 +158,7 @@ def eval_SPDC(model,
 
 def run(args, config):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    print(device)
     torch.cuda.empty_cache()
 
     data_config = config['data']
