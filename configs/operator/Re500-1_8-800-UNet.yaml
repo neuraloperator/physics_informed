@@ -5,7 +5,7 @@ data:
   offset: 0
   total_num: 300
   raw_res: [256, 256, 513]
-  n_data_samples: 2
+  n_data_samples: 100
   data_res: [64, 64, 257]  # resolution in 1 second
   pde_res: [64, 64, 129]   # resolution in 1 second
   a_offset: 0
