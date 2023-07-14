@@ -11,12 +11,8 @@ from train_utils.losses import LpLoss, darcy_loss, PINO_loss, SPDC_loss
 from tqdm import tqdm
 import torch.nn.functional as F
 import gc
-
-
-try:
-    import wandb
-except ImportError:
-    wandb = None
+import torch.nn as nn
+import wandb
 
 def train_SPDC(model,
                     train_loader, 
@@ -29,13 +25,14 @@ def train_SPDC(model,
                     group='default',
                     tags=['default'],
                     use_tqdm=True):
-    if rank == 0 and wandb and log:
+    if wandb and log:
         run = wandb.init(project=project,
                          entity=config['log']['entity'],
                          group=group,
                          config=config,
                          tags=tags, reinit=True,
                          settings=wandb.Settings(start_method="fork"))
+        print(f"wandb is activated")
 
     data_weight = config['train']['xy_loss']
     f_weight = config['train']['f_loss']
@@ -157,8 +154,22 @@ def eval_SPDC(model,
 
 
 def run(args, config):
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+    model = FNO3d(modes1=config['model']['modes1'],
+                  modes2=config['model']['modes2'],
+                  modes3=config['model']['modes3'],
+                  fc_dim=config['model']['fc_dim'],
+                  layers=config['model']['layers'],
+                  in_dim=config['model']['in_dim'],
+                  out_dim=config['model']['out_dim'],
+                  activation_func=config['model']['act'])
+  #
+  #if torch.cuda.device_count() > 1:
+  #   print("Let's use", torch.cuda.device_count(), "GPUs!")
+  #   model = nn.DataParallel(model)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(device)
+    model.to(device)
     torch.cuda.empty_cache()
 
     data_config = config['data']
@@ -181,14 +192,6 @@ def run(args, config):
     gc.collect()
     torch.cuda.empty_cache()
 
-    model = FNO3d(modes1=config['model']['modes1'],
-                  modes2=config['model']['modes2'],
-                  modes3=config['model']['modes3'],
-                  fc_dim=config['model']['fc_dim'],
-                  layers=config['model']['layers'],
-                  in_dim=config['model']['in_dim'],
-                  out_dim=config['model']['out_dim'],
-                  activation_func=config['model']['act']).to(device)
     # Load from checkpoint
     if 'ckpt' in config['train']:
         ckpt_path = config['train']['ckpt']
