@@ -12,7 +12,7 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from pytorch3dunet.unet3d.model import UNet3D
+from baselines.unet3d import UNet3D
 
 from train_utils.losses import LpLoss
 from train_utils.datasets import KFDataset, KFaDataset, sample_data
@@ -132,7 +132,7 @@ def subprocess(args):
         torch.cuda.manual_seed_all(seed)
 
     # create model 
-    model = UNet3D(in_channels=4, out_channels=1, f_maps=192, final_sigmoid=True).to(device) 
+    model = UNet3D(in_channels=4, out_channels=1, f_maps=64, final_sigmoid=False).to(device)
     num_params = count_params(model)
     config['num_params'] = num_params
     print(f'Number of parameters: {num_params}')
