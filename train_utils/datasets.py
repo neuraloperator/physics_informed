@@ -298,6 +298,8 @@ class KFDataset(Dataset):
                  data_res, pde_res, 
                  raw_res, 
                  n_samples=None, 
+                 total_samples=None,
+                 idx=0,
                  offset=0,
                  t_duration=1.0):
         super().__init__()
@@ -314,7 +316,11 @@ class KFDataset(Dataset):
             self.T = int(self.pde_res[2] * t_duration) + 1    # number of points in time dimension
 
         self.load()
-
+        if total_samples is not None:
+            print(f'Load {total_samples} samples starting from {idx}th sample')
+            self.data = self.data[idx:idx + total_samples]
+            self.a_data = self.a_data[idx:idx + total_samples]
+            
         self.data_s_step = pde_res[0] // data_res[0]
         self.data_t_step = (pde_res[2] - 1) // (data_res[2] - 1)
 

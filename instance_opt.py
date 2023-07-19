@@ -98,6 +98,25 @@ def train_ns(model,
     # clean up wandb
     if wandb and args.log:
         run.finish()
+        
+    # save prediction and truth
+    save_dir = os.path.join(base_dir, 'results')
+    os.makedirs(save_dir, exist_ok=True)
+    result_path = os.path.join(save_dir, f'results-{args.idx}.pt')
+
+    criterion = LpLoss()
+
+    model.eval()
+    with torch.no_grad():
+        u, a_in = next(u_loader)
+        u = u.to(device)
+        a_in = a_in.to(device)
+        out = model(a_in)
+        error = criterion(out, u)
+        print(f'Test error: {error.item()}')
+        torch.save({'truth': u.cpu(), 'pred': out.cpu()}, result_path)
+    print(f'Results saved to {result_path}')
+
 
 
 def subprocess(args):
@@ -138,11 +157,11 @@ def subprocess(args):
                         data_res=config['data']['data_res'], 
                         pde_res=config['data']['data_res'], 
                         n_samples=config['data']['n_test_samples'], 
+                        total_samples=1,
+                        idx=args.idx,
                         offset=config['data']['testoffset'], 
                         t_duration=config['data']['t_duration'])
-    idx = [0]
-    u_set = Subset(dataset, indices=idx)
-    u_loader = DataLoader(u_set, batch_size=batchsize)
+    u_loader = DataLoader(dataset, batch_size=1)
 
     optimizer = Adam(model.parameters(), lr=config['train']['base_lr'])
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
@@ -164,6 +183,7 @@ if __name__ == '__main__':
     # parse options
     parser = ArgumentParser(description='Basic paser')
     parser.add_argument('--config', type=str, help='Path to the configuration file')
+    parser.add_argument('--idx', type=int, default=0, help='Index of the instance')
     parser.add_argument('--log', action='store_true', help='Turn on the wandb')
     parser.add_argument('--seed', type=int, default=None)
     parser.add_argument('--ckpt', type=str, default=None)

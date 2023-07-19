@@ -11,7 +11,8 @@ data:
   a_offset: 0
   n_a_samples: 250
   testoffset: 275
-  n_test_samples: 1
+  n_test_samples: 10
+  total_test_samples: 50
   t_duration: 0.125
   shuffle: True
 
@@ -41,7 +42,7 @@ test:
   ckpt: model-400.pt
 
 log:
-  logdir: Re500-1_8s-800-PINO-tto
+  logdir: Re500-1_8s-800-FNO
   entity: hzzheng-pino
   project: PINO-NS-test-time-opt
-  group: Re500-1_8s-800-PINO-s
+  group: Re500-1_8s-800-FNO

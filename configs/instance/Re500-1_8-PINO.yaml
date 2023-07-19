@@ -11,7 +11,8 @@ data:
   a_offset: 0
   n_a_samples: 250
   testoffset: 275
-  n_test_samples: 1
+  n_test_samples: 10
+  total_test_samples: 50
   t_duration: 0.125
   shuffle: True
 
