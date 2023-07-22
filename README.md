@@ -22,7 +22,7 @@ Abstract: *Machine learning methods have recently shown promise in solving parti
 
 ## Data description
 ### Burgers equation
-[burgers_pino.mat](https://hkzdata.s3.us-west-2.amazonaws.com/PINO/burgers_pino.mat)
+[burgers_pino.mat](https://hkzdata.s3.us-west-2.amazonaws.com/PINO/data/burgers_pino.mat)
 
 ### Darcy flow 
 - spatial domain: $x\in (0,1)^2$
