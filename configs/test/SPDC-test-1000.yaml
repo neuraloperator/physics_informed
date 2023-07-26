@@ -25,7 +25,7 @@ model:
 
 test:
   batchsize: 1
-  ckpt: 'checkpoints/spdc-FDM/spdc-pino-eqn.pt'
+  ckpt: 'checkpoints/spdc-FDM/spdc-pino-eqn_200.pt'
 
 
 log:

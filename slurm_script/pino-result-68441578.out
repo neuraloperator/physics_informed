@@ -1,22 +1,0 @@
-environment: /usr/bin/tclsh: No such file or directory
-Fri Jul  7 18:05:06 2023       
-+-----------------------------------------------------------------------------+
-| NVIDIA-SMI 510.108.03   Driver Version: 510.108.03   CUDA Version: 11.6     |
-|-------------------------------+----------------------+----------------------+
-| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
-| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
-|                               |                      |               MIG M. |
-|===============================+======================+======================|
-|   0  NVIDIA A40          On   | 00000000:1C:00.0 Off |                    0 |
-|  0%   24C    P8    26W / 300W |      0MiB / 46068MiB |      0%      Default |
-|                               |                      |                  N/A |
-+-------------------------------+----------------------+----------------------+
-                                                                               
-+-----------------------------------------------------------------------------+
-| Processes:                                                                  |
-|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
-|        ID   ID                                                   Usage      |
-|=============================================================================|
-|  No running processes found                                                 |
-+-----------------------------------------------------------------------------+
-  0%|          | 0/500 [00:00<?, ?it/s]Epoch 0, train loss: 76670.87998 train f error: 76659.70830; data l2 error: 1.86195:   0%|          | 0/500 [02:30<?, ?it/s]Epoch 0, train loss: 76670.87998 train f error: 76659.70830; data l2 error: 1.86195:   0%|          | 1/500 [02:32<21:07:21, 152.39s/it]Epoch 1, train loss: 76659.92383 train f error: 76659.70947; data l2 error: 0.03581:   0%|          | 1/500 [05:00<21:07:21, 152.39s/it]Epoch 1, train loss: 76659.92383 train f error: 76659.70947; data l2 error: 0.03581:   0%|          | 2/500 [05:00<20:47:34, 150.31s/it]Epoch 2, train loss: 76659.80879 train f error: 76659.70801; data l2 error: 0.01670:   0%|          | 2/500 [07:29<20:47:34, 150.31s/it]Epoch 2, train loss: 76659.80879 train f error: 76659.70801; data l2 error: 0.01670:   1%|          | 3/500 [07:29<20:39:39, 149.66s/it]Epoch 3, train loss: 76659.76201 train f error: 76659.70596; data l2 error: 0.00959:   1%|          | 3/500 [09:59<20:39:39, 149.66s/it]Epoch 3, train loss: 76659.76201 train f error: 76659.70596; data l2 error: 0.00959:   1%|          | 4/500 [09:59<20:39:30, 149.94s/it]Epoch 4, train loss: 76659.74180 train f error: 76659.70303; data l2 error: 0.00620:   1%|          | 4/500 [12:32<20:39:30, 149.94s/it]Epoch 4, train loss: 76659.74180 train f error: 76659.70303; data l2 error: 0.00620:   1%|          | 5/500 [12:32<20:41:09, 150.44s/it]

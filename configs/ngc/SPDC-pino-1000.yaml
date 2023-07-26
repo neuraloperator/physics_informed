@@ -33,7 +33,7 @@ train:
   f_loss: 1.0
   xy_loss: 5.0
   save_dir: 'spdc-FDM'
-  save_name: 'spdc-pino-eqn.pt'
+  save_name: 'spdc-pino-1000-eqn.pt'
 
 log:
   project: PINO-spdc-test
