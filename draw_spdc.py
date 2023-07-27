@@ -4,10 +4,8 @@ import yaml
 import torch
 import numpy as np
 from models import FNO3d
-from train_utils import Adam
 from train_utils.datasets import SPDCLoader
 from train_utils.utils import save_checkpoint
-from train_utils.losses import LpLoss, darcy_loss, PINO_loss, SPDC_loss
 from tqdm import tqdm
 import torch.nn.functional as F
 import gc
@@ -15,13 +13,9 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 
 
-try:
-    import wandb
-except ImportError:
-    wandb = None
 
 def plot_av_sol(u,y):
-
+    # y = torch.ones_like(y)
     N,nx,ny,nz,u_nfields = u.shape
     y_nfields = y.shape[4]
     u = u.reshape(N,nx, ny, nz,2,u_nfields//2)

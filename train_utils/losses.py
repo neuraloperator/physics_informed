@@ -529,7 +529,7 @@ def SPDC_loss(u,y,input,equation_dict, grad="autograd"):
     '''
     Calcultae and return the data loss, pde loss and ic (Initial condition) loss
     Args:
-    u: The output of the network - tensor of shape (batch size, Nx, Ny, Nz, 2*nout) - where nout is the number of out fields (*2 because of both real and imag part). The fields order: (signal out, idler outs)
+    u: The output of the network - tensor of shape (batch size, Nx, Ny, Nz, 2*nout) - where nout is the number of out fields (*2 because of both real and imag part). The fields order: (signal out, idler out)
     y: The entire ground truth solution - tensor of shape 
         (batch size, Nx, Ny, Nz, 2*(nin+nout)) - where nout is the number of out fields (*2 because of both real and imag part). The fields order:      (pump,signal vac, idler vac, signal out, idler out)
     input: The input to the network. a tensor of size (batchsize,X,Y,3+2*nin = 9)
@@ -557,7 +557,7 @@ def SPDC_loss(u,y,input,equation_dict, grad="autograd"):
     ny = u.size(2)
     nz = u.size(3)
     u_nfields = u.size(4)//2 # should be 2
-    y_nfields = y.size(4)//2 # should be 2
+    y_nfields = y.size(4)//2 # should be 5
 
     u = u.reshape(batchsize,nx, ny, nz,2,u_nfields)
     y = y.reshape(batchsize,nx, ny, nz,2,y_nfields)

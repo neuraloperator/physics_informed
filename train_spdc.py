@@ -55,6 +55,7 @@ def train_SPDC(model,
             gc.collect()
             torch.cuda.empty_cache()
             x, y = x.to(rank), y.to(rank)
+            # y = torch.ones_like(y).to(rank)
             x_in = F.pad(x,(0,0,0,padding),"constant",0).type(torch.float32)
             out = model(x_in).reshape(y.shape[0],y.shape[1],y.shape[2],y.shape[3] + padding, 2*nout)
             # out = out[...,:-padding,:, :] # if padding is not 0
