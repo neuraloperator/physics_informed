@@ -151,6 +151,45 @@ def eval_SPDC(model,
     print(f'==Averaged relative L2 error mean: {mean_err}, std error: {std_err}==\n'
           f'==Averaged equation error mean: {mean_f_err}, std error: {std_f_err}==\n'
           f'==Averaged initial condition error mean: {mean_ic_err}, std error: {std_ic_err}==')
+    
+def eval_dummy_SPDC(dataloader,
+                 config,
+                 equation_dict,
+                 device,
+                 padding = 0,
+                 use_tqdm=True):
+    nout = config['data']['nout']
+    if use_tqdm:
+        pbar = tqdm(dataloader, dynamic_ncols=True, smoothing=0.05)
+    else:
+        pbar = dataloader
+
+    test_err = []
+    f_err = []
+    ic_err = []
+
+    for x, y in pbar:
+        gc.collect()
+        torch.cuda.empty_cache()
+        x, y = x.to(device), y.to(device)
+        out = torch.zeros_like(y)[...,:2*nout]
+        data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,input=x,equation_dict=equation_dict,grad="none")
+        test_err.append(data_loss.item())
+        f_err.append(f_loss.item())
+        ic_err.append(ic_loss.item())
+
+    mean_f_err = np.mean(f_err)
+    std_f_err = np.std(f_err, ddof=1) / np.sqrt(len(f_err))
+
+    mean_err = np.mean(test_err)
+    std_err = np.std(test_err, ddof=1) / np.sqrt(len(test_err))
+
+    mean_ic_err = np.mean(ic_err)
+    std_ic_err = np.std(ic_err, ddof=1) / np.sqrt(len(ic_err))
+
+    print(f'==Averaged relative L2 error mean: {mean_err}, std error: {std_err}==\n'
+          f'==Averaged equation error mean: {mean_f_err}, std error: {std_f_err}==\n'
+          f'==Averaged initial condition error mean: {mean_ic_err}, std error: {std_ic_err}==')
 
 
 def run(args, config):
@@ -168,7 +207,6 @@ def run(args, config):
   #   print("Let's use", torch.cuda.device_count(), "GPUs!")
   #   model = nn.DataParallel(model)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(device)
     model.to(device)
     torch.cuda.empty_cache()
 
@@ -253,12 +291,35 @@ def test(config):
         print('Weights loaded from %s' % ckpt_path)
     eval_SPDC(model=model,dataloader=dataloader, config=config, equation_dict=equation_dict, device=device)
 
+def dummy(config):
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+    data_config = config['data']
+    dataset = SPDCLoader(   datapath = data_config['datapath'],
+                            nx=data_config['nx'], 
+                            ny=data_config['ny'],
+                            nz=data_config['nz'],
+                            nin = data_config['nin'],
+                            nout = data_config['nout'],
+                            sub_xy=data_config['sub_xy'],
+                            sub_z=data_config['sub_z'],
+                            N=data_config['total_num'],
+                            device=device)
+    
+    equation_dict = dataset.data_dict
+    dataloader = dataset.make_loader(n_sample=data_config['n_sample'],
+                                     batch_size=config['train']['batchsize'],
+                                     start=data_config['offset'])
+    del dataset
+    gc.collect()
+    torch.cuda.empty_cache()
+    eval_dummy_SPDC(dataloader=dataloader, config=config, equation_dict=equation_dict, device=device)
 
 if __name__ == '__main__':
     parser = ArgumentParser(description='Basic paser')
     parser.add_argument('--config_path', type=str, help='Path to the configuration file')
     parser.add_argument('--log', action='store_true', help='Turn on the wandb')
-    parser.add_argument('--mode', type=str, help='train or test')
+    parser.add_argument('--mode', type=str, help='train, test or dummy')
     args = parser.parse_args()
 
     config_file = args.config_path
@@ -266,5 +327,7 @@ if __name__ == '__main__':
         config = yaml.load(stream, yaml.FullLoader)
     if args.mode == 'train':
         run(args, config)
+    elif args.mode == 'dummy':
+        dummy(config)
     else:
         test(config)

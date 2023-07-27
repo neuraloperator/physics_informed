@@ -551,6 +551,7 @@ def SPDC_loss(u,y,input,equation_dict, grad="autograd"):
     '''
 
     mse_loss = lambda x: F.mse_loss(torch.abs(x),torch.zeros(x.shape,device=x.device,dtype=input.dtype))
+    # mse_loss = lambda x: F.l1_loss(torch.abs(x),torch.zeros(x.shape,device=x.device,dtype=input.dtype)) # trying L1 loss
     batchsize = u.size(0)
     nx = u.size(1)
     ny = u.size(2)

@@ -173,7 +173,8 @@ class SPDCLoader(object):
                             a_data), dim=-1)
 
         dataset = torch.utils.data.TensorDataset(a_data, u_data)
-        loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=train)
+        # loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=train) # should change to that after finished overfit
+        loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False)
         return loader
 
     def make_dataset(self, n_sample, start=0, train=True):
