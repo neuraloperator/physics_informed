@@ -579,7 +579,7 @@ def SPDC_loss(u,y,input,equation_dict, grad="autograd"):
     u0 = u_full[..., 0,:]
     y0 = y_full[..., 0,:]
     ic_loss = mse_loss(u0-y0[...,-2:])
-    data_loss = mse_loss(u_full-y_full[...,-2:])
+    data_loss = mse_loss(u_full-y_full[...,-2:])/mse_loss(y_full[...,-2:])
 
     gc.collect()
     torch.cuda.empty_cache()

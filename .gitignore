@@ -20,3 +20,4 @@ configs/ngc/SPDC-pino-100_copy.yaml
 configs/operator/SPDC-FNO-tmp.yaml
 slurm_script/FNO-tmp.sh
 configs/test/SPDC-test-tmp.yaml
+slurm_script/FNO-tmp copy.sh
