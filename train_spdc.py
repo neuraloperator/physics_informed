@@ -19,7 +19,10 @@ def train_SPDC(model,
                     optimizer, scheduler,
                     config,
                     equation_dict,
-                    rank=0, log=False,
+                    rank=0, 
+                    log=False,
+                    validate=False,
+                    val_dataloader = None,
                     padding = 0,
                     project='PINO-3d-default',
                     group='default',
@@ -38,6 +41,7 @@ def train_SPDC(model,
     f_weight = config['train']['f_loss']
     ic_weight = config['train']['ic_loss']
     nout = config['data']['nout']
+    grad = config['model']['grad']
 
     model.train()
     pbar = range(config['train']['epochs'])
@@ -60,7 +64,7 @@ def train_SPDC(model,
             out = model(x_in).reshape(y.shape[0],y.shape[1],y.shape[2],y.shape[3] + padding, 2*nout)
             # out = out[...,:-padding,:, :] # if padding is not 0
 
-            data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,input=x,equation_dict=equation_dict)
+            data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,input=x,equation_dict=equation_dict, grad=grad)
             total_loss = ic_loss * ic_weight + f_loss * f_weight + data_loss * data_weight
 
             gc.collect()
@@ -76,22 +80,54 @@ def train_SPDC(model,
         data_l2 /= len(train_loader)
         train_pino /= len(train_loader)
         train_loss /= len(train_loader)
-        if use_tqdm:
-            pbar.set_description(
-                (
-                    f'Epoch {e}, train loss: {train_loss:.5f} '
-                    f'train f error: {train_pino:.5f}; '
-                    f'data l2 error: {data_l2:.5f}'
+
+        if validate:
+            validation_loss = eval_SPDC(
+                                        model=model,
+                                        dataloader=val_dataloader,
+                                        config=config,
+                                        equation_dict=equation_dict,
+                                        device=rank,
+                                        use_tqdm=False,
+                                        validation=True)
+            if use_tqdm:
+                pbar.set_description(
+                    (
+                        f'Epoch {e}, train loss: {train_loss:.5f}; '
+                        f'equation f error: {train_pino:.5f}; '
+                        f'data l2 error: {data_l2:.5f}; '
+                        f'val l2 error: {validation_loss:.5f}; '
+                    )
                 )
-            )
-        if wandb and log:
-            wandb.log(
-                {
-                    'Train f error': train_pino,
-                    'Train L2 error': data_l2,
-                    'Train loss': train_loss,
-                }
-            )
+            if wandb and log:
+                wandb.log(
+                    {
+                        'Equation f error': train_pino,
+                        'Data L2 error': data_l2,
+                        'Train loss': train_loss,
+                        'Validation (data) L2 loss': validation_loss
+                    }
+                )
+
+        else:
+            if use_tqdm:
+                pbar.set_description(
+                    (
+                        f'Epoch {e}, train loss: {train_loss:.5f}; '
+                        f'equation f error: {train_pino:.5f}; '
+                        f'data l2 error: {data_l2:.5f}; '
+                    )
+                )
+            if wandb and log:
+                wandb.log(
+                    {
+                        'Equation f error': train_pino,
+                        'Data L2 error': data_l2,
+                        'Train loss': train_loss
+                    }
+                )
+
+
 
         if e % 100 == 0:
             save_checkpoint(config['train']['save_dir'],
@@ -115,9 +151,12 @@ def eval_SPDC(model,
                  equation_dict,
                  device,
                  padding = 0,
-                 use_tqdm=True):
+                 use_tqdm=True,
+                 validation=False):
     model.eval()
     nout = config['data']['nout']
+    grad = config['model']['grad']
+
     if use_tqdm:
         pbar = tqdm(dataloader, dynamic_ncols=True, smoothing=0.05)
     else:
@@ -135,10 +174,13 @@ def eval_SPDC(model,
         out = model(x_in).reshape(y.shape[0],y.shape[1],y.shape[2],y.shape[3] + padding, 2*nout)
             # out = out[...,:-padding,:, :] # if padding is not 0
 
-        data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,input=x,equation_dict=equation_dict)
+        data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,input=x,equation_dict=equation_dict, grad=grad)
         test_err.append(data_loss.item())
         f_err.append(f_loss.item())
         ic_err.append(ic_loss.item())
+
+    if validation:
+        return np.mean(test_err)
 
     mean_f_err = np.mean(f_err)
     std_f_err = np.std(f_err, ddof=1) / np.sqrt(len(f_err))
@@ -160,6 +202,7 @@ def eval_dummy_SPDC(dataloader,
                  padding = 0,
                  use_tqdm=True):
     nout = config['data']['nout']
+    grad = config['model']['grad']
     if use_tqdm:
         pbar = tqdm(dataloader, dynamic_ncols=True, smoothing=0.05)
     else:
@@ -174,7 +217,7 @@ def eval_dummy_SPDC(dataloader,
         torch.cuda.empty_cache()
         x, y = x.to(device), y.to(device)
         out = torch.zeros_like(y)[...,:2*nout]
-        data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,input=x,equation_dict=equation_dict,grad="none")
+        data_loss,ic_loss,f_loss = SPDC_loss(u=out,y=y,input=x,equation_dict=equation_dict,grad=grad)
         test_err.append(data_loss.item())
         f_err.append(f_loss.item())
         ic_err.append(ic_loss.item())
@@ -227,8 +270,15 @@ def run(args, config):
     train_loader = dataset.make_loader(n_sample=data_config['n_sample'],
                                        batch_size=config['train']['batchsize'],
                                        start=data_config['offset'],train=True)
-    del dataset
-    gc.collect()
+
+    val_dataloader = None
+    if args.validate:
+        val_dataloader = dataset.make_loader(
+                                     n_sample=data_config['total_num'] - data_config['n_sample'],
+                                     batch_size=config['train']['batchsize'],
+                                     start=data_config['n_sample'],train=False)
+        del dataset
+        gc.collect()
     torch.cuda.empty_cache()
 
     # Load from checkpoint
@@ -251,7 +301,9 @@ def run(args, config):
                     rank=device, 
                     log=args.log,
                     project=config['log']['project'],
-                    group=config['log']['group'])
+                    group=config['log']['group'],
+                    validate=args.validate,
+                    val_dataloader=val_dataloader)
 
 def test(config):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -320,6 +372,7 @@ if __name__ == '__main__':
     parser = ArgumentParser(description='Basic paser')
     parser.add_argument('--config_path', type=str, help='Path to the configuration file')
     parser.add_argument('--log', action='store_true', help='Turn on the wandb')
+    parser.add_argument('--validate', action='store_true', help='Calculate validation error')
     parser.add_argument('--mode', type=str, help='train, test or dummy')
     args = parser.parse_args()
 

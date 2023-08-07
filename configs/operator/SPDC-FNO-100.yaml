@@ -7,7 +7,7 @@ data:
   nx: 121
   ny: 121
   nz: 10
-  sub_xy: 2
+  sub_xy: 4
   sub_z: 1
   nin: 3
   nout: 2
@@ -24,7 +24,7 @@ model:
   num_pad: 5
 
 train:
-  batchsize: 1
+  batchsize: 4
   epochs: 500
   milestones: [150, 300, 450]
   base_lr: 0.001
@@ -37,6 +37,6 @@ train:
 
 log:
   project: PINO-spdc-test
-  group: gelu-eqn
-  entity: hzzheng-pino
+  group: ml4physics_spdc
+  entity: ml4physics_spdc
 
