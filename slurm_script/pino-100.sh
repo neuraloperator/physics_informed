@@ -18,5 +18,5 @@ conda activate pino-env
 
 ## Run the script
 nvidia-smi
-python train_spdc.py --config_path configs/ngc/SPDC-pino-100.yaml --mode train
+python train_spdc.py --config_path configs/ngc/SPDC-pino-100.yaml --mode train --log --validate
 echo Done

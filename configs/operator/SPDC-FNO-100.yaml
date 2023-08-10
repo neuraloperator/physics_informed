@@ -22,6 +22,7 @@ model:
   out_dim: 4
   act: gelu
   num_pad: 5
+  grad: 'autograd'
 
 train:
   batchsize: 4

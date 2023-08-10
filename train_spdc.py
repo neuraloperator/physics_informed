@@ -156,6 +156,8 @@ def eval_SPDC(model,
     model.eval()
     nout = config['data']['nout']
     grad = config['model']['grad']
+    if validation:
+        grad='none'
 
     if use_tqdm:
         pbar = tqdm(dataloader, dynamic_ncols=True, smoothing=0.05)

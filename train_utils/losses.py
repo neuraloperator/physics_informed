@@ -569,8 +569,6 @@ def SPDC_loss(u,y,input,equation_dict, grad="autograd"):
     elif grad == "none":
         pde_res = torch.zeros(u.shape,dtype=input.dtype)
     
-    pde_loss = mse_loss(pde_res)
-
 
     u_full = u[...,0,:] + 1j*u[...,1,:] # real part + j * imag part
     y_full = y[...,0,:] + 1j*y[...,1,:] # real part + j * imag part
@@ -580,7 +578,7 @@ def SPDC_loss(u,y,input,equation_dict, grad="autograd"):
     y0 = y_full[..., 0,:]
     ic_loss = mse_loss(u0-y0[...,-2:])
     data_loss = mse_loss(u_full-y_full[...,-2:])/mse_loss(y_full[...,-2:])
-
+    pde_loss = mse_loss(pde_res)/1e5/0.7578
     gc.collect()
     torch.cuda.empty_cache()
 

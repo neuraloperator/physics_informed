@@ -1,9 +1,9 @@
 data:
   name: spdc
-  datapath: '/home/dor-hay.sha/project/data/spdc/fixed_pump_100.bin'
-  total_num: 100
+  datapath: '/home/dor-hay.sha/project/data/spdc/fixed_pump_10.bin'
+  total_num: 10
   offset: 0
-  n_sample: 80
+  n_sample: 8
   nx: 121
   ny: 121
   nz: 10
@@ -26,13 +26,13 @@ model:
 
 train:
   batchsize: 4
-  epochs: 1500
+  epochs: 500
   milestones: [150, 300, 450]
-  base_lr: 0.0009
+  base_lr: 0.001
   scheduler_gamma: 0.5
-  ic_loss: 0.0
-  f_loss: 0.0001
-  xy_loss: 1.0
+  ic_loss: 1.0
+  f_loss: 1.0
+  xy_loss: 5.0
   save_dir: 'spdc-FDM'
   save_name: 'spdc-pino-eqn.pt'
 
@@ -40,4 +40,3 @@ log:
   project: PINO-spdc-test
   group: ml4physics_spdc
   entity: ml4physics_spdc
-
