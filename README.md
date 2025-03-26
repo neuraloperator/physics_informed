@@ -1,8 +1,14 @@
 # Physics-Informed Neural Operator for Learning Partial Differential Equations
 
-> **⚠️ DEPRECATION NOTICE:**  
-> This repository is **deprecated** and no longer maintained.  
-> The most up-to-date code can be found at: [https://github.com/neuraloperator/neuraloperator](https://github.com/neuraloperator/neuraloperator).
+📢 **DEPRECATION NOTICE** 📢  
+🚨 **This repository is no longer maintained.** 🚨  
+
+The code in this repository is **deprecated** and may not work with newer dependencies or frameworks.  
+For the most up-to-date implementation and continued development, please visit:  
+
+➡️ **[NeuralOperator](https://github.com/neuraloperator/neuraloperator)** ⬅️  
+
+🔴 **We strongly recommend using the latest version to ensure compatibility, performance, and support.** 🔴  
 
 ![PINO Diagram](docs/pino-diagram4.png)
 
