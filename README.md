@@ -1,13 +1,16 @@
 # Physics-Informed Neural Operator for Learning Partial Differential Equations
 
-📢 **DEPRECATION NOTICE** 📢  
+# 📢 DEPRECATION NOTICE 📢  
 ----------------------------
 
-> 🚨 **This repository is no longer maintained.** 🚨 The code in this repository is **deprecated** and may not work with newer dependencies or frameworks.  
-For the most up-to-date implementation and continued development, please visit:  ➡️ **[NeuralOperator](https://github.com/neuraloperator/neuraloperator)** ⬅️ .
+🚨 **This repository is no longer maintained.** 🚨 The code in this repository is **deprecated** and may not work with newer dependencies or frameworks.  
+For the most up-to-date implementation and continued development, please visit:  
+
+## ➡️ **[NeuralOperator](https://github.com/neuraloperator/neuraloperator)** ⬅️
+
 🔴 We strongly recommend using the latest version to ensure compatibility, performance, and support.🔴  
 
-
+----------------------------
 ![PINO Diagram](docs/pino-diagram4.png)
 
 [comment]: <> (![Results on Navier Stokes equation]&#40;docs/solver-pino.png&#41;)
