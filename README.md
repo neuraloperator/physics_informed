@@ -1,14 +1,12 @@
 # Physics-Informed Neural Operator for Learning Partial Differential Equations
 
 📢 **DEPRECATION NOTICE** 📢  
-🚨 **This repository is no longer maintained.** 🚨  
+----------------------------
 
-The code in this repository is **deprecated** and may not work with newer dependencies or frameworks.  
-For the most up-to-date implementation and continued development, please visit:  
+> 🚨 **This repository is no longer maintained.** 🚨 The code in this repository is **deprecated** and may not work with newer dependencies or frameworks.  
+For the most up-to-date implementation and continued development, please visit:  ➡️ **[NeuralOperator](https://github.com/neuraloperator/neuraloperator)** ⬅️ .
+🔴 We strongly recommend using the latest version to ensure compatibility, performance, and support.🔴  
 
-➡️ **[NeuralOperator](https://github.com/neuraloperator/neuraloperator)** ⬅️  
-
-🔴 **We strongly recommend using the latest version to ensure compatibility, performance, and support.** 🔴  
 
 ![PINO Diagram](docs/pino-diagram4.png)
 
@@ -16,9 +14,13 @@ For the most up-to-date implementation and continued development, please visit:
 
 <img src="docs/solver-pino-pinn.png" alt="Results on Navier Stokes equation" width="720" height="501"/>
 
-**Physics-informed Neural Operator for Learning Partial Differential Equations**
+# Paper Info
 
-Abstract: *Machine learning methods have recently shown promise in solving partial differential equations (PDEs). They can be classified into two broad categories: solution function approximation and operator learning. The Physics-Informed Neural Network (PINN) is an example of the former while the Fourier neural operator (FNO) is an example of the latter. Both these approaches have shortcomings. The optimization in PINN is challenging and prone to failure, especially on multi-scale dynamic systems. FNO does not suffer from this optimization issue since it carries out supervised learning on a given dataset, but obtaining such data may be too expensive or infeasible. In this work, we propose the physics-informed neural operator (PINO), where we combine the operating-learning and function-optimization frameworks, and this improves convergence rates and accuracy over both PINN and FNO models. In the operator-learning phase, PINO learns the solution operator over multiple instances of the parametric PDE family. In the test-time optimization phase, PINO optimizes the pre-trained operator ansatz for the querying instance of the PDE. Experiments show PINO outperforms previous ML methods on many popular PDE families while retaining the extraordinary speed-up of FNO compared to solvers. In particular, PINO accurately solves long temporal transient flows and  Kolmogorov flows, while PINN and other methods fail to converge.*
+
+This repo contains code for experiments from the paper [Physics-Informed Neural Operator for Learning Partial Differential Equations](https://arxiv.org/abs/2111.03794) (2021) by Zongyi Li, Hongkai Zheng, Nikola Kovachki, David Jin, Haoxuan Chen, Burigede Liu, Kamyar Azizzadenesheli, and Anima Anandkumar.
+
+Abstract: 
+> Machine learning methods have recently shown promise in solving partial differential equations (PDEs). They can be classified into two broad categories: solution function approximation and operator learning. The Physics-Informed Neural Network (PINN) is an example of the former while the Fourier neural operator (FNO) is an example of the latter. Both these approaches have shortcomings. The optimization in PINN is challenging and prone to failure, especially on multi-scale dynamic systems. FNO does not suffer from this optimization issue since it carries out supervised learning on a given dataset, but obtaining such data may be too expensive or infeasible. In this work, we propose the physics-informed neural operator (PINO), where we combine the operating-learning and function-optimization frameworks, and this improves convergence rates and accuracy over both PINN and FNO models. In the operator-learning phase, PINO learns the solution operator over multiple instances of the parametric PDE family. In the test-time optimization phase, PINO optimizes the pre-trained operator ansatz for the querying instance of the PDE. Experiments show PINO outperforms previous ML methods on many popular PDE families while retaining the extraordinary speed-up of FNO compared to solvers. In particular, PINO accurately solves long temporal transient flows and  Kolmogorov flows, while PINN and other methods fail to converge.
 ## Requirements
 - Pytorch 1.8.0 or later
 - wandb
